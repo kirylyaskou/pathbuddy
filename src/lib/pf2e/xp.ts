@@ -10,12 +10,6 @@ const CREATURE_XP: Record<number, number> = {
   [0]: 40, [1]: 60, [2]: 80, [3]: 120, [4]: 160,
 }
 
-// Source: Gamemastery Guide Table 4-18 (https://2e.aonprd.com/Rules.aspx?ID=1370)
-const PWOL_CREATURE_XP: Record<number, number> = {
-  [-7]: 9, [-6]: 12, [-5]: 14, [-4]: 18, [-3]: 21, [-2]: 26, [-1]: 32,
-  [0]: 40, [1]: 48, [2]: 60, [3]: 72, [4]: 90, [5]: 108, [6]: 135, [7]: 160,
-}
-
 // Source: GM Core (https://2e.aonprd.com/Rules.aspx?ID=2649)
 // Simple hazard XP = 1/5 of complex hazard XP (which equals creature XP)
 const SIMPLE_HAZARD_XP: Record<number, number> = {
@@ -34,56 +28,41 @@ const SIMPLE_HAZARD_XP: Record<number, number> = {
  * - Negative creature levels are treated as level 0.
  * - Delta below table minimum returns { xp: 0 } (trivially weak).
  * - Delta above table maximum returns { xp: null, outOfRange: true }.
- * - When `pwol: true`, uses the extended Proficiency Without Level table (-7 to +7).
  */
 export function calculateCreatureXP(
   creatureLevel: number,
   partyLevel: number,
-  options?: { pwol?: boolean }
 ): XpResult {
   const level = Math.max(creatureLevel, 0)
   const delta = level - partyLevel
-  const pwol = options?.pwol ?? false
-  const table = pwol ? PWOL_CREATURE_XP : CREATURE_XP
-  const minDelta = pwol ? -7 : -4
-  const maxDelta = pwol ? 7 : 4
 
-  if (delta < minDelta) return { xp: 0 }
-  if (delta > maxDelta) return { xp: null, outOfRange: true }
-  return { xp: table[delta]! }
+  if (delta < -4) return { xp: 0 }
+  if (delta > 4) return { xp: null, outOfRange: true }
+  return { xp: CREATURE_XP[delta]! }
 }
 
 /**
  * Returns the XP value for a single hazard relative to the party level.
  *
  * - Complex hazard XP equals creature XP at the same delta.
- * - Simple hazard XP equals 1/5 of complex hazard XP (floored for PWOL).
+ * - Simple hazard XP equals 1/5 of complex hazard XP.
  * - Out-of-range behavior matches creatures: 0 below min, null+flag above max.
  */
 export function getHazardXp(
   hazardLevel: number,
   partyLevel: number,
   type: HazardType,
-  options?: { pwol?: boolean }
 ): XpResult {
   const level = Math.max(hazardLevel, 0)
   const delta = level - partyLevel
-  const pwol = options?.pwol ?? false
-  const minDelta = pwol ? -7 : -4
-  const maxDelta = pwol ? 7 : 4
 
-  if (delta < minDelta) return { xp: 0 }
-  if (delta > maxDelta) return { xp: null, outOfRange: true }
+  if (delta < -4) return { xp: 0 }
+  if (delta > 4) return { xp: null, outOfRange: true }
 
   if (type === 'complex') {
-    const table = pwol ? PWOL_CREATURE_XP : CREATURE_XP
-    return { xp: table[delta]! }
+    return { xp: CREATURE_XP[delta]! }
   }
 
-  // Simple hazard
-  if (pwol) {
-    return { xp: Math.floor(PWOL_CREATURE_XP[delta]! / 5) }
-  }
   return { xp: SIMPLE_HAZARD_XP[delta]! }
 }
 
@@ -151,15 +130,12 @@ export interface EncounterResult {
 /**
  * Full encounter XP orchestrator. Computes per-entity XP breakdown, total XP,
  * threat rating, and out-of-range warnings.
- *
- * Propagates `pwol` option to all sub-functions automatically.
  */
 export function calculateXP(
   creatures: number[],
   hazards: Array<{ level: number; type: HazardType }>,
   partyLevel: number,
   partySize: number,
-  options?: { pwol?: boolean }
 ): EncounterResult {
   if (partySize === 0) throw new Error('Party size cannot be 0')
 
@@ -167,7 +143,7 @@ export function calculateXP(
   let totalXp = 0
 
   const creatureEntries: EncounterCreatureEntry[] = creatures.map(level => {
-    const result = calculateCreatureXP(level, partyLevel, options)
+    const result = calculateCreatureXP(level, partyLevel)
     if (result.outOfRange) {
       warnings.push({ type: 'outOfRange', creatureLevel: level, partyLevel })
       return { level, xp: null, outOfRange: true }
@@ -177,7 +153,7 @@ export function calculateXP(
   })
 
   const hazardEntries: EncounterHazardEntry[] = hazards.map(h => {
-    const result = getHazardXp(h.level, partyLevel, h.type, options)
+    const result = getHazardXp(h.level, partyLevel, h.type)
     if (result.outOfRange) {
       warnings.push({ type: 'outOfRange', hazardLevel: h.level, partyLevel })
       return { level: h.level, type: h.type, xp: null, outOfRange: true }
@@ -195,6 +171,5 @@ export function calculateXP(
 
 export const __testing = {
   CREATURE_XP,
-  PWOL_CREATURE_XP,
   SIMPLE_HAZARD_XP,
 }
