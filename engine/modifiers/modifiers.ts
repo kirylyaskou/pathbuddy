@@ -1,4 +1,4 @@
-import type { DieFace, DamageType, DamageCategory, CriticalInclusion } from './damage'
+import type { DieFace, DamageType, DamageCategory, CriticalInclusion } from '../damage/damage'
 
 // ─── Modifier Types ───────────────────────────────────────────────────────────
 // Source: PF2e Player Core / GM Core (https://2e.aonprd.com/Rules.aspx?ID=22)
