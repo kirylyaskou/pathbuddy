@@ -1,0 +1,100 @@
+// ─── Engine Barrel Export ──────────────────────────────────────────────────────
+// Single public API for all PF2e engine logic.
+// Consumers import from '@engine' or './engine'.
+// No per-subdirectory index.ts files (D-02).
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+export type { WeakEliteTier } from './types'
+
+// ── Conditions ────────────────────────────────────────────────────────────────
+export {
+  CONDITION_SLUGS,
+  VALUED_CONDITIONS,
+  CONDITION_GROUPS,
+  ConditionManager,
+} from './conditions/conditions'
+export type { ConditionSlug, ValuedCondition } from './conditions/conditions'
+
+// ── Damage ────────────────────────────────────────────────────────────────────
+export {
+  DAMAGE_CATEGORIES,
+  PHYSICAL_DAMAGE_TYPES,
+  ENERGY_DAMAGE_TYPES,
+  OTHER_DAMAGE_TYPES,
+  DAMAGE_TYPES,
+  DAMAGE_TYPE_CATEGORY,
+  MATERIAL_EFFECTS,
+  DIE_SIZES,
+  DIE_FACES,
+} from './damage/damage'
+export type {
+  DamageCategory,
+  PhysicalDamageType,
+  EnergyDamageType,
+  OtherDamageType,
+  DamageType,
+  MaterialEffect,
+  DieSize,
+  DieFace,
+  CriticalInclusion,
+  DamageFormula,
+  BaseDamage,
+  IWRBypass,
+} from './damage/damage'
+
+export { DamageCategorization, nextDamageDieSize } from './damage/damage-helpers'
+
+export {
+  IMMUNITY_TYPES,
+  WEAKNESS_TYPES,
+  RESISTANCE_TYPES,
+  DOUBLE_VS_CONDITIONS,
+  createImmunity,
+  createWeakness,
+  createResistance,
+  applyIWR,
+} from './damage/iwr'
+export type {
+  ImmunityType,
+  WeaknessType,
+  ResistanceType,
+  DoubleVsCondition,
+  DamageInstance,
+  Immunity,
+  Weakness,
+  Resistance,
+  IWRApplicationResult,
+} from './damage/iwr'
+
+export { parseIwrData, formatIwrType } from './damage/iwr-utils'
+export type { IwrData } from './damage/iwr-utils'
+
+// ── Modifiers ─────────────────────────────────────────────────────────────────
+export {
+  MODIFIER_TYPES,
+  Modifier,
+  applyStackingRules,
+  StatisticModifier,
+  DamageDicePF2e,
+} from './modifiers/modifiers'
+export type { ModifierType } from './modifiers/modifiers'
+
+// ── Encounter ─────────────────────────────────────────────────────────────────
+export {
+  calculateCreatureXP,
+  getHazardXp,
+  generateEncounterBudgets,
+  calculateEncounterRating,
+  calculateXP,
+} from './encounter/xp'
+export type {
+  XpResult,
+  HazardType,
+  ThreatRating,
+  EncounterResult,
+  EncounterCreatureEntry,
+  EncounterHazardEntry,
+  OutOfRangeWarning,
+} from './encounter/xp'
+
+export { getHpAdjustment } from './encounter/weak-elite'
