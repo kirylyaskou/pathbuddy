@@ -1,4 +1,4 @@
-import type { WeakEliteTier } from '@/types/entity'
+export type WeakEliteTier = 'normal' | 'weak' | 'elite'
 
 // Source: PF2e Monster Core — Archives of Nethys IDs 3264/3265
 // https://2e.aonprd.com/Rules.aspx?ID=3264 (Elite)
