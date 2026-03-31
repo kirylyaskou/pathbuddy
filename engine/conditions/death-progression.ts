@@ -1,10 +1,13 @@
 // ─── Death Progression ────────────────────────────────────────────────────────
 // Source: PF2e Player Core — Recovery Checks (D-13, D-14, D-15)
-// Self-contained flat check implementation. Phase 4 adds full degree-of-success system.
+// Delegates degree calculation to centralized degree-of-success module (Pitfall 4).
+
+import { calculateDegreeOfSuccess } from '../degree-of-success/degree-of-success'
+import type { DegreeOfSuccess } from '../degree-of-success/degree-of-success'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type RecoveryCheckOutcome = 'criticalSuccess' | 'success' | 'failure' | 'criticalFailure'
+export type RecoveryCheckOutcome = DegreeOfSuccess
 
 export interface RecoveryCheckResult {
   /** The degree of success achieved on the flat check */
@@ -49,30 +52,9 @@ export function performRecoveryCheck(
   const deathThreshold = 4 - doomedValue
   const roll = rollOverride ?? Math.ceil(Math.random() * 20)
 
-  // Determine degree of success per PF2e flat check rules
-  // Natural 20 is always at least a success (upgrade one step)
-  // Natural 1 is always at most a failure (downgrade one step)
-  let outcome: RecoveryCheckOutcome
-
-  if (roll === 20) {
-    // Natural 20: at least a success, upgrade by one step
-    // If roll >= DC, that's a success -> upgraded to crit success
-    // If roll < DC, that's a failure -> upgraded to success
-    outcome = roll >= dc ? 'criticalSuccess' : 'success'
-  } else if (roll === 1) {
-    // Natural 1: at most a failure, downgrade by one step
-    // If roll >= DC, that's a success -> downgraded to failure
-    // If roll < DC, that's a failure -> downgraded to crit failure
-    outcome = roll >= dc ? 'failure' : 'criticalFailure'
-  } else if (roll >= dc + 10) {
-    outcome = 'criticalSuccess'
-  } else if (roll >= dc) {
-    outcome = 'success'
-  } else if (roll <= dc - 10) {
-    outcome = 'criticalFailure'
-  } else {
-    outcome = 'failure'
-  }
+  // Delegate degree calculation to centralized module (Pitfall 4 — single source of truth).
+  // Recovery checks are flat checks: totalModifier = 0, roll is the raw d20.
+  const outcome: RecoveryCheckOutcome = calculateDegreeOfSuccess(roll, 0, dc)
 
   // Apply dying value change based on outcome
   let newDying = dyingValue
