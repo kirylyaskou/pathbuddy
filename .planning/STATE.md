@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.2.2
+milestone: v0.3.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-03-31T11:33:44.515Z"
+status: executing
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-31T17:45:32.828Z"
 last_activity: 2026-03-31
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 10
+  completed_phases: 8
+  total_plans: 21
+  completed_plans: 19
   percent: 0
 ---
 
@@ -20,17 +20,17 @@ progress:
 
 See: `.planning/PROJECT.md` (updated 2026-03-31)
 
-**Core value:** Accurate, complete PF2e game logic engine as standalone TypeScript module.
-**Current focus:** Phase 02 — reference-analysis
+**Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
+**Current focus:** Phase 05 — vite-scaffold-nextjs-teardown
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 05 (vite-scaffold-nextjs-teardown) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-03-31
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (0/6 phases complete)
 
 ## Performance Metrics
 
@@ -44,15 +44,15 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 5. Vite Scaffold | TBD | - | - |
+| 6. FSD + Zustand | TBD | - | - |
+| 7. SQLite + Data Pipeline | TBD | - | - |
+| 8. Combat Tracker | TBD | - | - |
+| 9. Bestiary + Encounter | TBD | - | - |
+| 10. P2 Differentiators | TBD | - | - |
+| Phase 05 P01 | 6min | 2 tasks | 17 files |
 
 ## Accumulated Context
-
-| Phase 01-cleanup-architecture P01 | 5 | 2 tasks | 4 files |
-| Phase 01-cleanup-architecture P02 | 8min | 2 tasks | 12 files |
-| Phase 02-reference-analysis P01 | 469 | 2 tasks | 1 files |
-| Phase 04 P02 | 4min | 1 tasks | 2 files |
-| Phase 04 P04 | 1min | 1 tasks | 1 files |
 
 ### Decisions
 
@@ -63,29 +63,38 @@ Key decisions carrying forward from prior milestones:
 - ImmunityType combines DAMAGE_TYPES + DAMAGE_CATEGORIES + special strings (critical-hits, precision)
 - vitality/void used instead of positive/negative energy — PF2e Remaster taxonomy
 - All previous milestones (v1.0–v2.1) squashed into single initial commit for fresh start
-- [Phase 01-cleanup-architecture]: WeakEliteTier type declared inline in weak-elite.ts until Plan 02 consolidates engine types
-- [Phase 01-cleanup-architecture]: PWOL removed from all XP functions — standard PF2e tables only going forward
-- [Phase 01-cleanup-architecture]: Single barrel export at engine/index.ts only — no per-subdirectory index.ts (D-02)
-- [Phase 01-cleanup-architecture]: engine/types.ts created as shared type home; WeakEliteTier moved from inline weak-elite.ts
-- [Phase 01-cleanup-architecture]: @engine path alias configured in tsconfig.json (two entries: @engine -> index.ts, @engine/* -> engine/*)
-- [Phase 02-reference-analysis]: Single comprehensive GAP-ANALYSIS.md document chosen over domain-split files — more navigable for Phase 3/4 planners
-- [Phase 02-reference-analysis]: holy/unholy confirmed as genuine Remaster damage types (appear in remaster:true content), need to add to DAMAGE_TYPES alongside vitality/void
-- [Phase 02-reference-analysis]: abilities condition group is non-exclusive — clumsy/drained/enfeebled/stupefied coexist, engine group-exclusivity must not apply
-- [Phase 02-reference-analysis]: malevolence is adventure-specific (Malevolence AP), not a core PF2e condition — intentional inclusion in engine
-- [Phase 04]: 22 combat-relevant actions get outcome descriptors; dirty-trick absent from refs/, basic actions without degree-of-success excluded
-- [Phase 04]: Statistics section left as-is from Plan 04-03; Actions and Degree of Success sections placed between Modifiers and Encounter in barrel
+- @engine path alias configured in tsconfig.json (two entries: @engine -> index.ts, @engine/* -> engine/*)
+- Single barrel export at engine/index.ts only — no per-subdirectory index.ts
+- Keep React, skip Vue port — working prototype exists, porting is pure cost
+- Next.js to Vite+React — SSR unnecessary for Tauri desktop SPA; createHashRouter mandatory (no server for HTML5 history)
+- FSD architecture for frontend layers (app/pages/widgets/features/entities/shared)
+- Zustand 5 + immer middleware for state management; useShallow mandatory for object selectors
+- shadcn/ui (Radix) component library stays; re-init with rsc: false for Vite
+- @vitejs/plugin-react (NOT swc — archived) for Vite React support
+- getSqlite() raw SQL for performance-critical paths (batch insert, FTS5)
+- Splash-before-router pattern for async DB initialization — migrations complete before React mounts
+- import.meta.glob for Drizzle migrations (Node.js fs crashes in WebView)
+- shared/api/ is sole Tauri IPC boundary — all invoke() calls centralized there
+- Engine stays outside FSD as external lib consumed via @engine alias — not modified in v0.3.0
+- ConditionManager: module-level Map pattern, NOT in React/Zustand state (mutation bypass)
+- Entity state (serializable, SQLite-derived) separated from feature runtime state (session, in-memory)
+- [Phase 05]: @vitejs/plugin-react downgraded from ^6.0.1 to ^5.2.0 (v6 requires Vite 8, project uses Vite 6)
+- [Phase 05]: eslint downgraded from ^10.1.0 to ^9.22.0 (eslint-plugin-import only supports up to eslint 9)
+- [Phase 05]: npm install ran without --legacy-peer-deps — no Radix peer dep conflicts with React 19.2.4
 
 ### Pending Todos
 
-None yet.
+- Run `npm install` in Phase 5; add `--legacy-peer-deps` if Radix peer dep conflicts with React 19 surface
+- Audit Foundry VTT sync migration SQL filenames for lexicographic sort order before Phase 7
+- Verify exact `plugin:sql|execute` / `plugin:sql|select` IPC command name strings against tauri-plugin-sql v2.3.2 Rust source at start of Phase 7
 
 ### Blockers/Concerns
 
-- Phase 2 (Reference Analysis) is BLOCKED until user provides `ref/` directory containing Foundry VTT PF2e source repo
-- Phases 3 and 4 scope is intentionally TBD until Phase 2 gap analysis completes
+None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T11:25:05.642Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-03-31T17:45:32.825Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
+Next step: `/gsd:plan-phase 5`
