@@ -37,7 +37,7 @@ Requirements for Frontend Rebuild + Engine Integration milestone.
 - [x] **FND-02**: React Router v7 (library mode, `createHashRouter`) replaces Next.js App Router with all page routes
 - [x] **FND-03**: Tailwind v4 `@theme inline` configured with all PF2e OKLCH color tokens from prototype
 - [x] **FND-04**: shadcn/ui re-initialized for Vite (`rsc: false`), all 60+ Radix components available
-- [ ] **FND-05**: `steiger` FSD linter + `eslint-plugin-boundaries` enforce layer import direction
+- [x] **FND-05**: `steiger` FSD linter + `eslint-plugin-boundaries` enforce layer import direction
 
 ### Architecture
 
@@ -115,7 +115,7 @@ Deferred to future milestones.
 | FND-02 | Phase 5 | Complete |
 | FND-03 | Phase 5 | Complete |
 | FND-04 | Phase 5 | Complete |
-| FND-05 | Phase 5 | Pending |
+| FND-05 | Phase 5 | Complete |
 | ARCH-03 | Phase 6 | Pending |
 | ARCH-04 | Phase 6 | Pending |
 | ARCH-05 | Phase 6 | Pending |
