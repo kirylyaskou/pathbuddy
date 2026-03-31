@@ -8,13 +8,120 @@
 
 ## Executive Summary
 
-<!-- Task 2 -->
+This analysis covers all 12 PF2e mechanical domains by comparing the Foundry VTT PF2e source data (`refs/pf2e/` — 28,026 JSON entries across 94 content packs) against the current `engine/` TypeScript modules. Findings are validated by direct reading of representative JSON samples from each domain.
+
+**Coverage summary:**
+- **12 domains analyzed** total
+- **5 domains partially covered** by the engine: Conditions & Statuses, Damage & IWR, Modifier Math, Encounter XP, Weak/Elite HP adjustment
+- **7 domains with zero engine coverage:** Actions, Spells, Equipment & Weapons, Feats, Classes & Class Features, Ancestries & Heritages, Downtime Actions
+
+**Gap severity: CRITICAL.** The engine covers roughly 5 of 12 domains, and even those 5 have significant gaps. The zero-coverage domains contain some of the most fundamental PF2e mechanics (spell system, feat system, class system, full action execution).
+
+**Highest-impact work for Phases 3 and 4:**
+
+1. **Conditions (Phase 3):** Add 3 missing groups (senses, abilities, death), implement `overrides` mechanic (Blinded→Dazzled, Stunned→Slowed), wire condition Rule Elements to apply modifiers (FlatModifier, GrantItem chains for Grabbed→Off-Guard+Immobilized, Dying→Unconscious)
+2. **IWR type expansion (Phase 3):** Add ~50 missing immunity types (condition immunities: paralyzed, stunned, etc.; effect categories: fear-effects, disease, magic, etc.), ~17 weakness types (holy, unholy, cold-iron, area-damage, etc.), ~14 resistance types (all-damage, spells, precision, etc.)
+3. **Creature type definition (Phase 3/4):** Add formal Creature interface to `engine/types.ts` covering HP, AC, saves, abilities, IWR, speed, size, traits, embedded attacks
+4. **Degree-of-success system (Phase 4):** Foundation for all action outcomes — critical success (+10 over DC), success, failure, critical failure (-10 under DC)
+5. **Action system skeleton (Phase 4):** Action type schema, basic action definitions (Strike, Escape, Stride, Ready), MAP tracking, action trait system
+6. **Modifier-to-statistic wiring (Phase 4):** Link ConditionManager condition application to StatisticModifier; define what statistics exist (AC, saves, skills, perception, attack rolls)
+
+The 7 zero-coverage domains (spells, feats, equipment, classes, ancestries, downtime) represent Phase 5+ scope. Phase 3 and 4 focus on completing the combat-critical domains.
 
 ---
 
 ## Prioritized Missing Mechanics
 
-<!-- Task 2 -->
+All gaps from the 12 domain sections, consolidated into two priority tiers per D-06.
+
+### HIGH Priority (Combat-Related)
+
+| # | Domain | Gap | Description |
+|---|--------|-----|-------------|
+| 1 | Conditions | Missing 3 condition groups | Engine has groups for detection and attitudes only; refs has 5 groups: also missing senses (blinded, concealed, dazzled, deafened, invisible), abilities (clumsy, cursebound, drained, enfeebled, stupefied), death (doomed, dying, unconscious, wounded) |
+| 2 | Conditions | Missing override mechanic | Engine has no overrides logic; refs defines: Blinded overrides Dazzled, Stunned overrides Slowed, attitude conditions override each other |
+| 3 | Conditions | Rule Elements not applied | Conditions don't apply mechanical effects: Blinded should apply -4 status to Perception, Grabbed should grant Off-Guard + Immobilized, Dying should grant Unconscious |
+| 4 | Conditions | No condition max values | No doomed-4-dies, no dying-4-dies maximum enforcement |
+| 5 | Conditions | No condition immunity check | Creatures immune to a condition (e.g., paralyzed immunity) not checked before ConditionManager.add() |
+| 6 | Conditions | Death group logic absent | Unconscious is in the death group alongside dying/wounded/doomed — group not modeled |
+| 7 | Conditions | GrantItem chains not tracked | Grabbed→Off-Guard+Immobilized, Dying→Unconscious, Paralyzed→Off-Guard implicit grants not applied |
+| 8 | Conditions | abilities group wrongly mutually exclusive | abilities group (clumsy, drained, enfeebled, stupefied) CAN coexist — they affect different ability scores |
+| 9 | Damage/IWR | Immunity types — condition immunities | Missing: blinded, clumsy, confused, controlled, dazzled, deafened, doomed, drained, enfeebled, fascinated, fatigued, grabbed, immobilized, off-guard, paralyzed, persistent-damage, petrified, prone, restrained, sickened, slowed, stunned, stupefied, unconscious |
+| 10 | Damage/IWR | Immunity types — effect categories | Missing: auditory, curse, death-effects, disease, emotion, fear-effects, fortune-effects, healing, illusion, inhaled, light, magic, misfortune-effects, nonlethal-attacks, object-immunities, olfactory, polymorph, possession, radiation, scrying, sleep, spell-deflection, swarm-attacks, swarm-mind, visual |
+| 11 | Damage/IWR | Weakness types missing | Missing: alchemical, area-damage, axe-vulnerability, cold-iron, earth, holy, orichalcum, peachwood, salt, salt-water, silver, splash-damage, unholy, vorpal, vulnerable-to-sunlight, water, air |
+| 12 | Damage/IWR | Resistance types missing | Missing: air, all-damage, critical-hits, earth, metal, mythic, plant, precision, protean-anatomy, silver, spells, unholy, water, wood |
+| 13 | Damage/IWR | all-damage resistance special handling | Resistance to all-damage must match any damage type — requires special case in applyIWR() typeMatches() |
+| 14 | Damage/IWR | holy/unholy as damage types | holy and unholy are Remaster damage types appearing in weakness/resistance data — need to add to DAMAGE_TYPES |
+| 15 | Damage/IWR | Condition immunity vs damage immunity | Separate processing path needed: applyIWR() for damage, ConditionManager.add() for condition immunities |
+| 16 | Actions | No Action type or schema | No TypeScript interface for actions (actionType, cost, category, traits, rules) |
+| 17 | Actions | No basic actions (30) | Strike, Escape, Stride, Step, Raise a Shield, Ready, Delay, Aid, Seek, Crawl, Drop Prone, Stand, Interact, Leap, Fly, Burrow, Mount, and others — none defined in engine |
+| 18 | Actions | No combat skill actions | Demoralize, Feint, Grapple, Shove, Trip, Disarm, Tumble Through, Steal, Dirty Trick not defined |
+| 19 | Actions | No class actions (23) | Class-specific combat abilities not represented |
+| 20 | Actions | No archetype actions (76) | Archetype combat actions not represented |
+| 21 | Actions | No action execution logic | No degree-of-success handling, no condition application from action outcomes, no MAP accumulation |
+| 22 | Actions | No Multiple Attack Penalty | MAP (-5/-10 agile, -10/-10 non-agile) not tracked anywhere |
+| 23 | Actions | No action trait system | Traits (attack, manipulate, move, stance, open) affect action mechanics — not modeled |
+| 24 | Modifier Math | No Statistic definitions | No model of what statistics exist (AC, saves, skills, perception, attack rolls, spell DCs) |
+| 25 | Modifier Math | No condition-to-modifier link | Applying a condition should automatically contribute its FlatModifier rules to relevant statistics |
+| 26 | Modifier Math | No proficiency system | Proficiency ranks (untrained/trained/expert/master/legendary) and proficiency bonus calculation absent |
+| 27 | Modifier Math | No ability modifier calculation | No function to use ability mod as typed bonus; ability scores stored as pre-calculated mods in creature JSON |
+| 28 | Modifier Math | No Multiple Attack Penalty | MAP applies as untyped penalty on attack rolls after first attack in a turn |
+| 29 | Modifier Math | No degree-of-success system | Critical success (+10 over DC), success, failure, critical failure (-10 under DC) — not modeled |
+| 30 | Creatures | No Creature type in engine | engine/types.ts only has WeakEliteTier — no Creature interface with HP, AC, saves, abilities, IWR, speed, size, traits |
+| 31 | Creatures | No creature stat calculation | Cannot compute effective AC (flat-footed, flanked), saves, or attack modifiers from creature data |
+| 32 | Creatures | No melee attack model | type: "melee" items in creature JSON define attack bonus and damage rolls — not modeled in engine |
+| 33 | Creatures | No creature ability model | Reactive Strike, Grab, Constrict, Frightful Presence — ~55 in bestiary-ability-glossary-srd — no engine representation |
+| 34 | Spells | Entire spell system absent | 1,796 spells with no engine representation |
+| 35 | Spells | No spell type/schema | No TypeScript interface for Spell (area, damage, defense, duration, level, range, target, time, traits) |
+| 36 | Spells | No spell damage model | Spells deal typed damage with categories (splash, persistent) and heightened scaling |
+| 37 | Spells | No spell save/defense system | Spells require saves — links to degree-of-success; basic saves halve damage on success |
+| 38 | Spells | No spell tradition system | arcane, divine, occult, primal — affects casting availability |
+| 39 | Spells | No heightening system | Fixed-level and per-rank interval heightening changes damage formulas |
+| 40 | Spells | No spell slot/focus point tracking | Prepared/spontaneous casting use spell slots; focus spells use focus points (max 3) |
+| 41 | Spells | Focus spell subsystem | 150 focus spells with refocus mechanic not modeled |
+| 42 | Equipment | No Weapon type | No interface for weapons (baseItem, category, damage die, damageType, group, runes, traits, range, bulk) |
+| 43 | Equipment | No rune system | Potency (attack bonus) and striking (extra damage dice) runes are fundamental to PF2e gear progression |
+| 44 | Equipment | No Armor type | No interface for armor (acBonus, category, dexCap, checkPenalty, speedPenalty, strength requirement, group, runes) |
+| 45 | Equipment | No Shield type | No interface for shields (acBonus, hardness, HP, runes.reinforcing) |
+| 46 | Equipment | No weapon group effects | Weapon groups determine critical specialization effects — not modeled |
+| 47 | Equipment | No equipment traits system | Finesse, agile, deadly, fatal, reach, versatile, thrown — affect attack calculations and MAP |
+| 48 | Feats | Entire feat system absent | 5,861 feats with no engine representation |
+| 49 | Feats | No feat type/schema | No TypeScript interface for Feat (level, category, prerequisites, rules, traits) |
+| 50 | Feats | No Rule Element system | FlatModifier, GrantItem, RollOption, BattleForm, ChoiceSet, etc. — no Rule Element processor |
+| 51 | Feats | No feat registry | No way to look up feats by slug, category, or class |
+| 52 | Classes | No class schema | 27 class definitions with no engine representation |
+| 53 | Classes | No class feature system | 826 class features (Rage, Sneak Attack, Wild Shape, etc.) with no engine representation |
+| 54 | Classes | No proficiency progression | Classes define initial proficiency ranks and advancement — not modeled |
+| 55 | Classes | No key ability system | Each class has keyAbility that drives spellcasting DC and sometimes attack bonus |
+| 56 | Classes | No class feature progression | Class items map features to unlock levels — no progression tracking |
+| 57 | Hazards | Complex hazard initiative | Complex hazards join combat with their own initiative and routine actions — not modeled |
+| 58 | Creatures | No HP tracking state | HP tracking was in Vue store; engine has getHpAdjustment() but no HP state model |
+
+### LOWER Priority (Non-Combat / Downtime)
+
+| # | Domain | Gap | Description |
+|---|--------|-----|-------------|
+| 1 | Conditions | malevolence not in refs/ | malevolence slug is in engine but absent from refs/pf2e/conditions/ — it is an adventure-specific condition (Malevolence AP), not a core PF2e condition; document as intentional |
+| 2 | Damage/IWR | Material effects edge cases | peachwood, salt, salt-water, vorpal appear as weakness types in some creatures — not in MATERIAL_EFFECTS |
+| 3 | Modifier Math | Ability score generation | Characters need ability score → mod function (score/2 - 5) — not needed for NPC/DM tool yet |
+| 4 | Modifier Math | Enhancement/deflection types | Some sources use enhancement and deflection bonus types (older OGL content) — not in MODIFIER_TYPES |
+| 5 | Creatures | No sense model | Senses (darkvision, scent, tremorsense, etc.) in system.perception.senses[] — not modeled |
+| 6 | Creatures | No speed model | Speed types (land, fly, swim, burrow, climb) in system.attributes.speed — not modeled |
+| 7 | Spells | Ritual system | 11 rituals with special multi-caster and multi-check resolution — not modeled |
+| 8 | Spells | Counteract system | Counterspell and counteract checks use a separate opposed-check mechanic |
+| 9 | Equipment | No property rune effects | 685 equipment-effects entries model runtime effects from property runes — not processed |
+| 10 | Equipment | No consumables/general equipment | Alchemical bombs, elixirs, potions, wands, scrolls — no engine coverage |
+| 11 | Feats | No prerequisite validation | Feat prerequisites (skill ranks, other feats, level) are not checked |
+| 12 | Ancestries | Entire ancestry system absent | 50 ancestries with ability boosts, flaws, HP grants, languages — no engine representation |
+| 13 | Ancestries | Heritage system absent | 321 heritages with passive abilities and Rule Elements — no engine representation |
+| 14 | Ancestries | Ancestry feature system absent | 55 ancestry features (Fangs, Darkvision, etc.) — no engine representation |
+| 15 | Hazards | No Hazard stat type | Engine computes hazard XP but has no Hazard interface for stat blocks (HP, hardness, AC, saves, disable DCs) |
+| 16 | Hazards | Hazard disable mechanics | Skill checks to disable (Thievery DC, Arcana DC, etc.) not modeled |
+| 17 | Hazards | Hazard reactions | Hazard reactions (trigger + effect) are embedded actions — no execution model |
+| 18 | Hazards | Hazard reset conditions | Time-based or condition-based reset not modeled |
+| 19 | Downtime | Entire downtime system absent | Long-Term Rest HP calculation, Retraining, Learn Name, Grow — no engine representation |
+| 20 | Downtime | Crafting subsystem absent | Craft action, crafting entries, item cost reduction — no engine representation |
+| 21 | Downtime | Earn Income absent | Skill check-based income generation at various proficiency levels — no engine representation |
 
 ---
 
