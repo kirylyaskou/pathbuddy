@@ -11,4 +11,12 @@ export default defineConfig([
       'fsd/segments-by-purpose': 'off',
     },
   },
+  {
+    files: ['src/entities/**'],
+    rules: {
+      // Entity slices are created before their feature-layer consumers;
+      // they will be referenced once features/ and widgets/ are wired
+      'fsd/insignificant-slice': 'off',
+    },
+  },
 ])

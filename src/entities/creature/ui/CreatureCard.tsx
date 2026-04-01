@@ -1,29 +1,11 @@
-
 import { Plus } from "lucide-react"
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent } from "@/shared/ui/card"
 import { Button } from "@/shared/ui/button"
-import { LevelBadge } from "./level-badge"
-import { StatBlock } from "./stat-badge"
-import { TraitList } from "./trait-pill"
-// TODO: Replace with real Creature type from engine/entities when available (Phase 7+)
-type Rarity = 'common' | 'uncommon' | 'rare' | 'unique'
-type Size = 'Tiny' | 'Small' | 'Medium' | 'Large' | 'Huge' | 'Gargantuan'
-
-interface Creature {
-  name: string
-  level: number
-  hp: number
-  ac: number
-  fort: number
-  ref: number
-  will: number
-  perception: number
-  traits: string[]
-  rarity: Rarity
-  size: Size
-  type: string
-}
+import { LevelBadge } from "@/shared/ui/level-badge"
+import { StatBlock } from "@/shared/ui/stat-badge"
+import { TraitList } from "@/shared/ui/trait-pill"
+import type { Creature } from '../model/types'
 
 interface CreatureCardProps {
   creature: Creature

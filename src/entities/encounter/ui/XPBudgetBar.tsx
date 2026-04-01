@@ -1,30 +1,6 @@
-
+import { generateEncounterBudgets } from '@engine'
+import type { ThreatRating } from '@engine'
 import { cn } from "@/shared/lib/utils"
-
-// TODO: Replace with real engine imports when available (Phase 7+)
-// These are stub functions matching the engine's encounter module API
-type ThreatLevel = 'trivial' | 'low' | 'moderate' | 'severe' | 'extreme'
-
-function getXPThresholds(partySize: number) {
-  // Standard PF2e XP thresholds scaled by party size factor
-  const factor = partySize / 4
-  return {
-    trivial: Math.round(40 * factor),
-    low: Math.round(60 * factor),
-    moderate: Math.round(80 * factor),
-    severe: Math.round(120 * factor),
-    extreme: Math.round(160 * factor),
-  }
-}
-
-function getThreatLevel(xp: number, partySize: number): ThreatLevel {
-  const thresholds = getXPThresholds(partySize)
-  if (xp >= thresholds.extreme) return 'extreme'
-  if (xp >= thresholds.severe) return 'severe'
-  if (xp >= thresholds.moderate) return 'moderate'
-  if (xp >= thresholds.low) return 'low'
-  return 'trivial'
-}
 
 interface XPBudgetBarProps {
   currentXP: number
@@ -32,7 +8,7 @@ interface XPBudgetBarProps {
   className?: string
 }
 
-const threatColors = {
+const threatColors: Record<ThreatRating, string> = {
   trivial: "bg-pf-threat-trivial",
   low: "bg-pf-threat-low",
   moderate: "bg-pf-threat-moderate",
@@ -40,7 +16,7 @@ const threatColors = {
   extreme: "bg-pf-threat-extreme",
 }
 
-const threatTextColors = {
+const threatTextColors: Record<ThreatRating, string> = {
   trivial: "text-pf-threat-trivial",
   low: "text-pf-threat-low",
   moderate: "text-pf-threat-moderate",
@@ -49,8 +25,12 @@ const threatTextColors = {
 }
 
 export function XPBudgetBar({ currentXP, partySize, className }: XPBudgetBarProps) {
-  const thresholds = getXPThresholds(partySize)
-  const threatLevel = getThreatLevel(currentXP, partySize)
+  const thresholds = generateEncounterBudgets(partySize)
+  const threatLevel: ThreatRating = currentXP >= thresholds.extreme ? 'extreme'
+    : currentXP >= thresholds.severe ? 'severe'
+    : currentXP >= thresholds.moderate ? 'moderate'
+    : currentXP >= thresholds.low ? 'low'
+    : 'trivial'
   const maxXP = thresholds.extreme * 1.5 // extend bar beyond extreme for visual
 
   // Calculate segment widths as percentages

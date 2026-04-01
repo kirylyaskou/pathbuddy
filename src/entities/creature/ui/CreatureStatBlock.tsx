@@ -1,4 +1,3 @@
-
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Separator } from "@/shared/ui/separator"
@@ -8,33 +7,20 @@ import {
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
 import { ChevronDown } from "lucide-react"
-import { LevelBadge } from "./level-badge"
-import { TraitList } from "./trait-pill"
-import { ActionIcon } from "./action-icon"
-// TODO: Replace with real Creature type from engine/entities when available (Phase 7+)
-type Rarity = 'common' | 'uncommon' | 'rare' | 'unique'
-type Size = 'Tiny' | 'Small' | 'Medium' | 'Large' | 'Huge' | 'Gargantuan'
-type ActionCost = 0 | 1 | 2 | 3 | 'reaction' | 'free'
+import { LevelBadge } from "@/shared/ui/level-badge"
+import { TraitList } from "@/shared/ui/trait-pill"
+import { ActionIcon } from "@/shared/ui/action-icon"
+import type { Creature, DisplayActionCost } from '../model/types'
 
-interface Creature {
-  name: string
-  level: number
-  hp: number
-  ac: number
-  fort: number
-  ref: number
-  will: number
-  perception: number
-  traits: string[]
-  rarity: Rarity
-  size: Size
-  type: string
+// Extended creature with full stat block fields for detailed display.
+// The base entity Creature has core fields; stat block needs more.
+interface CreatureStatBlockData extends Creature {
   immunities: string[]
   weaknesses: { type: string; value: number }[]
   resistances: { type: string; value: number }[]
   speeds: Record<string, number | null>
   strikes: { name: string; modifier: number; damage: string; traits: string[] }[]
-  abilities: { name: string; actionCost?: ActionCost; description: string; traits?: string[] }[]
+  abilities: { name: string; actionCost?: DisplayActionCost; description: string; traits?: string[] }[]
   skills: { name: string; modifier: number }[]
   languages: string[]
   senses: string[]
@@ -43,7 +29,7 @@ interface Creature {
 }
 
 interface CreatureStatBlockProps {
-  creature: Creature
+  creature: CreatureStatBlockData
   className?: string
 }
 
