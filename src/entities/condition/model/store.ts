@@ -9,6 +9,8 @@ export interface ConditionState {
   decrementCondition: (combatantId: string, slug: string) => void
   clearCombatantConditions: (combatantId: string) => void
   setAllForCombatant: (combatantId: string, conditions: ActiveCondition[]) => void
+  /** Replace only engine-managed conditions; persistent-* conditions are untouched */
+  syncEngineConditions: (combatantId: string, conditions: ActiveCondition[]) => void
   clearAll: () => void
 }
 
@@ -54,6 +56,14 @@ export const useConditionStore = create<ConditionState>()(
       set((state) => {
         state.activeConditions = state.activeConditions.filter(
           (c) => c.combatantId !== combatantId
+        )
+        state.activeConditions.push(...conditions)
+      }),
+    syncEngineConditions: (combatantId, conditions) =>
+      set((state) => {
+        // Keep persistent-* conditions, replace only engine-managed ones
+        state.activeConditions = state.activeConditions.filter(
+          (c) => c.combatantId !== combatantId || c.slug.startsWith('persistent-')
         )
         state.activeConditions.push(...conditions)
       }),
