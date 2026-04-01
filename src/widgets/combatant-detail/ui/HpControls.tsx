@@ -24,12 +24,14 @@ import {
   type WeaknessType,
   type ResistanceType,
 } from '@engine'
+import { DyingCascadeDialog } from './DyingCascadeDialog'
 
 interface HpControlsProps {
   combatant: Combatant
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]
+  abilities?: { name: string; description: string }[]
 }
 
 const DAMAGE_TYPE_GROUPS: { label: string; types: DamageType[] }[] = [
@@ -39,12 +41,13 @@ const DAMAGE_TYPE_GROUPS: { label: string; types: DamageType[] }[] = [
   { label: 'Other', types: ['force', 'mental', 'poison', 'spirit', 'vitality', 'void', 'untyped'] },
 ]
 
-export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances }: HpControlsProps) {
+export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, abilities }: HpControlsProps) {
   const [damageInput, setDamageInput] = useState('')
   const [healInput, setHealInput] = useState('')
   const [tempHpInput, setTempHpInput] = useState('')
   const [damageType, setDamageType] = useState<DamageType | null>(null)
   const [typeOpen, setTypeOpen] = useState(false)
+  const [dyingDialogOpen, setDyingDialogOpen] = useState(false)
   const { updateHp, updateTempHp } = useCombatantStore()
 
   const iwrPreview = useMemo(() => {
@@ -79,8 +82,13 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
       updateTempHp(combatant.id, combatant.tempHp - absorbed)
       remaining -= absorbed
     }
+    const hpBefore = combatant.hp
     if (remaining > 0) {
       updateHp(combatant.id, -remaining)
+    }
+    const newHp = Math.max(0, hpBefore - remaining)
+    if (newHp === 0 && hpBefore > 0) {
+      setDyingDialogOpen(true)
     }
     setDamageInput('')
     setDamageType(null)
@@ -239,6 +247,14 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
           </div>
         </div>
       </div>
+
+      <DyingCascadeDialog
+        open={dyingDialogOpen}
+        onClose={() => setDyingDialogOpen(false)}
+        combatantId={combatant.id}
+        combatantName={combatant.displayName}
+        abilities={abilities}
+      />
 
       {iwrPreview && (
         <div className="text-xs space-y-0.5 px-2 py-1.5 rounded bg-secondary/30 border border-border/30">

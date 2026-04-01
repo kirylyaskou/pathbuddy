@@ -8,4 +8,5 @@ export interface ActiveCondition {
   value?: number       // Only present for valued conditions
   isLocked?: boolean   // Locked conditions skip auto-decrement
   grantedBy?: string   // Slug of condition that granted this one (chain icon)
+  formula?: string     // Dice formula for persistent damage (e.g., "2d6")
 }
