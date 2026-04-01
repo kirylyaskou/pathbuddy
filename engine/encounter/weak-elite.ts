@@ -1,41 +1,43 @@
 import type { WeakEliteTier } from '../types'
 
-// Source: PF2e Monster Core — Archives of Nethys IDs 3264/3265
+// Source: Monster Core pg. 6-7
 // https://2e.aonprd.com/Rules.aspx?ID=3264 (Elite)
 // https://2e.aonprd.com/Rules.aspx?ID=3265 (Weak)
-const HP_TABLE: Array<{ maxLevel: number; delta: number }> = [
-  { maxLevel: 2,  delta: 10  },
-  { maxLevel: 4,  delta: 15  },
-  { maxLevel: 6,  delta: 20  },
-  { maxLevel: 8,  delta: 30  },
-  { maxLevel: 10, delta: 40  },
-  { maxLevel: 12, delta: 55  },
-  { maxLevel: 14, delta: 70  },
-  { maxLevel: 16, delta: 90  },
-  { maxLevel: 18, delta: 110 },
-  { maxLevel: 20, delta: 135 },
-  { maxLevel: 22, delta: 160 },
-  { maxLevel: 24, delta: 185 },
+
+// Elite: starting level → HP increase
+const ELITE_HP: Array<{ maxLevel: number; delta: number }> = [
+  { maxLevel: 1,  delta: 10 },  // 1 or lower
+  { maxLevel: 4,  delta: 15 },  // 2–4
+  { maxLevel: 19, delta: 20 },  // 5–19
 ]
+const ELITE_HP_HIGH = 30  // 20+
+
+// Weak: starting level → HP decrease (stored as positive, negated on return)
+const WEAK_HP: Array<{ maxLevel: number; delta: number }> = [
+  { maxLevel: 2,  delta: 10 },  // 1–2
+  { maxLevel: 5,  delta: 15 },  // 3–5
+  { maxLevel: 20, delta: 20 },  // 6–20
+]
+const WEAK_HP_HIGH = 30  // 21+
 
 /**
  * Returns the HP delta for a weak or elite creature adjustment.
  * Positive for elite, negative for weak, zero for normal.
  *
- * Special cases:
- * - weak on level <= 0: not applicable per rules — returns 0
- * - elite/weak on level < 1: clamped to level 1 bracket minimum
- * - level above 24: uses the highest bracket (185)
+ * Tables are asymmetric per official rules (Monster Core pg. 6-7).
  */
 export function getHpAdjustment(tier: WeakEliteTier, level: number): number {
   if (tier === 'normal') return 0
-  if (tier === 'weak' && level <= 0) return 0
 
-  const lookupLevel = Math.max(level, 1)
-  const bracket = HP_TABLE.find(b => lookupLevel <= b.maxLevel) ?? HP_TABLE[HP_TABLE.length - 1]
+  if (tier === 'elite') {
+    const bracket = ELITE_HP.find(b => level <= b.maxLevel)
+    return bracket ? bracket.delta : ELITE_HP_HIGH
+  }
 
-  if (tier === 'elite') return bracket.delta
-  return -bracket.delta
+  // weak — level 0 or lower has no weak adjustment per rules
+  if (level <= 0) return 0
+  const bracket = WEAK_HP.find(b => level <= b.maxLevel)
+  return -(bracket ? bracket.delta : WEAK_HP_HIGH)
 }
 
 /**
