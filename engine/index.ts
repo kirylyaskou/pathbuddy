@@ -147,7 +147,7 @@ export type {
   OutOfRangeWarning,
 } from './encounter/xp'
 
-export { getHpAdjustment } from './encounter/weak-elite'
+export { getHpAdjustment, getStatAdjustment } from './encounter/weak-elite'
 
 // ── Statistics ───────────────────────────────────────────────────────────────
 export { Statistic } from './statistics/statistic'

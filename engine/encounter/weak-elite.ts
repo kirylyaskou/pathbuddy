@@ -60,5 +60,16 @@ function getAdjustedLevel(tier: WeakEliteTier, level: number): number {
   return level - 1
 }
 
+/**
+ * Returns the stat adjustment for Weak/Elite creatures.
+ * PF2e rules: Elite +2 to AC, attacks, DCs, saves, skills, perception.
+ * Weak: -2 to the same.
+ */
+export function getStatAdjustment(tier: WeakEliteTier): number {
+  if (tier === 'elite') return 2
+  if (tier === 'weak') return -2
+  return 0
+}
+
 // Test-only export — not part of public API
 export const __testing = { getAdjustedLevel }

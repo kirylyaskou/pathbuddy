@@ -214,6 +214,17 @@ Plans:
 | 9. Bestiary Browser + Encounter Builder | v0.3.0 | 2/2 | Executing | - |
 | 10. P2 Differentiators | v0.3.0 | 0/4 | Planned    |  |
 
+## Backlog
+
+### Phase 999.1: Stat block card in combat tracker (BACKLOG)
+
+**Goal:** Integrate the bestiary stat block card into the combat tracker — clicking a combatant in the tracker opens the same full stat block (with MAP, IWR, abilities, etc.) that's shown in the bestiary browser
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd:review-backlog when ready)
+
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-01 — Phase 8 planned (4 plans in 3 waves)*
+*Last updated: 2026-04-01 — Phase 10 UAT in progress*

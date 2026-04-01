@@ -49,7 +49,7 @@ export function advanceTurn(): void {
       toast(`${combatant?.displayName ?? 'Combatant'}: ${summary}`)
     }
 
-    // Persistent damage flat-checks
+    // Persistent damage flat-checks — set pending state for dialog
     const persistentConditions = useConditionStore
       .getState()
       .activeConditions.filter(
@@ -58,28 +58,15 @@ export function advanceTurn(): void {
     if (persistentConditions.length > 0) {
       const combatant = combatants.find((cb) => cb.id === endingCombatantId)
       const name = combatant?.displayName ?? 'Combatant'
-      for (const pc of persistentConditions) {
-        const damageType = pc.slug.replace('persistent-', '')
-        const formulaStr = pc.formula || '?'
-        toast(
-          `${name}: ${formulaStr} ${damageType} (persistent). Roll flat-check DC 15 to remove.`,
-          {
-            action: {
-              label: 'Roll DC 15',
-              onClick: () => {
-                const roll = Math.ceil(Math.random() * 20)
-                if (roll >= 15) {
-                  useConditionStore.getState().removeCondition(endingCombatantId!, pc.slug)
-                  toast(`Flat-check: ${roll} — Persistent ${damageType} removed!`)
-                } else {
-                  toast(`Flat-check: ${roll} — Persistent ${damageType} continues. Apply ${formulaStr} damage.`)
-                }
-              },
-            },
-            duration: 10000,
-          }
-        )
-      }
+      tracker.setPendingPersistentDamage({
+        combatantId: endingCombatantId!,
+        combatantName: name,
+        conditions: persistentConditions.map((pc) => ({
+          slug: pc.slug,
+          formula: pc.formula || '?',
+          damageType: pc.slug.replace('persistent-', ''),
+        })),
+      })
     }
   }
 

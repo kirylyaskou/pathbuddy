@@ -1,12 +1,19 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+export interface PendingPersistentDamage {
+  combatantId: string
+  combatantName: string
+  conditions: { slug: string; formula: string; damageType: string }[]
+}
+
 export interface CombatTrackerState {
   combatId: string | null
   activeCombatantId: string | null
   round: number
   turn: number
   isRunning: boolean
+  pendingPersistentDamage: PendingPersistentDamage | null
   startCombat: (combatId: string) => void
   endCombat: () => void
   nextTurn: () => void
@@ -15,6 +22,7 @@ export interface CombatTrackerState {
   setRound: (round: number) => void
   setTurn: (turn: number) => void
   setCombatId: (id: string | null) => void
+  setPendingPersistentDamage: (p: PendingPersistentDamage | null) => void
 }
 
 export const useCombatTrackerStore = create<CombatTrackerState>()(
@@ -24,6 +32,7 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
     round: 0,
     turn: 0,
     isRunning: false,
+    pendingPersistentDamage: null,
     startCombat: (combatId) =>
       set((state) => {
         state.combatId = combatId
@@ -62,6 +71,10 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
     setCombatId: (id) =>
       set((state) => {
         state.combatId = id
+      }),
+    setPendingPersistentDamage: (p) =>
+      set((state) => {
+        state.pendingPersistentDamage = p
       }),
   }))
 )

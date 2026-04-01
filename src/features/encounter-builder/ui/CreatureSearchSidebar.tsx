@@ -7,7 +7,7 @@ import type { WeakEliteTier } from '@/entities/creature'
 import { searchCreatures, fetchCreatures } from '@/shared/api'
 import type { CreatureRow } from '@/shared/api'
 import { useEncounterBuilderStore } from '../model/store'
-import { getHpAdjustment } from '@engine'
+import { getHpAdjustment, getStatAdjustment } from '@engine'
 
 const TIERS: { value: WeakEliteTier; label: string }[] = [
   { value: 'weak', label: 'Weak' },
@@ -99,11 +99,17 @@ export function CreatureSearchSidebar() {
             <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
           )}
           {!loading && results.length === 0 && query.trim() && (
-            <p className="text-sm text-muted-foreground text-center py-4">No creatures found</p>
+            <div className="text-center py-4 space-y-1">
+              <p className="text-sm text-muted-foreground">No creatures found</p>
+              <p className="text-xs text-muted-foreground/60">
+                To add hazards, use the hazard form in the left panel
+              </p>
+            </div>
           )}
           {results.map((row) => {
             const creature = toCreature(row)
             const hpDelta = getHpAdjustment(selectedTier, creature.level)
+            const statDelta = getStatAdjustment(selectedTier)
             return (
               <div key={row.id}>
                 <CreatureCard
@@ -116,6 +122,10 @@ export function CreatureSearchSidebar() {
                     HP: {creature.hp} → {Math.max(1, creature.hp + hpDelta)}{' '}
                     <span className={hpDelta > 0 ? 'text-primary' : 'text-destructive'}>
                       ({hpDelta > 0 ? '+' : ''}{hpDelta})
+                    </span>
+                    {' | '}AC: {creature.ac} → {creature.ac + statDelta}{' '}
+                    <span className={statDelta > 0 ? 'text-primary' : 'text-destructive'}>
+                      ({statDelta > 0 ? '+' : ''}{statDelta})
                     </span>
                   </p>
                 )}

@@ -166,8 +166,8 @@ function HazardForm({
   onAdd: () => void
 }) {
   return (
-    <div className="p-2 border-t border-border/30 space-y-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Add Hazard</p>
+    <div className="p-2 border-t border-border/50 space-y-1.5">
+      <p className="text-xs font-medium text-amber-400/80 uppercase tracking-wider">Add Hazard</p>
       <div className="flex items-center gap-1.5">
         <Input
           value={name}

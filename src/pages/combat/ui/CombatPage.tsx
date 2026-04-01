@@ -3,12 +3,16 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/u
 import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
+import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
 import { CombatControls, AddPCDialog } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
+import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import { setupAutoSave, teardownAutoSave, loadActiveCombat } from '@/features/combat-tracker/lib/combat-persistence'
 
 export function CombatPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const pendingPersistentDamage = useCombatTrackerStore((s) => s.pendingPersistentDamage)
+  const setPendingPersistentDamage = useCombatTrackerStore((s) => s.setPendingPersistentDamage)
 
   useEffect(() => {
     loadActiveCombat()
@@ -18,6 +22,10 @@ export function CombatPage() {
 
   return (
     <div className="flex flex-col h-full">
+      <PersistentDamageDialog
+        pending={pendingPersistentDamage}
+        onClose={() => setPendingPersistentDamage(null)}
+      />
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Left panel — Initiative list */}
         <ResizablePanel defaultSize={25} minSize={18} maxSize={35}>
