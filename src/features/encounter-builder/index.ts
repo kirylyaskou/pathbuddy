@@ -1,2 +1,5 @@
-export { useEncounterBuilderStore } from './model/store'
-export type { EncounterBuilderState, PartyConfig } from './model/store'
+export { useEncounterBuilderStore, selectEncounterResult, selectBudgets, selectThreatRating } from './model/store'
+export type { EncounterBuilderState, DraftCreature } from './model/store'
+export { PartyConfigBar } from './ui/PartyConfigBar'
+export { EncounterCreatureList } from './ui/EncounterCreatureList'
+export { CreatureSearchSidebar } from './ui/CreatureSearchSidebar'

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { initDatabase } from '@/shared/api'
+import { useEncounterBuilderStore } from '@/features/encounter-builder'
 import { Button } from '@/shared/ui/button'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
@@ -27,6 +28,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
     try {
       setStatus('migrating')
       await initDatabase()
+      await useEncounterBuilderStore.getState().loadConfig()
       setStatus('ready')
       setFading(true)
       setTimeout(onReady, 150)
