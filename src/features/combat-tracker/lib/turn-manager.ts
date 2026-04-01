@@ -1,0 +1,104 @@
+import { useCombatantStore } from '@/entities/combatant'
+import { useConditionStore } from '@/entities/condition'
+import { useCombatTrackerStore } from '../model/store'
+import { endTurnConditions, clearCombatantManager, hydrateManager } from './condition-bridge'
+import type { ActiveCondition } from '@/entities/condition'
+import type { ConditionSlug } from '@engine'
+import { toast } from 'sonner'
+
+interface TurnSnapshot {
+  activeCombatantId: string | null
+  round: number
+  turn: number
+  conditionsBefore: ActiveCondition[]
+  combatantId: string
+}
+
+let lastSnapshot: TurnSnapshot | null = null
+
+export function advanceTurn(): void {
+  const combatants = useCombatantStore.getState().combatants
+  const tracker = useCombatTrackerStore.getState()
+
+  if (!tracker.isRunning || combatants.length === 0) return
+
+  const currentIdx = combatants.findIndex((c) => c.id === tracker.activeCombatantId)
+  const endingCombatantId = tracker.activeCombatantId
+
+  if (endingCombatantId) {
+    lastSnapshot = {
+      activeCombatantId: tracker.activeCombatantId,
+      round: tracker.round,
+      turn: tracker.turn,
+      conditionsBefore: useConditionStore
+        .getState()
+        .activeConditions.filter((c) => c.combatantId === endingCombatantId),
+      combatantId: endingCombatantId,
+    }
+
+    const changes = endTurnConditions(endingCombatantId)
+    if (changes.length > 0) {
+      const summary = changes
+        .map((c) => {
+          const name = c.slug.replace('-', ' ')
+          if (c.to === null) return `${name} removed`
+          return `${name} ${c.from} → ${c.to}`
+        })
+        .join(', ')
+      const combatant = combatants.find((cb) => cb.id === endingCombatantId)
+      toast(`${combatant?.displayName ?? 'Combatant'}: ${summary}`)
+    }
+  }
+
+  let nextIdx: number
+  let newRound = tracker.round
+  let newTurn = tracker.turn + 1
+
+  if (currentIdx === -1 || currentIdx >= combatants.length - 1) {
+    nextIdx = 0
+    newRound = tracker.round + 1
+    newTurn = 0
+  } else {
+    nextIdx = currentIdx + 1
+  }
+
+  const nextCombatant = combatants[nextIdx]
+  tracker.setActiveCombatant(nextCombatant.id)
+  tracker.setRound(newRound)
+  tracker.setTurn(newTurn)
+}
+
+export function reverseTurn(): void {
+  if (!lastSnapshot) return
+
+  const tracker = useCombatTrackerStore.getState()
+  if (!tracker.isRunning) return
+
+  tracker.setActiveCombatant(lastSnapshot.activeCombatantId)
+  tracker.setRound(lastSnapshot.round)
+  tracker.setTurn(lastSnapshot.turn)
+
+  const { combatantId, conditionsBefore } = lastSnapshot
+
+  const conditionsForHydrate = conditionsBefore.map((c) => ({
+    slug: c.slug as ConditionSlug,
+    value: c.value ?? 1,
+    isLocked: !!c.isLocked,
+    grantedBy: c.grantedBy as ConditionSlug | undefined,
+  }))
+
+  clearCombatantManager(combatantId)
+  hydrateManager(combatantId, conditionsForHydrate)
+
+  toast('Reversed to previous turn')
+
+  lastSnapshot = null
+}
+
+export function canReverseTurn(): boolean {
+  return lastSnapshot !== null
+}
+
+export function clearTurnSnapshot(): void {
+  lastSnapshot = null
+}

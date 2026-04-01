@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
 import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { CombatControls, AddPCDialog } from '@/features/combat-tracker'
+import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
+import { setupAutoSave, teardownAutoSave, loadActiveCombat } from '@/features/combat-tracker/lib/combat-persistence'
 
 export function CombatPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadActiveCombat()
+    setupAutoSave()
+    return () => teardownAutoSave()
+  }, [])
 
   return (
     <div className="flex flex-col h-full">
@@ -18,6 +26,7 @@ export function CombatPage() {
             <div className="flex-1 min-h-0">
               <InitiativeList selectedId={selectedId} onSelect={setSelectedId} />
             </div>
+            <TurnControls />
             <div className="p-2 border-t border-border/50">
               <AddPCDialog />
             </div>

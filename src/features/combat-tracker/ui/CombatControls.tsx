@@ -2,6 +2,7 @@ import { Play, Square, Swords } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { useCombatTrackerStore, clearAllManagers } from '@/features/combat-tracker'
+import { clearTurnSnapshot } from '../lib/turn-manager'
 import { useCombatantStore } from '@/entities/combatant'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -24,6 +25,7 @@ export function CombatControls() {
   }
 
   const handleEnd = () => {
+    clearTurnSnapshot()
     endCombat()
     clearAllManagers()
     clearAllCombatants()
