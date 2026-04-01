@@ -10,7 +10,20 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { useConditionStore } from '@/entities/condition'
 import { useCombatantStore } from '@/entities/combatant'
+import { applyCondition } from '@/features/combat-tracker'
+import type { ConditionSlug } from '@engine'
 import type { PendingPersistentDamage } from '@/features/combat-tracker/model/store'
+
+function incrementDying(combatantId: string): void {
+  const conditions = useConditionStore.getState().activeConditions
+  const dying = conditions.find((c) => c.combatantId === combatantId && c.slug === 'dying')
+  const wounded = conditions.find((c) => c.combatantId === combatantId && c.slug === 'wounded')
+  const currentDying = dying?.value ?? 0
+  const woundedVal = wounded?.value ?? 0
+  // Engine cm.add('dying', v) sets dying = v + wounded, so pass (desired - wounded)
+  const desired = currentDying + 1
+  applyCondition(combatantId, 'dying' as ConditionSlug, Math.max(1, desired - woundedVal))
+}
 
 function rollFormula(formula: string): number {
   // Parse dice formulas like "2d6", "1d4+2", "5"
@@ -42,6 +55,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
     roll: number
     passed: boolean
     damageDealt?: number
+    dyingIncreased?: boolean
   }>>([])
 
   if (!pending) return null
@@ -62,8 +76,15 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
         return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: true }
       } else {
         const damage = rollFormula(pc.formula)
-        useCombatantStore.getState().updateHp(pending.combatantId, -damage)
-        return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: false, damageDealt: damage }
+        const combatant = useCombatantStore.getState().combatants.find((c) => c.id === pending.combatantId)
+        if (combatant && combatant.hp <= 0) {
+          // PF2e rule: persistent damage at 0 HP increases dying by 1
+          incrementDying(pending.combatantId)
+          return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: false, damageDealt: damage, dyingIncreased: true }
+        } else {
+          useCombatantStore.getState().updateHp(pending.combatantId, -damage)
+          return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: false, damageDealt: damage }
+        }
       }
     })
     setResults(newResults)
@@ -155,6 +176,10 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                   {r.passed ? (
                     <p className="text-emerald-400 font-medium">
                       Passed! Persistent {r.damageType} removed.
+                    </p>
+                  ) : r.dyingIncreased ? (
+                    <p className="text-destructive font-medium">
+                      Failed — Dying +1 (at 0 HP)
                     </p>
                   ) : (
                     <p className="text-destructive font-medium">

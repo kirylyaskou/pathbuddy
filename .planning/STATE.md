@@ -3,34 +3,34 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 10 context gathered
-last_updated: "2026-04-01T18:07:02.920Z"
-last_activity: 2026-04-01 -- Phase 10 execution started
+stopped_at: Phase 11 UI-SPEC approved
+last_updated: "2026-04-01T21:49:37.737Z"
+last_activity: 2026-04-01
 progress:
-  total_phases: 12
-  completed_phases: 10
-  total_plans: 36
-  completed_plans: 30
-  percent: 33
+  total_phases: 14
+  completed_phases: 11
+  total_plans: 38
+  completed_plans: 32
+  percent: 0
 ---
 
 # STATE.md - Pathfinder 2e DM Assistant
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-03-31)
+See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 10 — encounter-builder-page
+**Current focus:** v0.4.0 Stabilization + Polish — Phase 11 complete, starting Phase 12
 
 ## Current Position
 
-Phase: 10 (encounter-builder-page) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 10
-Last activity: 2026-04-01 -- Phase 10 execution started
+Phase: 12 — Stat Block + Bestiary Data Quality (not started)
+Plan: —
+Status: Ready to plan
+Last activity: 2026-04-02 — Phase 11 App Shell Fixes complete (2 plans)
 
-Progress: [████░░░░░░] 33% (2/6 phases complete)
+Progress: [███░░░░░░░] 33% (1/3 phases complete)
 
 ## Performance Metrics
 
@@ -44,15 +44,9 @@ Progress: [████░░░░░░] 33% (2/6 phases complete)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 5. Vite Scaffold | TBD | - | - |
-| 6. FSD + Zustand | TBD | - | - |
-| 7. SQLite + Data Pipeline | TBD | - | - |
-| 8. Combat Tracker | TBD | - | - |
-| 9. Bestiary + Encounter | TBD | - | - |
-| 10. P2 Differentiators | TBD | - | - |
-| Phase 05 P01 | 6min | 2 tasks | 17 files |
-| Phase 05 P02 | 6min | 2 tasks | 85 files |
-| Phase 05 P03 | 2min | 1 tasks | 1 files |
+| 11. App Shell Fixes | TBD | — | — |
+| 12. Stat Block + Bestiary Data Quality | TBD | — | — |
+| 13. Combat UX Sweep | TBD | — | — |
 
 ## Accumulated Context
 
@@ -77,26 +71,23 @@ Key decisions carrying forward from prior milestones:
 - Splash-before-router pattern for async DB initialization — migrations complete before React mounts
 - import.meta.glob for Drizzle migrations (Node.js fs crashes in WebView)
 - shared/api/ is sole Tauri IPC boundary — all invoke() calls centralized there
-- Engine stays outside FSD as external lib consumed via @engine alias — not modified in v0.3.0
+- Engine stays outside FSD as external lib consumed via @engine alias
 - ConditionManager: module-level Map pattern, NOT in React/Zustand state (mutation bypass)
 - Entity state (serializable, SQLite-derived) separated from feature runtime state (session, in-memory)
-- [Phase 05]: @vitejs/plugin-react downgraded from ^6.0.1 to ^5.2.0 (v6 requires Vite 8, project uses Vite 6)
-- [Phase 05]: eslint downgraded from ^10.1.0 to ^9.22.0 (eslint-plugin-import only supports up to eslint 9)
-- [Phase 05]: npm install ran without --legacy-peer-deps — no Radix peer dep conflicts with React 19.2.4
-- [Phase 05]: Hooks (use-mobile, use-toast) moved from shared/ui/ to shared/hooks/ for FSD convention
-- [Phase 05]: PF2e mock data imports replaced with local type stubs (Creature, ActionCost, XP thresholds) in shared/ui components
-- [Phase 05]: AppHeader simplified to theme toggle only for Phase 5 (no campaign selector, no sync status)
-- [Phase 05]: Sidebar Ctrl+K (not Cmd+K) since Tauri target is Windows desktop
-- [Phase 05]: Migrated boundaries/element-types (deprecated) to boundaries/dependencies with v6 object-based selectors
-- [Phase 06]: Entity Creature is own serializable type — engine Creature has non-serializable ConditionManager, can't be used in stores
-- [Phase 06]: DisplaySize/DisplayActionCost types bridge engine short codes to UI display values
-- [Phase 06]: generateEncounterBudgets takes only partySize (not partyLevel as originally assumed)
-- [Phase 06]: steiger insignificant-slice rule disabled for entities/ and features/ (no consumers until wired)
+- Entity Creature is own serializable type — engine Creature has non-serializable ConditionManager
+- Auto-roll + manual d20 dual mode established (DyingCascadeDialog, PersistentDamageDialog)
+- HpControls has damage type combobox + applyIWR inline preview
+- TurnControls hooks into turn-manager for condition auto-decrement and persistent damage detection
+
+### v0.4.0-specific context
+
+- FIX-01 (encounters crash): caused by Radix ScrollArea interaction with state update in render — likely a useEffect dependency array or an event handler mutating state during paint
+- STAT-01 (@-syntax): v1.0 had a 7-pass regex chain for @UUID, @Damage, @Check, @Template — the React port may have lost this sanitizer; check MILESTONES.md v1.0 accomplishments for prior art
+- CMB-09 (HP input): replacing 3 inputs (damage/heal/tempHP) with 1 input + 3 buttons simplifies the HpControls widget; value interpretation changes based on which button is pressed
 
 ### Pending Todos
 
-- Audit Foundry VTT sync migration SQL filenames for lexicographic sort order before Phase 7
-- Verify exact `plugin:sql|execute` / `plugin:sql|select` IPC command name strings against tauri-plugin-sql v2.3.2 Rust source at start of Phase 7
+None.
 
 ### Blockers/Concerns
 
@@ -104,7 +95,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-01T14:52:36.905Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-encounter-builder-page/10-CONTEXT.md
-Next step: `/gsd:discuss-phase 7` or `/gsd:plan-phase 7`
+Last session: 2026-04-01T21:35:36.090Z
+Stopped at: Phase 11 UI-SPEC approved
+Resume file: .planning/phases/11-app-shell-fixes/11-UI-SPEC.md
+Next step: /gsd:plan-phase 11

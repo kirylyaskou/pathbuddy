@@ -16,7 +16,7 @@ import {
 export function EncountersPage() {
   const loadConfig = useEncounterBuilderStore((s) => s.loadConfig)
   const isLoaded = useEncounterBuilderStore((s) => s.isLoaded)
-  const result = useEncounterBuilderStore(selectEncounterResult)
+  const totalXp = useEncounterBuilderStore((s) => selectEncounterResult(s).totalXp)
   const partySize = useEncounterBuilderStore((s) => s.partySize)
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function EncountersPage() {
 
       {/* XP Budget Bar */}
       <div className="px-4 py-2 border-b border-border/50">
-        <XPBudgetBar currentXP={result.totalXp} partySize={partySize} />
+        <XPBudgetBar currentXP={totalXp} partySize={partySize} />
       </div>
 
       {/* Main content — creature list + search */}

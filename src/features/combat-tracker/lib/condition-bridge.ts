@@ -24,6 +24,11 @@ function syncToStore(combatantId: string): void {
     useConditionStore.getState().clearCombatantConditions(combatantId)
     return
   }
+  // Preserve persistent-* conditions that live only in the store (not in engine CM)
+  const existing = useConditionStore.getState().activeConditions
+  const persistentConditions = existing.filter(
+    (c) => c.combatantId === combatantId && c.slug.startsWith('persistent-')
+  )
   const conditions: ActiveCondition[] = cm.getAll().map(({ slug, value }) => ({
     combatantId,
     slug,
@@ -31,6 +36,8 @@ function syncToStore(combatantId: string): void {
     isLocked: cm.isProtected(slug) || undefined,
     grantedBy: cm.getGranter(slug),
   }))
+  // Merge back persistent-* conditions with their formula intact
+  conditions.push(...persistentConditions)
   useConditionStore.getState().setAllForCombatant(combatantId, conditions)
 }
 

@@ -7,7 +7,8 @@
 - ✅ **v2.0 PF2e Game Logic Engine** — Phases 01-06 (shipped 2026-03-25)
 - ✅ **v2.1 Engine-UI Integration** — Phases 07-11 (shipped 2026-03-25)
 - ✅ **v0.2.2-pre-alpha — PF2e Engine** — Phases 1-4 (complete)
-- 🚧 **v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration** — Phases 5-10 (in progress)
+- ✅ **v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration** — Phases 5-10 (complete)
+- 🚧 **v0.4.0-pre-alpha — Stabilization + Polish** — Phases 11-13 (in progress)
 
 ## Phases
 
@@ -31,16 +32,27 @@ Full history preserved in `.planning/milestones/`.
 
 </details>
 
-### 🚧 v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration
+<details>
+<summary>✅ v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration (COMPLETE)</summary>
 
 **Milestone Goal:** Port the React prototype from Next.js to Vite + React Router for Tauri, reorganize by FSD, add Zustand state management, reconnect SQLite + Foundry VTT data pipeline, and wire the PF2e engine to replace all mock data with live entity data.
 
-- [ ] **Phase 5: Vite Scaffold + Next.js Teardown** — Running Tauri 2 + Vite 6 + React 19 SPA with createHashRouter, Tailwind v4 OKLCH tokens, and all Next.js artifacts purged
+- [x] **Phase 5: Vite Scaffold + Next.js Teardown** — Running Tauri 2 + Vite 6 + React 19 SPA with createHashRouter, Tailwind v4 OKLCH tokens, and all Next.js artifacts purged
 - [x] **Phase 6: FSD Structure + Zustand Stores** — Complete FSD directory skeleton with typed entity layers, all Zustand stores designed with correct ownership, and shared/api/ IPC boundary established
-- [ ] **Phase 7: SQLite + Foundry VTT Data Pipeline** — SQLite + Drizzle ORM reconnected, Foundry VTT sync pipeline working, FTS5 search returning 28K+ entities, mock data deleted
-- [ ] **Phase 8: Combat Tracker + Engine Integration** — Full 3-panel combat workspace with initiative, HP/tempHP, condition badges wired to engine ConditionManager, auto-decrement, and creature-add from bestiary
-- [ ] **Phase 9: Bestiary Browser + Encounter Builder** — Bestiary with FTS5 + filters displaying real Foundry stat blocks, and encounter builder with live XP budget wired to engine calculateEncounterRating
-- [ ] **Phase 10: P2 Differentiators** — Engine-powered IWR preview, Dying/Wounded cascade UI, Weak/Elite presets, persistent damage flat-checks, MAP display, and hazard XP — all using complete barrel-exported engine functions
+- [x] **Phase 7: SQLite + Foundry VTT Data Pipeline** — SQLite + Drizzle ORM reconnected, Foundry VTT sync pipeline working, FTS5 search returning 28K+ entities, mock data deleted
+- [x] **Phase 8: Combat Tracker + Engine Integration** — Full 3-panel combat workspace with initiative, HP/tempHP, condition badges wired to engine ConditionManager, auto-decrement, and creature-add from bestiary
+- [x] **Phase 9: Bestiary Browser + Encounter Builder** — Bestiary with FTS5 + filters displaying real Foundry stat blocks, and encounter builder with live XP budget wired to engine calculateEncounterRating
+- [x] **Phase 10: P2 Differentiators** — Engine-powered IWR preview, Dying/Wounded cascade UI, Weak/Elite presets, persistent damage flat-checks, MAP display, and hazard XP — all using complete barrel-exported engine functions
+
+</details>
+
+### 🚧 v0.4.0-pre-alpha — Stabilization + Polish
+
+**Milestone Goal:** Make everything work without errors — fix crashes, clean up UX, and bring every existing feature to a working end-to-end state. No new architecture, only focused fixes and polish.
+
+- [x] **Phase 11: App Shell Fixes** — Animated splash screen replaces white screen; encounters page loads without crashing (completed 2026-04-01)
+- [ ] **Phase 12: Stat Block + Bestiary Data Quality** — @-syntax renders as human-readable text; full 17-skill list displayed; sources filter shows book names
+- [ ] **Phase 13: Combat UX Sweep** — Kill button in Dying modal; Detection/Attitude conditions removed from picker; wider condition picker layout; single-input HP controls; persistent damage modal fully functional
 
 ## Phase Details
 
@@ -189,17 +201,57 @@ Plans:
   3. When adding a creature from the bestiary to combat, the DM can select Weak or Elite tier — HP adjusts immediately using engine `getHpAdjustment` before the creature enters the tracker
   4. Combatants with persistent damage show a prompt at turn end for a flat-check roll; passing removes the condition, failing deals the persistent damage
   5. The creature stat block displays MAP attack modifier sets (MAP 0 / MAP -5 / MAP -10) computed by engine `buildAttackModifierSets`; hazard entries in the encounter builder contribute XP via engine `getHazardXp`
-**Plans:** 0/4 plans executed
+**Plans:** 4/4 plans executed
 Plans:
-- [ ] 10-01-PLAN.md — Weak/Elite tier toggle on creature add + MAP attack display in stat block (INT-03, INT-05)
-- [ ] 10-02-PLAN.md — IWR damage preview with type combobox and engine applyIWR breakdown (INT-01)
-- [ ] 10-03-PLAN.md — Dying/Wounded cascade dialog + persistent damage flat-check toasts (INT-02, INT-04)
-- [ ] 10-04-PLAN.md — Hazard XP in encounter builder via engine getHazardXp (INT-06)
+- [x] 10-01-PLAN.md — Weak/Elite tier toggle on creature add + MAP attack display in stat block (INT-03, INT-05)
+- [x] 10-02-PLAN.md — IWR damage preview with type combobox and engine applyIWR breakdown (INT-01)
+- [x] 10-03-PLAN.md — Dying/Wounded cascade dialog + persistent damage flat-check toasts (INT-02, INT-04)
+- [x] 10-04-PLAN.md — Hazard XP in encounter builder via engine getHazardXp (INT-06)
+**UI hint**: yes
+
+### Phase 11: App Shell Fixes
+**Goal**: The app presents a polished first impression and the encounters page loads reliably — no white flash on startup, no crash from the Radix ScrollArea infinite re-render
+**Depends on**: Phase 10
+**Requirements**: SPLASH-01, FIX-01
+**Success Criteria** (what must be TRUE):
+  1. On app launch the user sees an animated CSS d20 die spinning with rotating D&D/PF2e flavor messages instead of a blank white screen
+  2. Loading messages cycle through at least 5 thematic strings while the DB initializes
+  3. Navigating to the Encounters page does not crash or freeze — the page renders and is fully interactive
+  4. The Radix ScrollArea component on the Encounters page renders without triggering an infinite re-render loop (no React "Maximum update depth exceeded" error in console)
+**Plans:** 2/2 plans complete
+Plans:
+- [x] 11-01-PLAN.md — Animated d20 splash screen with TTRPG loading messages (SPLASH-01)
+- [x] 11-02-PLAN.md — Replace Radix ScrollArea with native overflow div (FIX-01)
+**UI hint**: yes
+
+### Phase 12: Stat Block + Bestiary Data Quality
+**Goal**: Creature ability descriptions are human-readable instead of raw Foundry markup, the stat block shows the complete 17-skill list, and the bestiary sources filter shows recognizable book names
+**Depends on**: Phase 11
+**Requirements**: STAT-01, STAT-02, BEST-04
+**Success Criteria** (what must be TRUE):
+  1. Ability descriptions in the stat block render @UUID, @Damage, @Check, @Template, and @Localize tokens as formatted human-readable text — no raw `@` markup is visible to the user
+  2. The stat block skills section lists all 17 PF2e skills with their calculated modifiers — skills not present in Foundry data are derived from creature level + proficiency rank
+  3. The bestiary sources filter dropdown shows human-readable book names (e.g., "Player Core", "Monster Core") rather than folder names (e.g., "pf2e", "sf2e")
+  4. Selecting a book name in the sources filter correctly narrows the bestiary results to creatures from that source
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 13: Combat UX Sweep
+**Goal**: The combat tracker is easier and faster to use — the DM can kill a dying creature in one click, the condition picker shows only combat-relevant conditions in a wider layout, and HP adjustments use a single input with clear action buttons
+**Depends on**: Phase 12
+**Requirements**: CMB-06, CMB-07, CMB-08, CMB-09, CMB-10
+**Success Criteria** (what must be TRUE):
+  1. The Dying recovery dialog includes a "Kill" button that immediately sets the combatant to dead without requiring a recovery roll
+  2. The condition picker does not show Detection conditions (Observed, Hidden, Undetected, Unnoticed) or Attitude conditions (Hostile, Unfriendly, Friendly, Helpful, Indifferent)
+  3. The condition picker is wide enough to show conditions in a multi-column grid — the DM can scan and select a condition without scrolling a narrow list
+  4. HP controls show one numeric input field and three clearly labeled buttons (Damage / Heal / TempHP) — no separate input fields for each action
+  5. The persistent damage modal opens correctly, displays the condition and damage amount, prompts for a flat-check, applies damage on failure, and removes the condition on success
+**Plans**: TBD
 **UI hint**: yes
 
 ## Progress
 
-**Execution Order:** 5 → 6 → 7 → 8 → 9 → 10
+**Execution Order:** 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -209,10 +261,13 @@ Plans:
 | 4. Actions & Modifier Math | v0.2.2 | 4/4 | Complete | 2026-03-31 |
 | 5. Vite Scaffold + Next.js Teardown | v0.3.0 | 3/3 | Complete | 2026-04-01 |
 | 6. FSD Structure + Zustand Stores | v0.3.0 | 4/4 | Complete | 2026-04-01 |
-| 7. SQLite + Foundry VTT Data Pipeline | v0.3.0 | 0/5 | Planned | - |
-| 8. Combat Tracker + Engine Integration | v0.3.0 | 0/4 | Planned | - |
-| 9. Bestiary Browser + Encounter Builder | v0.3.0 | 2/2 | Executing | - |
-| 10. P2 Differentiators | v0.3.0 | 0/4 | Planned    |  |
+| 7. SQLite + Foundry VTT Data Pipeline | v0.3.0 | 5/5 | Complete | 2026-04-01 |
+| 8. Combat Tracker + Engine Integration | v0.3.0 | 4/4 | Complete | 2026-04-01 |
+| 9. Bestiary Browser + Encounter Builder | v0.3.0 | 2/2 | Complete | 2026-04-01 |
+| 10. P2 Differentiators | v0.3.0 | 4/4 | Complete | 2026-04-01 |
+| 11. App Shell Fixes | v0.4.0 | 2/2 | Complete | 2026-04-02 |
+| 12. Stat Block + Bestiary Data Quality | v0.4.0 | 0/TBD | Not started | - |
+| 13. Combat UX Sweep | v0.4.0 | 0/TBD | Not started | - |
 
 ## Backlog
 
@@ -220,11 +275,11 @@ Plans:
 
 **Goal:** Integrate the bestiary stat block card into the combat tracker — clicking a combatant in the tracker opens the same full stat block (with MAP, IWR, abilities, etc.) that's shown in the bestiary browser
 **Requirements:** TBD
-**Plans:** 0 plans
+**Plans:** 0/2 plans executed
 
 Plans:
 - [ ] TBD (promote with /gsd:review-backlog when ready)
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-01 — Phase 10 UAT in progress*
+*Last updated: 2026-04-01 — v0.4.0-pre-alpha roadmap appended (Phases 11-13)*
