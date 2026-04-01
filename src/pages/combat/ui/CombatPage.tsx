@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
 import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
+import { CombatantDetail } from '@/widgets/combatant-detail'
 import { CombatControls, AddPCDialog } from '@/features/combat-tracker'
 
 export function CombatPage() {
@@ -25,15 +26,15 @@ export function CombatPage() {
 
         <ResizableHandle withHandle />
 
-        {/* Center panel — Combatant detail (Plan 03) */}
+        {/* Center panel — Combatant detail */}
         <ResizablePanel defaultSize={45} minSize={30}>
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            {selectedId ? (
-              <p className="text-sm">Combatant detail — Plan 03</p>
-            ) : (
+          {selectedId ? (
+            <CombatantDetail combatantId={selectedId} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
               <p className="text-sm">Select a combatant to view details</p>
-            )}
-          </div>
+            </div>
+          )}
         </ResizablePanel>
 
         <ResizableHandle withHandle />
