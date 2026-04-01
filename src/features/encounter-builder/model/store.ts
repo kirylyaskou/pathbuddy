@@ -5,6 +5,7 @@ import {
   generateEncounterBudgets,
   type EncounterResult,
   type ThreatRating,
+  type WeakEliteTier,
 } from '@engine'
 import { loadPartyConfig, savePartyConfig } from '@/shared/api'
 
@@ -13,6 +14,8 @@ export interface DraftCreature {
   creatureId: string
   name: string
   level: number
+  adjustedLevel: number
+  tier: WeakEliteTier
 }
 
 export interface EncounterBuilderState {
@@ -21,7 +24,7 @@ export interface EncounterBuilderState {
   partySize: number
   isLoaded: boolean
 
-  addCreatureToDraft: (creature: { creatureId: string; name: string; level: number }) => void
+  addCreatureToDraft: (creature: { creatureId: string; name: string; level: number; tier?: WeakEliteTier }) => void
   removeCreatureFromDraft: (instanceId: string) => void
   setPartyLevel: (level: number) => void
   setPartySize: (size: number) => void
@@ -40,11 +43,18 @@ export const useEncounterBuilderStore = create<EncounterBuilderState>()(
 
     addCreatureToDraft: (creature) =>
       set((state) => {
+        const tier = creature.tier ?? 'normal'
+        const adjustedLevel =
+          tier === 'elite' ? creature.level + 1
+          : tier === 'weak' ? creature.level - 1
+          : creature.level
         state.draftCreatures.push({
           instanceId: `draft-${++instanceCounter}`,
           creatureId: creature.creatureId,
           name: creature.name,
           level: creature.level,
+          adjustedLevel,
+          tier,
         })
       }),
 
@@ -86,7 +96,7 @@ export const useEncounterBuilderStore = create<EncounterBuilderState>()(
 )
 
 export function selectEncounterResult(state: EncounterBuilderState): EncounterResult {
-  const levels = state.draftCreatures.map((c) => c.level)
+  const levels = state.draftCreatures.map((c) => c.adjustedLevel)
   return calculateXP(levels, [], state.partyLevel, state.partySize)
 }
 

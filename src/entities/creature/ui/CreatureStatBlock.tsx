@@ -110,33 +110,48 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-4 pb-4 space-y-3">
-              {creature.strikes.map((strike, i) => (
-                <div key={i} className="p-3 rounded-md bg-secondary/50">
-                  <div className="flex items-center gap-2">
-                    <ActionIcon cost={1} className="text-lg" />
-                    <span className="font-semibold">{strike.name}</span>
-                    <span className="font-mono text-primary">
-                      +{strike.modifier}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-sm">
-                    <span className="font-semibold">Damage </span>
-                    <span className="font-mono">{strike.damage}</span>
-                  </div>
-                  {strike.traits.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {strike.traits.map((trait) => (
-                        <span
-                          key={trait}
-                          className="px-1.5 py-0.5 text-xs rounded bg-secondary text-secondary-foreground"
-                        >
-                          {trait}
-                        </span>
-                      ))}
+              {creature.strikes.map((strike, i) => {
+                const isAgile = strike.traits.includes('agile')
+                const map1 = strike.modifier - (isAgile ? 4 : 5)
+                const map2 = strike.modifier - (isAgile ? 8 : 10)
+                const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
+                return (
+                  <div key={i} className="p-3 rounded-md bg-secondary/50">
+                    <div className="flex items-center gap-2">
+                      <ActionIcon cost={1} className="text-lg" />
+                      <span className="font-semibold">{strike.name}</span>
+                      <span className="font-mono text-primary">
+                        +{strike.modifier}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <div className="mt-1 text-sm">
+                      <span className="font-semibold">Damage </span>
+                      <span className="font-mono">{strike.damage}</span>
+                    </div>
+                    <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+                      <span className="font-mono">
+                        MAP: <span className="text-primary">{fmt(strike.modifier)}</span>
+                        {' / '}
+                        <span className="text-muted-foreground">{fmt(map1)}</span>
+                        {' / '}
+                        <span className="text-muted-foreground">{fmt(map2)}</span>
+                      </span>
+                    </div>
+                    {strike.traits.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {strike.traits.map((trait) => (
+                          <span
+                            key={trait}
+                            className="px-1.5 py-0.5 text-xs rounded bg-secondary text-secondary-foreground"
+                          >
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </CollapsibleContent>
         </Collapsible>

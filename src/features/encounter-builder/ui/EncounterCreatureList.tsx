@@ -38,13 +38,18 @@ export function EncounterCreatureList() {
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {draftCreatures.map((dc) => {
-            const xpResult = calculateCreatureXP(dc.level, partyLevel)
+            const xpResult = calculateCreatureXP(dc.adjustedLevel, partyLevel)
             return (
               <div
                 key={dc.instanceId}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary/30 hover:bg-secondary/50 group"
               >
-                <LevelBadge level={dc.level} size="sm" />
+                <LevelBadge level={dc.adjustedLevel} size="sm" />
+                {dc.tier !== 'normal' && (
+                  <span className={`text-[10px] px-1 rounded ${dc.tier === 'elite' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    {dc.tier === 'elite' ? 'E' : 'W'}
+                  </span>
+                )}
                 <span className="flex-1 text-sm font-medium truncate">{dc.name}</span>
                 <span className="text-xs font-mono text-muted-foreground">
                   {xpResult.xp != null ? `${xpResult.xp} XP` : 'OoR'}
