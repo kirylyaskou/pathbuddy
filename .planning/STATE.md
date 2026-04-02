@@ -4,14 +4,14 @@ milestone: v0.8.5
 milestone_name: milestone
 status: planned
 stopped_at: v0.8.5 milestone complete — phases 31-32 shipped
-last_updated: "2026-04-02T17:00:00.000Z"
+last_updated: "2026-04-02T18:00:00.000Z"
 last_activity: 2026-04-02
 progress:
-  total_phases: 30
-  completed_phases: 30
-  total_plans: 58
-  completed_plans: 52
-  percent: 30
+  total_phases: 32
+  completed_phases: 32
+  total_plans: 60
+  completed_plans: 54
+  percent: 32
 ---
 
 # STATE.md - Pathfinder 2e DM Assistant
@@ -30,13 +30,13 @@ Plan: Not started
 Status: v0.8.5 complete
 Last activity: 2026-04-02
 
-Progress: [█████░░░░░] 25%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 49
+- Total plans completed: 54
 - Average duration: —
 - Total execution time: —
 
@@ -108,6 +108,15 @@ Key decisions carrying forward from prior milestones:
 - [Phase 28]: actions_json: JSON array of {name, actionType, description} from items[] where type='action'
 - [Phase 29]: HazardCard: collapsed row (LevelBadge + name + complex/simple badge + stealth DC); expanded: AC/Hardness/HP stats, stealth details, description, disable, reset, actions, traits
 - [Phase 30]: CreatureSearchSidebar gains Creatures/Hazards tab toggle; HazardForm removed from EncounterCreatureList; hazard rows clickable with addHazardToDraft(name, level, is_complex?'complex':'simple')
+- [Phase 30]: Hazard rows in EncounterCreatureList visually distinct: amber left border, amber-950 bg, AlertTriangle icon, LevelBadge, amber text
+
+### v0.8.5-specific context
+
+- [Phase 31]: FOLDER_TO_CATEGORY: 'dfRpdU8Efsenms12'→basic, '0Z6sKp3ActW2pM2e'→skill, 'NnWkuvbKXtwc0nEt'→exploration, 'zXSrhFwRbm6XXqAa'→downtime
+- [Phase 31]: actions table: id, name, action_type, action_cost, category, action_category, description, traits, source_book (~101 actions total)
+- [Phase 32]: ActionCard: cost display ◆/◆◆/◆◆◆/↩/◇/● in amber mono; category badge colors: basic=blue, skill=green, exploration=purple, downtime=zinc
+- [Phase 32]: [[/act slug]]{display} tokens resolved to display text in sanitize()
+- [Phase 32]: /actions route, Zap icon in sidebar reference section
 
 ### Roadmap Evolution
 
@@ -127,13 +136,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-02T16:00:00.000Z
-Stopped at: v0.6.0 complete (phases 20-24)
+Last session: 2026-04-02T18:00:00.000Z
+Stopped at: v0.8.5 complete (phases 31-32)
 Next step: /gsd:plan-milestone v0.9.0
-
-### v0.8.5-specific context
-
-- [Phase 31]: FOLDER_TO_CATEGORY: 'dfRpdU8Efsenms12'→basic, '0Z6sKp3ActW2pM2e'→skill, 'NnWkuvbKXtwc0nEt'→exploration, 'zXSrhFwRbm6XXqAa'→downtime
-- [Phase 31]: actions table: id, name, action_type, action_cost, category, action_category, description, traits, source_book (~101 actions total)
-- [Phase 32]: ActionCard: cost display ◆/◆◆/◆◆◆/↩/◇/● in amber mono; category badge colors: basic=blue, skill=green, exploration=purple, downtime=zinc
-- [Phase 32]: [[/act slug]]{display} tokens resolved to display text in sanitize()
