@@ -24,7 +24,7 @@ export function BestiaryFilterBar() {
   const { filters, setFilter, resetFilters } = useBestiaryStore(
     useShallow((s) => ({ filters: s.filters, setFilter: s.setFilter, resetFilters: s.resetFilters }))
   )
-  const [sources, setSources] = useState<string[]>([])
+  const [sources, setSources] = useState<{ pack: string; name: string }[]>([])
 
   useEffect(() => {
     fetchDistinctSources().then(setSources)
@@ -111,8 +111,8 @@ export function BestiaryFilterBar() {
           <SelectContent>
             <SelectItem value="__all__">All Sources</SelectItem>
             {sources.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
+              <SelectItem key={s.pack} value={s.pack}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>
