@@ -4,8 +4,8 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 13 UI-SPEC approved
-last_updated: "2026-04-02T09:31:17.185Z"
-last_activity: 2026-04-02
+last_updated: "2026-04-02T11:27:31.850Z"
+last_activity: 2026-04-02 -- Phase 14 execution started
 progress:
   total_phases: 17
   completed_phases: 13
@@ -25,10 +25,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 ## Current Position
 
-Phase: 999.1
-Plan: Not started
+Phase: 14 (stat-block-polish-2) — EXECUTING
+Plan: 1 of 2
 Status: Executing Phase 14
-Last activity: 2026-04-02
+Last activity: 2026-04-02 -- Phase 14 execution started
 
 Progress: [███░░░░░░░] 33% (1/3 phases complete)
 

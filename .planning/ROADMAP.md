@@ -287,7 +287,7 @@ Plans:
 | 11. App Shell Fixes | v0.4.0 | 2/2 | Complete | 2026-04-02 |
 | 12. Stat Block + Bestiary Data Quality | v0.4.0 | 2/2 | Complete | 2026-04-02 |
 | 13. Combat UX Sweep | v0.4.0 | 3/3 | Complete    | 2026-04-02 |
-| 14. Stat Block Polish 2 | v0.4.0 | 0/TBD | Complete    | 2026-04-02 |
+| 14. Stat Block Polish 2 | v0.4.0 | 2/2 | Complete   | 2026-04-02 |
 
 ## Backlog
 
@@ -295,7 +295,7 @@ Plans:
 
 **Goal:** Integrate the bestiary stat block card into the combat tracker — clicking a combatant in the tracker opens the same full stat block (with MAP, IWR, abilities, etc.) that's shown in the bestiary browser
 **Requirements:** TBD
-**Plans:** 0/2 plans complete
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] TBD (promote with /gsd:review-backlog when ready)
