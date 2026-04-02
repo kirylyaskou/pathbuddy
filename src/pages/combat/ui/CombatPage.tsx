@@ -23,6 +23,9 @@ export function CombatPage() {
 
   const pendingPersistentDamage = useCombatTrackerStore((s) => s.pendingPersistentDamage)
   const setPendingPersistentDamage = useCombatTrackerStore((s) => s.setPendingPersistentDamage)
+  const { combatId, isEncounterBacked } = useCombatTrackerStore(
+    useShallow((s) => ({ combatId: s.combatId, isEncounterBacked: s.isEncounterBacked }))
+  )
 
   const combatants = useCombatantStore(useShallow((s) => s.combatants))
 
@@ -136,7 +139,15 @@ export function CombatPage() {
         <ResizablePanel defaultSize={40} minSize={28}>
           <div className="h-full overflow-y-auto">
             {lastNpcStatBlock ? (
-              <CreatureStatBlock creature={lastNpcStatBlock} className="rounded-none border-x-0 border-t-0" />
+              <CreatureStatBlock
+                creature={lastNpcStatBlock}
+                className="rounded-none border-x-0 border-t-0"
+                encounterContext={
+                  isEncounterBacked && combatId && selectedId
+                    ? { encounterId: combatId, combatantId: selectedId }
+                    : undefined
+                }
+              />
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
                 {statBlockLoading ? (

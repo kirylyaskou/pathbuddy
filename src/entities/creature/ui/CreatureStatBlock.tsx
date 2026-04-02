@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Separator } from "@/shared/ui/separator"
@@ -8,21 +8,28 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight, X } from "lucide-react"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
 import type { CreatureStatBlockData } from '../model/types'
 import type { SpellcastingSection, SpellsByRank } from '@/entities/spell'
 import type { SpellRow } from '@/entities/spell'
-import { getSpellById } from '@/shared/api'
+import { getSpellById, searchSpells, saveSpellSlotUsage, loadSpellSlots, loadSpellOverrides, upsertSpellOverride, deleteSpellOverride } from '@/shared/api'
+import type { SpellOverrideRow } from '@/shared/api'
+
+export interface EncounterContext {
+  encounterId: string
+  combatantId: string
+}
 
 interface CreatureStatBlockProps {
   creature: CreatureStatBlockData
   className?: string
+  encounterContext?: EncounterContext
 }
 
-export function CreatureStatBlock({ creature, className }: CreatureStatBlockProps) {
+export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
   return (
     <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
       {/* Header - Grimdark */}
@@ -258,7 +265,11 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
         {creature.spellcasting && creature.spellcasting.length > 0 && (
           <>
             {creature.spellcasting.map((section) => (
-              <SpellcastingBlock key={section.entryId} section={section} />
+              <SpellcastingBlock
+                key={section.entryId}
+                section={section}
+                {...(encounterContext ? { encounterContext } : {})}
+              />
             ))}
             <Separator />
           </>
@@ -433,6 +444,10 @@ function actionCostLabel(cost: string): string {
   return cost
 }
 
+function stripHtmlInline(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
+}
+
 function SpellCard({ foundryId, name }: { foundryId: string | null; name: string }) {
   const [open, setOpen] = useState(false)
   const [spell, setSpell] = useState<SpellRow | null>(null)
@@ -515,7 +530,7 @@ function SpellCard({ foundryId, name }: { foundryId: string | null; name: string
           {/* Description */}
           {spell.description && (
             <p className="text-xs text-foreground/75 leading-relaxed line-clamp-4">
-              {stripHtml(resolveFoundryTokensForSpell(spell.description))}
+              {stripHtmlInline(resolveFoundryTokensForSpell(spell.description))}
             </p>
           )}
         </div>
@@ -524,8 +539,161 @@ function SpellCard({ foundryId, name }: { foundryId: string | null; name: string
   )
 }
 
-function SpellcastingBlock({ section }: { section: SpellcastingSection }) {
+// ── Slot pips ─────────────────────────────────────────────────────────────────
+
+function SlotPips({ total, used, onToggle }: { total: number; used: number; onToggle: (idx: number) => void }) {
+  if (total <= 0) return null
+  return (
+    <div className="flex gap-0.5 items-center">
+      {Array.from({ length: total }).map((_, i) => (
+        <button
+          key={i}
+          onClick={(e) => { e.stopPropagation(); onToggle(i) }}
+          title={i < used ? 'Mark slot available' : 'Mark slot used'}
+          className={cn(
+            "w-3.5 h-3.5 rounded-full border transition-colors text-[8px] flex items-center justify-center",
+            i < used
+              ? "bg-primary/70 border-primary text-primary-foreground"
+              : "bg-transparent border-border/60 hover:border-primary/60"
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ── Spell override row ────────────────────────────────────────────────────────
+
+function AddSpellRow({ rank, onAdd }: {
+  rank: number
+  onAdd: (name: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SpellRow[]>([])
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return }
+    const t = setTimeout(async () => {
+      const r = await searchSpells(query, rank)
+      setResults(r.slice(0, 8))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [query, rank])
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-1">
+        <input
+          className="flex-1 text-xs bg-transparent border border-border/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary/60"
+          placeholder="Add spell…"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-card border border-border rounded shadow-lg max-h-40 overflow-y-auto">
+          {results.map((s) => (
+            <button
+              key={s.id}
+              className="w-full text-left px-2 py-1 text-xs hover:bg-secondary/70 flex items-center justify-between"
+              onMouseDown={() => { onAdd(s.name); setQuery(''); setOpen(false) }}
+            >
+              <span>{s.name}</span>
+              <span className="text-muted-foreground">{rankLabel(s.rank)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── SpellcastingBlock (with encounter-aware slots + overrides) ────────────────
+
+function SpellcastingBlock({ section, encounterContext }: {
+  section: SpellcastingSection
+  encounterContext?: EncounterContext
+}) {
   const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
+
+  // Slot state — keyed by rank
+  const [usedSlots, setUsedSlots] = useState<Record<number, number>>({})
+  // Override state
+  const [overrides, setOverrides] = useState<SpellOverrideRow[]>([])
+
+  const { encounterId, combatantId } = encounterContext ?? {}
+
+  const loadSlotState = useCallback(async () => {
+    if (!encounterId || !combatantId) return
+    const rows = await loadSpellSlots(encounterId, combatantId)
+    const byRank: Record<number, number> = {}
+    for (const r of rows) {
+      if (r.entryId === section.entryId) byRank[r.rank] = r.usedCount
+    }
+    setUsedSlots(byRank)
+  }, [encounterId, combatantId, section.entryId])
+
+  const loadOverrideState = useCallback(async () => {
+    if (!encounterId || !combatantId) return
+    const rows = await loadSpellOverrides(encounterId, combatantId)
+    setOverrides(rows.filter((r) => r.entryId === section.entryId))
+  }, [encounterId, combatantId, section.entryId])
+
+  useEffect(() => {
+    loadSlotState()
+    loadOverrideState()
+  }, [loadSlotState, loadOverrideState])
+
+  async function handleTogglePip(rank: number, idx: number, total: number) {
+    if (!encounterId || !combatantId) return
+    const current = usedSlots[rank] ?? 0
+    // Click on used pip → reduce; click on unused pip → use up to that index
+    const newUsed = idx < current ? idx : Math.min(idx + 1, total)
+    setUsedSlots((prev) => ({ ...prev, [rank]: newUsed }))
+    await saveSpellSlotUsage(encounterId, combatantId, section.entryId, rank, newUsed)
+  }
+
+  async function handleAddSpell(name: string, rank: number) {
+    if (!encounterId || !combatantId) return
+    const id = `${combatantId}:${section.entryId}:add:${name}:${rank}`
+    const override: SpellOverrideRow = {
+      id, encounterId, combatantId, entryId: section.entryId,
+      spellName: name, rank, isRemoved: false, sortOrder: Date.now(),
+    }
+    await upsertSpellOverride(override)
+    setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
+  }
+
+  async function handleRemoveSpell(spellName: string, rank: number, isDefault: boolean) {
+    if (!encounterId || !combatantId) return
+    if (isDefault) {
+      // Mark default spell as removed for this encounter
+      const id = `${combatantId}:${section.entryId}:rm:${spellName}:${rank}`
+      const override: SpellOverrideRow = {
+        id, encounterId, combatantId, entryId: section.entryId,
+        spellName, rank, isRemoved: true, sortOrder: 0,
+      }
+      await upsertSpellOverride(override)
+      setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
+    } else {
+      // Remove an added spell
+      const id = `${combatantId}:${section.entryId}:add:${spellName}:${rank}`
+      await deleteSpellOverride(id)
+      setOverrides((prev) => prev.filter((o) => o.id !== id))
+    }
+  }
+
+  const removedSpells = new Set(overrides.filter((o) => o.isRemoved).map((o) => `${o.rank}:${o.spellName}`))
+  const addedByRank = overrides
+    .filter((o) => !o.isRemoved)
+    .reduce<Record<number, string[]>>((acc, o) => {
+      if (!acc[o.rank]) acc[o.rank] = []
+      acc[o.rank].push(o.spellName)
+      return acc
+    }, {})
 
   return (
     <Collapsible defaultOpen>
@@ -550,23 +718,73 @@ function SpellcastingBlock({ section }: { section: SpellcastingSection }) {
             )}
           </div>
           {/* Spells by rank */}
-          {section.spellsByRank.map((byRank: SpellsByRank) => (
-            <div key={byRank.rank}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {rankLabel(byRank.rank)}
-                </span>
-                {byRank.slots > 0 && (
-                  <span className="text-xs text-muted-foreground">({byRank.slots} slots)</span>
-                )}
+          {section.spellsByRank.map((byRank: SpellsByRank) => {
+            const used = usedSlots[byRank.rank] ?? 0
+            const visibleSpells = byRank.spells.filter(
+              (s) => !removedSpells.has(`${byRank.rank}:${s.name}`)
+            )
+            const added = addedByRank[byRank.rank] ?? []
+            return (
+              <div key={byRank.rank}>
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {rankLabel(byRank.rank)}
+                  </span>
+                  {encounterId && byRank.slots > 0 ? (
+                    <SlotPips
+                      total={byRank.slots}
+                      used={used}
+                      onToggle={(idx) => handleTogglePip(byRank.rank, idx, byRank.slots)}
+                    />
+                  ) : byRank.slots > 0 ? (
+                    <span className="text-xs text-muted-foreground">({byRank.slots} slots)</span>
+                  ) : null}
+                </div>
+                <div className="space-y-1">
+                  {visibleSpells.map((spell, i) => (
+                    <div key={i} className="flex items-center gap-1 group/spell">
+                      <div className="flex-1">
+                        <SpellCard name={spell.name} foundryId={spell.foundryId} />
+                      </div>
+                      {encounterId && (
+                        <button
+                          onClick={() => handleRemoveSpell(spell.name, byRank.rank, true)}
+                          className="opacity-0 group-hover/spell:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                          title="Remove for this encounter"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {/* Added spells for this encounter */}
+                  {added.map((name, i) => (
+                    <div key={`added-${i}`} className="flex items-center gap-1 group/spell">
+                      <div className="flex-1">
+                        <SpellCard name={name} foundryId={null} />
+                      </div>
+                      {encounterId && (
+                        <button
+                          onClick={() => handleRemoveSpell(name, byRank.rank, false)}
+                          className="opacity-0 group-hover/spell:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                          title="Remove added spell"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {/* Add spell row — only in encounter context */}
+                  {encounterId && (
+                    <AddSpellRow
+                      rank={byRank.rank}
+                      onAdd={(name) => handleAddSpell(name, byRank.rank)}
+                    />
+                  )}
+                </div>
               </div>
-              <div className="space-y-1">
-                {byRank.spells.map((spell, i) => (
-                  <SpellCard key={i} name={spell.name} foundryId={spell.foundryId} />
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </CollapsibleContent>
     </Collapsible>
