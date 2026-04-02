@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
 import { Plus, Minus, Check } from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/shared/ui/popover'
-import { Command, CommandInput, CommandList, CommandItem, CommandGroup, CommandEmpty } from '@/shared/ui/command'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs'
 import { CONDITION_SLUGS, VALUED_CONDITIONS, CONDITION_GROUPS } from '@engine'
 import type { ConditionSlug } from '@engine'
 import { applyCondition } from '@/features/combat-tracker'
@@ -20,27 +20,52 @@ const PERSISTENT_SLUGS = [
   'persistent-bleed', 'persistent-electricity', 'persistent-poison',
 ] as const
 
-const groupedSlugs = new Set(Object.values(CONDITION_GROUPS).flat())
+const groupedSlugs = new Set([
+  ...Object.values(CONDITION_GROUPS).flat(),
+  ...PERSISTENT_SLUGS,
+])
 const otherSlugs = CONDITION_SLUGS.filter((s) => !groupedSlugs.has(s))
 
-const groups: Array<{ label: string; slugs: readonly string[] }> = [
-  { label: 'Persistent Damage', slugs: PERSISTENT_SLUGS },
-  { label: 'Death & Dying', slugs: CONDITION_GROUPS.death as ConditionSlug[] },
-  { label: 'Abilities', slugs: CONDITION_GROUPS.abilities as ConditionSlug[] },
-  { label: 'Senses', slugs: CONDITION_GROUPS.senses as ConditionSlug[] },
-  { label: 'Detection', slugs: CONDITION_GROUPS.detection as ConditionSlug[] },
-  { label: 'Attitudes', slugs: CONDITION_GROUPS.attitudes as ConditionSlug[] },
-  { label: 'Other', slugs: otherSlugs as ConditionSlug[] },
-]
+const TABS = [
+  { id: 'persistent', label: 'Persistent', slugs: PERSISTENT_SLUGS as readonly string[] },
+  { id: 'death', label: 'Death', slugs: CONDITION_GROUPS.death as readonly string[] },
+  { id: 'abilities', label: 'Abilities', slugs: CONDITION_GROUPS.abilities as readonly string[] },
+  { id: 'senses', label: 'Senses', slugs: CONDITION_GROUPS.senses as readonly string[] },
+  { id: 'other', label: 'Other', slugs: otherSlugs as readonly string[] },
+] as const
+
+const allSlugs = TABS.flatMap((t) => [...t.slugs])
+
+function ConditionPill({ slug, disabled, onClick }: { slug: string; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      className={`px-2 py-1.5 rounded text-xs capitalize cursor-pointer text-left truncate
+        ${disabled
+          ? 'opacity-50 cursor-not-allowed bg-secondary/20'
+          : 'bg-secondary/30 hover:bg-secondary/50 border border-border/30'
+        }`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {slug.split('-').join(' ')}
+      {disabled && <Check className="w-2.5 h-2.5 inline ml-1 opacity-50" />}
+    </button>
+  )
+}
+
+const normalize = (s: string) => s.split('-').join(' ').toLowerCase()
 
 export function ConditionCombobox({ combatantId, existingSlugs }: ConditionComboboxProps) {
   const [open, setOpen] = useState(false)
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   const [value, setValue] = useState(1)
   const [formula, setFormula] = useState('')
+  const [search, setSearch] = useState('')
 
   const isPersistent = selectedSlug?.startsWith('persistent-')
   const isValued = selectedSlug && !isPersistent && (VALUED_CONDITIONS as readonly string[]).includes(selectedSlug)
+
+  const matchesSearch = (slug: string) => normalize(slug).includes(normalize(search))
 
   const handleSelect = useCallback(
     (slug: string) => {
@@ -94,19 +119,19 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
   }, [])
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setSelectedSlug(null); setValue(1); setFormula('') } }}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setSelectedSlug(null); setValue(1); setFormula(''); setSearch('') } }}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
           <Plus className="w-3 h-3" />
           Condition
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-0" align="start">
+      <PopoverContent className="w-80 p-0" align="start">
         {selectedSlug && isPersistent ? (
           <div className="p-3 space-y-3">
             <div className="flex items-center justify-between">
               <button onClick={handleBack} className="text-xs text-muted-foreground hover:text-foreground">
-                ← Back
+                &#8592; Back
               </button>
               <span className="text-sm font-medium capitalize">
                 {selectedSlug.replace('persistent-', 'persistent ')}
@@ -131,10 +156,10 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
           <div className="p-3 space-y-3">
             <div className="flex items-center justify-between">
               <button onClick={handleBack} className="text-xs text-muted-foreground hover:text-foreground">
-                ← Back
+                &#8592; Back
               </button>
               <span className="text-sm font-medium capitalize">
-                {selectedSlug.replace('-', ' ')}
+                {selectedSlug.split('-').join(' ')}
               </span>
             </div>
             <div className="flex items-center justify-center gap-3">
@@ -159,34 +184,58 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
             </div>
             <Button className="w-full h-8 text-xs" onClick={handleApplyValued}>
               <Check className="w-3 h-3 mr-1" />
-              Apply {selectedSlug.replace('-', ' ')} {value}
+              Apply {selectedSlug.split('-').join(' ')} {value}
             </Button>
           </div>
         ) : (
-          <Command>
-            <CommandInput placeholder="Search conditions..." className="h-8" />
-            <CommandList className="max-h-60">
-              <CommandEmpty>No condition found.</CommandEmpty>
-              {groups.map((group) => (
-                <CommandGroup key={group.label} heading={group.label}>
-                  {group.slugs.map((slug) => (
-                    <CommandItem
+          <div>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conditions..."
+              className="h-8 text-xs border-0 border-b rounded-none px-3 focus-visible:ring-0"
+            />
+            {search ? (
+              <div className="p-2 grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+                {allSlugs.filter(matchesSearch).length === 0 ? (
+                  <p className="col-span-3 text-center text-xs text-muted-foreground py-4">No condition found.</p>
+                ) : (
+                  allSlugs.filter(matchesSearch).map((slug) => (
+                    <ConditionPill
                       key={slug}
-                      value={slug}
-                      onSelect={() => handleSelect(slug)}
+                      slug={slug}
                       disabled={existingSlugs.includes(slug)}
-                      className="text-xs capitalize"
-                    >
-                      {slug.replace('-', ' ')}
-                      {existingSlugs.includes(slug) && (
-                        <Check className="w-3 h-3 ml-auto opacity-50" />
-                      )}
-                    </CommandItem>
+                      onClick={() => handleSelect(slug)}
+                    />
+                  ))
+                )}
+              </div>
+            ) : (
+              <Tabs defaultValue="persistent">
+                <TabsList className="w-full h-8 rounded-none border-b">
+                  {TABS.map((t) => (
+                    <TabsTrigger key={t.id} value={t.id} className="text-xs flex-1 h-7">
+                      {t.label}
+                    </TabsTrigger>
                   ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
+                </TabsList>
+                {TABS.map((tab) => (
+                  <TabsContent key={tab.id} value={tab.id} className="mt-0">
+                    <div className="p-2 grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+                      {tab.slugs.map((slug) => (
+                        <ConditionPill
+                          key={slug}
+                          slug={slug}
+                          disabled={existingSlugs.includes(slug)}
+                          onClick={() => handleSelect(slug)}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          </div>
         )}
       </PopoverContent>
     </Popover>

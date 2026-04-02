@@ -249,9 +249,24 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 14: Stat Block Polish 2
+**Goal**: Stat block is fully readable and visually polished — all Foundry token patterns resolved ([[/act]], [[/br]], {Nfeet} area templates), Fighter's Fork has correct weapon data (group=trident, shove trait, Brute Strength extra damage), and the color system makes key stats instantly scannable (section headers, HP, saves, damage types, trait tags, ability text)
+**Depends on**: Phase 12
+**Requirements**: STAT-01, STAT-02
+**Success Criteria** (what must be TRUE):
+  1. [[/act slug]] tokens render as action name (e.g. "Shove") — no raw [[ ]] markup visible
+  2. [[/br expr #label]]{display} tokens render as display text only
+  3. {Nfeet} area template tokens render as readable range text (e.g. "30-foot area")
+  4. Fighter's Fork strike shows weapon group (trident), shove trait, and Brute Strength extra damage where applicable
+  5. Section headers (Strikes, Abilities, Skills) have gradient/themed color treatment
+  6. HP, saves, damage type labels, and trait tags each have distinct color coding for instant scanability
+  7. Ability description text is visually distinct from ability names (bold names, readable body text)
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
-**Execution Order:** 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
+**Execution Order:** 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -266,8 +281,9 @@ Plans:
 | 9. Bestiary Browser + Encounter Builder | v0.3.0 | 2/2 | Complete | 2026-04-01 |
 | 10. P2 Differentiators | v0.3.0 | 4/4 | Complete | 2026-04-01 |
 | 11. App Shell Fixes | v0.4.0 | 2/2 | Complete | 2026-04-02 |
-| 12. Stat Block + Bestiary Data Quality | v0.4.0 | 2/2 | Complete   | 2026-04-02 |
+| 12. Stat Block + Bestiary Data Quality | v0.4.0 | 2/2 | Complete | 2026-04-02 |
 | 13. Combat UX Sweep | v0.4.0 | 0/TBD | Not started | - |
+| 14. Stat Block Polish 2 | v0.4.0 | 0/TBD | Not started | - |
 
 ## Backlog
 

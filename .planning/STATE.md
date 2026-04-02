@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-04-02T01:10:40.919Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-04-02T01:57:32.157Z"
 last_activity: 2026-04-02
 progress:
-  total_phases: 15
+  total_phases: 16
   completed_phases: 12
   total_plans: 40
   completed_plans: 34
@@ -25,8 +25,8 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 ## Current Position
 
-Phase: 12 (stat-block-bestiary-data-quality) — EXECUTING
-Plan: 2 of 2
+Phase: 999.1
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-04-02
 
@@ -92,6 +92,10 @@ Key decisions carrying forward from prior milestones:
 - STAT-01 (@-syntax): v1.0 had a 7-pass regex chain for @UUID, @Damage, @Check, @Template — the React port may have lost this sanitizer; check MILESTONES.md v1.0 accomplishments for prior art
 - CMB-09 (HP input): replacing 3 inputs (damage/heal/tempHP) with 1 input + 3 buttons simplifies the HpControls widget; value interpretation changes based on which button is pressed
 
+### Roadmap Evolution
+
+- Phase 14 added: Stat Block Polish 2 — token patterns ([[/act]], [[/br]], {Nfeet}), Fighter's Fork weapon data, color system for stat block
+
 ### Pending Todos
 
 None.
@@ -102,7 +106,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-02T01:10:40.915Z
-Stopped at: Completed 12-02-PLAN.md
-Resume file: None
+Last session: 2026-04-02T01:57:32.153Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-stat-block-polish-2/14-CONTEXT.md
 Next step: /gsd:execute-phase 12
