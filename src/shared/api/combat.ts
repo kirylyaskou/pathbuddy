@@ -17,6 +17,7 @@ export interface CombatConditionRow {
   value?: number
   isLocked?: boolean
   grantedBy?: string
+  formula?: string
 }
 
 export interface CombatSnapshot {
@@ -48,9 +49,9 @@ export async function saveCombatState(state: CombatSnapshot): Promise<void> {
   }
   for (const cond of state.conditions) {
     await db.execute(
-      `INSERT INTO combat_conditions (combatant_id, slug, value, is_locked, granted_by)
-       VALUES (?, ?, ?, ?, ?)`,
-      [cond.combatantId, cond.slug, cond.value ?? null, cond.isLocked ? 1 : 0, cond.grantedBy ?? null]
+      `INSERT INTO combat_conditions (combatant_id, slug, value, is_locked, granted_by, formula)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [cond.combatantId, cond.slug, cond.value ?? null, cond.isLocked ? 1 : 0, cond.grantedBy ?? null, cond.formula ?? null]
     )
   }
 }
@@ -85,7 +86,7 @@ export async function loadCombatState(combatId: string): Promise<CombatSnapshot 
 
   const condRows = await db.select<Array<{
     combatant_id: string; slug: string; value: number | null;
-    is_locked: number; granted_by: string | null
+    is_locked: number; granted_by: string | null; formula: string | null
   }>>(
     `SELECT cc.* FROM combat_conditions cc
      JOIN combat_combatants cb ON cc.combatant_id = cb.id
@@ -98,6 +99,7 @@ export async function loadCombatState(combatId: string): Promise<CombatSnapshot 
     value: r.value ?? undefined,
     isLocked: r.is_locked === 1 ? true : undefined,
     grantedBy: r.granted_by ?? undefined,
+    formula: r.formula ?? undefined,
   }))
 
   return {

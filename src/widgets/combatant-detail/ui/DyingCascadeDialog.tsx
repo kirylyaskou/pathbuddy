@@ -208,6 +208,19 @@ export function DyingCascadeDialog({
               Roll Recovery Check
             </Button>
 
+            <Button
+              className="w-full"
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setConditionValue(combatantId, 'dying' as ConditionSlug, 4 - doomedValue)
+                setIsDead(true)
+                setCheckResult(null)
+              }}
+            >
+              Kill (no check)
+            </Button>
+
             {checkResult && (
               <div className="p-3 rounded bg-secondary/50 space-y-1.5 text-sm">
                 <div className="flex justify-between">

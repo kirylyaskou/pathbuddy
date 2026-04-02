@@ -38,42 +38,14 @@ const LOADING_MESSAGES = [
   "Critical failures build character. Yours and your character's.",
 ]
 
-const FACE_TRANSFORMS: string[] = [
-  'rotateX(90deg) translateZ(70px)',
-  'rotateY(0deg) rotateX(30deg) translateZ(80px)',
-  'rotateY(72deg) rotateX(30deg) translateZ(80px)',
-  'rotateY(144deg) rotateX(30deg) translateZ(80px)',
-  'rotateY(216deg) rotateX(30deg) translateZ(80px)',
-  'rotateY(288deg) rotateX(30deg) translateZ(80px)',
-  'rotateY(36deg) rotateX(-30deg) translateZ(80px)',
-  'rotateY(108deg) rotateX(-30deg) translateZ(80px)',
-  'rotateY(180deg) rotateX(-30deg) translateZ(80px)',
-  'rotateY(252deg) rotateX(-30deg) translateZ(80px)',
-  'rotateY(324deg) rotateX(-30deg) translateZ(80px)',
-  'rotateX(-90deg) translateZ(70px)',
-]
-
-function D20Spinner() {
+function D20Die() {
   return (
-    <div style={{ perspective: '600px' }} className="w-40 h-40">
-      <div
-        className="relative w-full h-full"
-        style={{
-          transformStyle: 'preserve-3d',
-          animation: 'spin-d20 8s infinite linear',
-        }}
-      >
-        {FACE_TRANSFORMS.map((transform, i) => (
-          <div
-            key={i}
-            className="absolute inset-0 w-16 h-14 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-              transform,
-              background: 'oklch(0.14 0.025 50 / 0.85)',
-              border: '1px solid oklch(0.75 0.18 75 / 0.5)',
-            }}
-          />
+    <div className="d20">
+      <div className="die">
+        {Array.from({ length: 20 }, (_, i) => (
+          <div key={i + 1} className="face">
+            <span>{i + 1}</span>
+          </div>
         ))}
       </div>
     </div>
@@ -160,7 +132,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
           </div>
         ) : (
           <>
-            <D20Spinner />
+            <D20Die />
             <p
               className="text-sm text-muted-foreground text-center max-w-xs transition-opacity duration-400"
               style={{ opacity: msgVisible ? 1 : 0 }}
@@ -168,9 +140,6 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
             >
               {LOADING_MESSAGES[msgIndex]}
             </p>
-            <div className="w-48 h-0.5 rounded-full bg-border overflow-hidden">
-              <div className="h-full bg-pf-gold/40 animate-pulse w-full" />
-            </div>
           </>
         )}
       </div>

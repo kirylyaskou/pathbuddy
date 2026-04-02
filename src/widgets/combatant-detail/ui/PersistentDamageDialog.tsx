@@ -20,13 +20,11 @@ function incrementDying(combatantId: string): void {
   const wounded = conditions.find((c) => c.combatantId === combatantId && c.slug === 'wounded')
   const currentDying = dying?.value ?? 0
   const woundedVal = wounded?.value ?? 0
-  // Engine cm.add('dying', v) sets dying = v + wounded, so pass (desired - wounded)
   const desired = currentDying + 1
   applyCondition(combatantId, 'dying' as ConditionSlug, Math.max(1, desired - woundedVal))
 }
 
 function rollFormula(formula: string): number {
-  // Parse dice formulas like "2d6", "1d4+2", "5"
   const match = formula.match(/^(\d+)d(\d+)(?:\s*\+\s*(\d+))?$/)
   if (match) {
     const [, count, faces, bonus] = match
@@ -40,6 +38,41 @@ function rollFormula(formula: string): number {
   return isNaN(num) ? 0 : num
 }
 
+type RollResult = {
+  damageType: string
+  slug: string
+  formula: string
+  roll: number
+  damageDealt: number
+  ended: boolean       // flat check passed → condition removed
+  dyingIncreased?: boolean
+}
+
+function applyResult(
+  combatantId: string,
+  pc: { slug: string; formula: string; damageType: string },
+  d20: number
+): RollResult {
+  // PF2e rule: take damage first, THEN flat check to end condition
+  const damage = rollFormula(pc.formula)
+  const combatant = useCombatantStore.getState().combatants.find((c) => c.id === combatantId)
+  let dyingIncreased = false
+  if (combatant && combatant.hp <= 0) {
+    incrementDying(combatantId)
+    dyingIncreased = true
+  } else {
+    useCombatantStore.getState().updateHp(combatantId, -damage)
+  }
+
+  // Flat check DC 15 to remove condition
+  const ended = d20 >= 15
+  if (ended) {
+    useConditionStore.getState().removeCondition(combatantId, pc.slug)
+  }
+
+  return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, damageDealt: damage, ended, dyingIncreased }
+}
+
 interface PersistentDamageDialogProps {
   pending: PendingPersistentDamage | null
   onClose: () => void
@@ -48,52 +81,37 @@ interface PersistentDamageDialogProps {
 export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDialogProps) {
   const [rollMode, setRollMode] = useState<'auto' | 'manual'>('auto')
   const [manualRoll, setManualRoll] = useState('')
-  const [results, setResults] = useState<Array<{
-    damageType: string
-    slug: string
-    formula: string
-    roll: number
-    passed: boolean
-    damageDealt?: number
-    dyingIncreased?: boolean
-  }>>([])
+  const [results, setResults] = useState<RollResult[]>([])
+  // manual step: index of the condition currently being rolled
+  const [manualStep, setManualStep] = useState(0)
 
   if (!pending) return null
 
   const allResolved = results.length === pending.conditions.length
+  const currentCondition = pending.conditions[manualStep]
 
   const handleRollAll = () => {
-    const d20 = rollMode === 'manual'
-      ? parseInt(manualRoll, 10)
-      : Math.ceil(Math.random() * 20)
-
-    if (isNaN(d20) || d20 < 1 || d20 > 20) return
-
     const newResults = pending.conditions.map((pc) => {
-      const passed = d20 >= 15
-      if (passed) {
-        useConditionStore.getState().removeCondition(pending.combatantId, pc.slug)
-        return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: true }
-      } else {
-        const damage = rollFormula(pc.formula)
-        const combatant = useCombatantStore.getState().combatants.find((c) => c.id === pending.combatantId)
-        if (combatant && combatant.hp <= 0) {
-          // PF2e rule: persistent damage at 0 HP increases dying by 1
-          incrementDying(pending.combatantId)
-          return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: false, damageDealt: damage, dyingIncreased: true }
-        } else {
-          useCombatantStore.getState().updateHp(pending.combatantId, -damage)
-          return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, passed: false, damageDealt: damage }
-        }
-      }
+      const d20 = Math.ceil(Math.random() * 20) // separate roll per condition
+      return applyResult(pending.combatantId, pc, d20)
     })
     setResults(newResults)
+  }
+
+  const handleManualApply = () => {
+    const d20 = parseInt(manualRoll, 10)
+    if (isNaN(d20) || d20 < 1 || d20 > 20) return
+    const result = applyResult(pending.combatantId, currentCondition, d20)
+    setResults((prev) => [...prev, result])
+    setManualRoll('')
+    setManualStep((s) => s + 1)
   }
 
   const handleClose = () => {
     setResults([])
     setManualRoll('')
     setRollMode('auto')
+    setManualStep(0)
     onClose()
   }
 
@@ -108,17 +126,32 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            {pending.conditions.map((pc) => (
-              <div key={pc.slug} className="flex items-center justify-between p-2 rounded bg-secondary/30">
-                <span className="text-sm capitalize font-medium">{pc.damageType}</span>
-                <span className="text-sm font-mono text-orange-400">{pc.formula}</span>
-              </div>
-            ))}
+          {/* Condition list header */}
+          <div className="space-y-1">
+            {pending.conditions.map((pc, i) => {
+              const res = results[i]
+              return (
+                <div key={pc.slug} className="flex items-center justify-between px-2 py-1.5 rounded bg-secondary/30">
+                  <span className="text-sm capitalize font-medium">{pc.damageType}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-mono text-orange-400">{pc.formula}</span>
+                    {res && (
+                      <span className={`text-xs font-mono ${res.ended ? 'text-emerald-400' : 'text-destructive'}`}>
+                        d20={res.roll} {res.ended ? '✓' : '✗'}
+                      </span>
+                    )}
+                    {!res && rollMode === 'manual' && i === manualStep && (
+                      <span className="text-xs text-pf-gold">← rolling</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <div className="text-center text-sm text-muted-foreground">
             Flat-check DC: <span className="font-mono font-bold text-foreground">15</span>
+            <span className="ml-1 text-xs">(one roll per condition)</span>
           </div>
 
           {!allResolved && (
@@ -128,7 +161,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                   variant={rollMode === 'auto' ? 'default' : 'outline'}
                   size="sm"
                   className="h-7 text-xs gap-1"
-                  onClick={() => setRollMode('auto')}
+                  onClick={() => { setRollMode('auto'); setManualStep(results.length) }}
                 >
                   <Dices className="w-3 h-3" />
                   Auto Roll
@@ -144,48 +177,55 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                 </Button>
               </div>
 
-              {rollMode === 'manual' && (
-                <div className="flex items-center justify-center gap-2">
-                  <Input
-                    type="number"
-                    value={manualRoll}
-                    onChange={(e) => setManualRoll(e.target.value)}
-                    placeholder="1-20"
-                    className="h-8 w-20 text-center text-sm"
-                    min={1}
-                    max={20}
-                    onKeyDown={(e) => e.key === 'Enter' && handleRollAll()}
-                  />
-                </div>
+              {rollMode === 'auto' && (
+                <Button className="w-full" onClick={handleRollAll}>
+                  Roll All Flat Checks ({pending.conditions.length - results.length} remaining)
+                </Button>
               )}
 
-              <Button className="w-full" onClick={handleRollAll}>
-                Roll Flat-Check
-              </Button>
+              {rollMode === 'manual' && currentCondition && (
+                <div className="space-y-2">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Rolling for: <span className="capitalize font-medium text-foreground">{currentCondition.damageType}</span>
+                    <span className="text-xs ml-1 font-mono text-orange-400">({currentCondition.formula})</span>
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Input
+                      type="number"
+                      value={manualRoll}
+                      onChange={(e) => setManualRoll(e.target.value)}
+                      placeholder="1-20"
+                      className="h-8 w-20 text-center text-sm"
+                      min={1}
+                      max={20}
+                      autoFocus
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualApply()}
+                    />
+                    <Button onClick={handleManualApply} disabled={!manualRoll}>
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
           {allResolved && (
             <div className="space-y-2">
               {results.map((r) => (
-                <div key={r.slug} className="p-3 rounded bg-secondary/50 space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground capitalize">{r.damageType}</span>
-                    <span className="font-mono font-bold">d20 = {r.roll}</span>
+                <div key={r.slug} className="p-3 rounded bg-secondary/50 space-y-1 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="capitalize font-medium">{r.damageType}</span>
+                    <span className="font-mono text-xs text-muted-foreground">d20 = <span className="font-bold text-foreground">{r.roll}</span></span>
                   </div>
-                  {r.passed ? (
-                    <p className="text-emerald-400 font-medium">
-                      Passed! Persistent {r.damageType} removed.
-                    </p>
-                  ) : r.dyingIncreased ? (
-                    <p className="text-destructive font-medium">
-                      Failed — Dying +1 (at 0 HP)
-                    </p>
-                  ) : (
-                    <p className="text-destructive font-medium">
-                      Failed — {r.damageDealt} {r.damageType} damage dealt.
-                    </p>
-                  )}
+                  <p className={r.dyingIncreased ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                    {r.dyingIncreased
+                      ? `${r.damageDealt} damage — Dying +1 (0 HP)`
+                      : `${r.damageDealt} ${r.damageType} damage`}
+                  </p>
+                  <p className={r.ended ? 'text-emerald-400 font-medium' : 'text-amber-400'}>
+                    {r.ended ? `d20 ${r.roll} ≥ 15 — condition removed` : `d20 ${r.roll} < 15 — continues`}
+                  </p>
                 </div>
               ))}
               <Button className="w-full" variant="outline" onClick={handleClose}>
