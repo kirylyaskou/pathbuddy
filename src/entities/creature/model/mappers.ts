@@ -68,18 +68,41 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     .map((item: any) => ({
       name: item.name || 'Ability',
       actionCost: parseActionCost(item.system?.actionType?.value, item.system?.actions?.value),
-      description: stripHtml(item.system?.description?.value || ''),
+      description: stripHtml(resolveFoundryTokens(item.system?.description?.value || '')),
       traits: (item.system?.traits?.value || []) as string[],
     }))
 
+  const STANDARD_SKILLS = [
+    'acrobatics', 'arcana', 'athletics', 'crafting', 'deception',
+    'diplomacy', 'intimidation', 'medicine', 'nature', 'occultism',
+    'performance', 'religion', 'society', 'stealth', 'survival', 'thievery',
+  ]
+
   const skillsObj = system.skills || {}
-  const skills = Object.entries(skillsObj)
-    .filter(([, v]: [string, any]) => v && typeof v.base === 'number' && v.base > 0)
-    .map(([name, v]: [string, any]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      modifier: v.base ?? 0,
+  const foundrySkills = new Map<string, number>(
+    Object.entries(skillsObj)
+      .filter(([, v]: [string, any]) => v && typeof v.base === 'number')
+      .map(([k, v]: [string, any]) => [k, v.base as number])
+  )
+
+  // All 17 standard skills — use Foundry value if present, else derive from level
+  const standardSkills = STANDARD_SKILLS.map((key) => ({
+    name: key.charAt(0).toUpperCase() + key.slice(1),
+    modifier: foundrySkills.has(key) ? foundrySkills.get(key)! : base.level,
+    calculated: !foundrySkills.has(key),
+  }))
+
+  // Lore skills — any Foundry skill keys not in STANDARD_SKILLS
+  const loreSkills = Object.entries(skillsObj)
+    .filter(([k, v]: [string, any]) => !STANDARD_SKILLS.includes(k) && v && typeof v.base === 'number')
+    .map(([k, v]: [string, any]) => ({
+      name: k.charAt(0).toUpperCase() + k.slice(1),
+      modifier: v.base as number,
+      calculated: false as const,
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
+
+  const skills = [...standardSkills, ...loreSkills]
 
   const languages: string[] = details.languages?.value || system.traits?.languages?.value || []
   const senseData = system.perception?.senses || system.traits?.senses || []
@@ -87,7 +110,7 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     ? senseData.map((s: any) => (typeof s === 'string' ? s : s.type || String(s)))
     : []
 
-  const description = stripHtml(details.publicNotes || details.description?.value || '')
+  const description = stripHtml(resolveFoundryTokens(details.publicNotes || details.description?.value || ''))
   const source =
     details.publication?.title || system.details?.source?.value || row.source_pack || 'Unknown'
 
@@ -141,6 +164,46 @@ function parseActionCost(actionType?: string, actions?: number): DisplayActionCo
   if (actionType === 'passive') return undefined
   if (actions != null && actions >= 1 && actions <= 3) return actions as 1 | 2 | 3
   return undefined
+}
+
+function resolveFoundryTokens(text: string): string {
+  // @UUID with alias: @UUID[Compendium.pf2e.X.Item.Y]{alias} → alias text
+  text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
+  // @UUID without alias: extract last dot-path segment (e.g. "Enfeebled")
+  text = text.replace(/@UUID\[([^\]]+)\]/g, (_, path: string) => {
+    const parts = path.split('.')
+    return parts[parts.length - 1]
+  })
+  // @Damage: @Damage[9d10[untyped]] → "9d10 untyped"
+  //          @Damage[2d6[fire], 1d4[bleed]] → "2d6 fire plus 1d4 bleed"
+  text = text.replace(/@Damage\[([^\]]*(?:\[[^\]]*\][^\]]*)*)\]/g, (_, inner: string) => {
+    const parts = inner.split(/,\s*/).map((part: string) => {
+      const m = part.trim().match(/^(.+?)\[(.+?)\]$/)
+      return m ? `${m[1]} ${m[2]}` : part.trim()
+    })
+    return parts.join(' plus ')
+  })
+  // @Check: @Check[type:perception|dc:20] → "DC 20 Perception check"
+  //         @Check[type:will|dc:25] → "DC 25 Will check"
+  text = text.replace(/@Check\[([^\]]+)\]/g, (_, inner: string) => {
+    const params = Object.fromEntries(inner.split('|').map((p: string) => p.split(':')))
+    const type = params.type
+      ? params.type.charAt(0).toUpperCase() + params.type.slice(1)
+      : 'Unknown'
+    const dc = params.dc ? `DC ${params.dc} ` : ''
+    return `${dc}${type} check`
+  })
+  // @Template: @Template[type:cone|distance:15] → "15-foot cone"
+  //            @Template[type:emanation|distance:30] → "30-foot emanation"
+  text = text.replace(/@Template\[([^\]]+)\]/g, (_, inner: string) => {
+    const params = Object.fromEntries(inner.split('|').map((p: string) => p.split(':')))
+    const distance = params.distance ?? '?'
+    const type = params.type ?? 'area'
+    return `${distance}-foot ${type}`
+  })
+  // @Localize fallback — strip token (sync pipeline resolves these at import time)
+  text = text.replace(/@Localize\[[^\]]+\]/g, '')
+  return text
 }
 
 function stripHtml(html: string): string {
