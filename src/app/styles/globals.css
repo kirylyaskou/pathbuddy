@@ -232,7 +232,6 @@
       oklch(0.72 0.18 75 / 0.2),
       transparent
     );
-    border-left: 3px solid var(--pf-gold);
   }
 }
 

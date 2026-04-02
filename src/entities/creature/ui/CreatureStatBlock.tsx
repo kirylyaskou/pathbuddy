@@ -20,9 +20,9 @@ interface CreatureStatBlockProps {
 
 export function CreatureStatBlock({ creature, className }: CreatureStatBlockProps) {
   return (
-    <Card className={cn("overflow-hidden card-grimdark border-border/50", className)}>
+    <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
       {/* Header - Grimdark */}
-      <CardHeader className="pb-3 stat-block-header border-b border-primary/20 bg-gradient-to-r from-primary/10 to-transparent">
+      <CardHeader className="pb-3 stat-block-header border-b border-primary/20">
         <div className="flex items-start gap-4">
           <LevelBadge level={creature.level} size="lg" />
           <div className="flex-1">
