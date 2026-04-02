@@ -16,6 +16,7 @@ export interface CreatureRow {
   size: string | null
   source_pack: string | null
   raw_json: string
+  source_name: string | null
 }
 
 export async function fetchCreatures(
@@ -112,12 +113,15 @@ export async function searchCreaturesFiltered(
   )
 }
 
-export async function fetchDistinctSources(): Promise<string[]> {
+export async function fetchDistinctSources(): Promise<{ pack: string; name: string }[]> {
   const db = await getDb()
-  const rows = await db.select<{ source_pack: string }[]>(
-    "SELECT DISTINCT source_pack FROM entities WHERE type = 'npc' AND source_pack IS NOT NULL ORDER BY source_pack"
+  const rows = await db.select<{ source_pack: string; source_name: string | null }[]>(
+    "SELECT DISTINCT source_pack, source_name FROM entities WHERE type = 'npc' AND source_pack IS NOT NULL ORDER BY source_pack"
   )
-  return rows.map(r => r.source_pack)
+  return rows.map(r => ({
+    pack: r.source_pack,
+    name: r.source_name ?? r.source_pack,
+  }))
 }
 
 export async function fetchDistinctTraits(): Promise<string[]> {
