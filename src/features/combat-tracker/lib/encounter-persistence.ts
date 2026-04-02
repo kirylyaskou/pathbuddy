@@ -1,9 +1,12 @@
-import { saveEncounterCombatState, loadEncounterState } from '@/shared/api'
+import { saveEncounterCombatState, loadEncounterState, fetchCreatureById } from '@/shared/api'
 import type { EncounterConditionRow } from '@/shared/api'
 import { useCombatantStore } from '@/entities/combatant'
+import type { Combatant } from '@/entities/combatant'
 import { useConditionStore } from '@/entities/condition'
+import { extractIwr } from '@/entities/creature'
 import { useCombatTrackerStore } from '../model/store'
 import { hydrateManager, clearAllManagers } from './condition-bridge'
+import { rollInitiative } from './initiative'
 import type { ConditionSlug } from '@engine'
 
 let unsubscribers: Array<() => void> = []
@@ -89,19 +92,43 @@ export async function loadEncounterIntoCombat(encounterId: string): Promise<bool
     const snapshot = await loadEncounterState(encounterId)
     if (!snapshot) return false
 
-    // Clear current combat state
-    useCombatantStore.getState().setCombatants(
-      snapshot.combatants.map((c) => ({
+    // Fetch creature data for NPC combatants (initiative + IWR)
+    const needsInitiative = !snapshot.isRunning && snapshot.round === 0
+    const uniqueRefs = [...new Set(
+      snapshot.combatants.filter((c) => c.isNPC && c.creatureRef).map((c) => c.creatureRef)
+    )]
+    const creatureRows = new Map<string, Awaited<ReturnType<typeof fetchCreatureById>>>()
+    await Promise.all(uniqueRefs.map(async (ref) => {
+      const row = await fetchCreatureById(ref)
+      if (row) creatureRows.set(ref, row)
+    }))
+
+    // Build combatants with initiative rolls and IWR data
+    const combatants: Combatant[] = snapshot.combatants.map((c) => {
+      const row = c.creatureRef ? creatureRows.get(c.creatureRef) : null
+      const iwr = row ? extractIwr(row) : null
+
+      let initiative = c.initiative
+      if (needsInitiative && c.isNPC && row) {
+        initiative = rollInitiative(row.perception ?? 0)
+      }
+
+      return {
         id: c.id,
         creatureRef: c.creatureRef,
         displayName: c.displayName,
-        initiative: c.initiative,
+        initiative,
         hp: c.hp,
         maxHp: c.maxHp,
         tempHp: c.tempHp,
         isNPC: c.isNPC,
-      }))
-    )
+        ...(iwr && iwr.immunities.length > 0 ? { iwrImmunities: iwr.immunities } : {}),
+        ...(iwr && iwr.weaknesses.length > 0 ? { iwrWeaknesses: iwr.weaknesses } : {}),
+        ...(iwr && iwr.resistances.length > 0 ? { iwrResistances: iwr.resistances } : {}),
+      }
+    })
+
+    useCombatantStore.getState().setCombatants(combatants)
 
     // Hydrate conditions
     clearAllManagers()
