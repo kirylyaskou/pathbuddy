@@ -22,7 +22,7 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
   return (
     <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
       {/* Header - Grimdark */}
-      <CardHeader className="pb-3 stat-block-header border-b border-primary/20">
+      <CardHeader className="-mt-6 pb-3 stat-block-header border-b border-primary/20">
         <div className="flex items-start gap-4">
           <LevelBadge level={creature.level} size="lg" />
           <div className="flex-1">
@@ -150,7 +150,7 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
                             {di > 0 && <span className="text-muted-foreground"> plus </span>}
                             <span className="font-mono">{d.formula}</span>
                             {d.type && (
-                              <span className="text-pf-blood font-mono"> {d.type}</span>
+                              <span className={cn("font-mono", damageTypeColor(d.type))}> {d.type}</span>
                             )}
                           </span>
                         ))}
@@ -166,7 +166,7 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
                             )}
                             <span className="font-mono">{ad.formula}</span>
                             {ad.type && (
-                              <span className="text-pf-blood font-mono"> {ad.type}</span>
+                              <span className={cn("font-mono", damageTypeColor(ad.type))}> {ad.type}</span>
                             )}
                           </div>
                         ))}
@@ -312,10 +312,54 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
   )
 }
 
-// Inline highlighting for DC values and damage dice in ability text
-const GAME_TEXT_RE = /(DC\s+\d+)|(\d+d\d+(?:\s*[+\-]\s*\d+)?(?:\[\w+\])?)/gi
+// Damage type color coding for PF2e
+const DAMAGE_TYPE_COLORS: Record<string, string> = {
+  // Physical — dark grey
+  bludgeoning: "text-zinc-400",
+  slashing:    "text-zinc-400",
+  piercing:    "text-zinc-400",
+  // Energy
+  fire:        "text-orange-400",
+  cold:        "text-cyan-300",
+  electricity: "text-yellow-300",
+  acid:        "text-lime-400",
+  sonic:       "text-violet-400",
+  force:       "text-blue-400",
+  // Positive/Negative
+  positive:    "text-green-400",
+  healing:     "text-green-400",
+  negative:    "text-pink-400",
+  // Other
+  poison:      "text-emerald-400",
+  mental:      "text-indigo-400",
+  bleed:       "text-red-400",
+  holy:        "text-yellow-200",
+  unholy:      "text-purple-600",
+  chaotic:     "text-orange-500",
+  lawful:      "text-slate-400",
+  good:        "text-amber-300",
+  evil:        "text-purple-800",
+  untyped:     "text-zinc-500",
+  spirit:      "text-violet-300",
+}
 
-function highlightGameText(text: string): ReactNode {
+function damageTypeColor(type: string): string {
+  return DAMAGE_TYPE_COLORS[type.toLowerCase()] ?? "text-pf-blood"
+}
+
+// Strip Foundry VTT inline roll tags: [[/gmr 2d6 #rounds]]{2d6 rounds} → "2d6 rounds"
+// If no display text, strip the tag entirely.
+const FOUNDRY_TAG_RE = /\[\[.*?\]\](?:\{([^}]*)\})?/g
+function stripFoundryTags(text: string): string {
+  return text.replace(FOUNDRY_TAG_RE, (_, display) => display ?? "")
+}
+
+// Inline highlighting for DC values and damage dice in ability text
+// Group 2 = dice formula, Group 3 = damage type (stripped of brackets)
+const GAME_TEXT_RE = /(DC\s+\d+)|(\d+d\d+(?:\s*[+\-]\s*\d+)?)(?:\[(\w+)\])?/gi
+
+function highlightGameText(raw: string): ReactNode {
+  const text = stripFoundryTags(raw)
   const parts: ReactNode[] = []
   let lastIndex = 0
   let key = 0
@@ -330,10 +374,16 @@ function highlightGameText(text: string): ReactNode {
         <span key={key++} className="text-pf-gold font-semibold font-mono">{match[1]}</span>
       )
     } else if (match[2]) {
-      // Dice/damage formula
+      // Dice formula
       parts.push(
         <span key={key++} className="text-pf-blood font-mono">{match[2]}</span>
       )
+      // Damage type (if present, stripped of brackets)
+      if (match[3]) {
+        parts.push(
+          <span key={key++} className={cn("font-mono", damageTypeColor(match[3]))}> {match[3]}</span>
+        )
+      }
     }
     lastIndex = idx + match[0].length
   }

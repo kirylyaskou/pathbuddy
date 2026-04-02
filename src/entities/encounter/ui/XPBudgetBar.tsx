@@ -99,14 +99,24 @@ export function XPBudgetBar({ currentXP, partySize, className }: XPBudgetBarProp
         />
       </div>
 
-      {/* Threshold Labels */}
-      <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-        <span>0</span>
-        <span className={threatTextColors.trivial}>Trivial: {thresholds.trivial}</span>
-        <span className={threatTextColors.low}>Low: {thresholds.low}</span>
-        <span className={threatTextColors.moderate}>Mod: {thresholds.moderate}</span>
-        <span className={threatTextColors.severe}>Sev: {thresholds.severe}</span>
-        <span className={threatTextColors.extreme}>Ext: {thresholds.extreme}</span>
+      {/* Threshold Labels — absolutely positioned to match bar segments */}
+      <div className="relative h-4 text-[10px] font-mono">
+        <span className="absolute left-0 text-muted-foreground">0</span>
+        {([
+          ['trivial', thresholds.trivial, `Trivial: ${thresholds.trivial}`],
+          ['low',     thresholds.low,     `Low: ${thresholds.low}`],
+          ['moderate',thresholds.moderate,`Mod: ${thresholds.moderate}`],
+          ['severe',  thresholds.severe,  `Sev: ${thresholds.severe}`],
+          ['extreme', thresholds.extreme, `Ext: ${thresholds.extreme}`],
+        ] as [ThreatRating, number, string][]).map(([tier, xp, label]) => (
+          <span
+            key={tier}
+            className={cn("absolute -translate-x-1/2", threatTextColors[tier])}
+            style={{ left: `${(xp / maxXP) * 100}%` }}
+          >
+            {label}
+          </span>
+        ))}
       </div>
     </div>
   )

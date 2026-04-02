@@ -3,34 +3,34 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 13 UI-SPEC approved
-last_updated: "2026-04-02T11:27:31.850Z"
-last_activity: 2026-04-02 -- Phase 14 execution started
+stopped_at: Phase 16 context gathered
+last_updated: "2026-04-02T14:29:25.632Z"
+last_activity: 2026-04-02
 progress:
-  total_phases: 17
-  completed_phases: 13
-  total_plans: 45
-  completed_plans: 37
-  percent: 33
+  total_phases: 20
+  completed_phases: 15
+  total_plans: 48
+  completed_plans: 42
+  percent: 20
 ---
 
 # STATE.md - Pathfinder 2e DM Assistant
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-01)
+See: `.planning/PROJECT.md` (updated 2026-04-02)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 14 — stat-block-polish-2
+**Current focus:** Phase 16 — encounter-persistence
 
 ## Current Position
 
-Phase: 14 (stat-block-polish-2) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 14
-Last activity: 2026-04-02 -- Phase 14 execution started
+Phase: 999.1
+Plan: Not started
+Status: Executing Phase 16
+Last activity: 2026-04-02
 
-Progress: [███░░░░░░░] 33% (1/3 phases complete)
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -44,11 +44,6 @@ Progress: [███░░░░░░░] 33% (1/3 phases complete)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 11. App Shell Fixes | TBD | — | — |
-| 12. Stat Block + Bestiary Data Quality | TBD | — | — |
-| 13. Combat UX Sweep | TBD | — | — |
-| Phase 12 P01 | 2 | 3 tasks | 3 files |
-| Phase 12 P02 | 2 | 5 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -86,15 +81,26 @@ Key decisions carrying forward from prior milestones:
 - [Phase 12]: en.json download failure is non-fatal — sync proceeds without @Localize resolution
 - [Phase 12]: fetchDistinctSources returns {pack, name}[] with null fallback to pack name for display
 
-### v0.4.0-specific context
+### v0.5.0-specific context
 
-- FIX-01 (encounters crash): caused by Radix ScrollArea interaction with state update in render — likely a useEffect dependency array or an event handler mutating state during paint
-- STAT-01 (@-syntax): v1.0 had a 7-pass regex chain for @UUID, @Damage, @Check, @Template — the React port may have lost this sanitizer; check MILESTONES.md v1.0 accomplishments for prior art
-- CMB-09 (HP input): replacing 3 inputs (damage/heal/tempHP) with 1 input + 3 buttons simplifies the HpControls widget; value interpretation changes based on which button is pressed
+- [Phase 15]: CombatPage.tsx restructured — Bestiary left (22%), Initiative+Detail center (38%, nested vertical ResizablePanelGroup id=combat-center-vertical: 35% list / 65% detail), Stat Card right (40%)
+- [Phase 15]: Sticky right panel — lastNpcStatBlock state only updates on NPC select; PC select leaves last NPC stat block visible
+- [Phase 15]: In-memory stat block cache in CombatPage (useRef<Map<string, CreatureStatBlockData>>), bounded to 10 entries, evicts oldest on overflow
+- [Phase 15]: handleSelect typed (id: string) — matches InitiativeList.onSelect exactly; setSelectedId(null) not needed via onSelect
+- [Phase 15]: CombatControls + AddPCDialog share border-b via items-stretch siblings (CombatControls has its own border-b; AddPCDialog wrapper matches it)
+- [Phase 15]: TurnControls moved to bottom of center lower sub-panel (renders null when !isRunning)
+
+- Combat tracker layout: Bestiary (left) | Initiative+Detail merged (center) | Creature Stat Card (right)
+- Encounters become source of truth: creatures + spell overrides + slot state stored in encounters SQLite
+- Combat tracker is a dynamic view of the active encounter — survives tab navigation via Zustand, not stored forever
+- Custom spell override stored as: encounter_id + combatant_id → custom_spells[] (non-destructive)
+- Spell slot tracking per combatant: DM marks slots used; editable from both Encounters page and combat creature card
+- Death Tower Necromancer JSON needs research: does it encode class type (wizard/bard/etc.) in Foundry data?
+- If class type determinable → use PF2e spell slot progression tables for slot count per level
 
 ### Roadmap Evolution
 
-- Phase 14 added: Stat Block Polish 2 — token patterns ([[/act]], [[/br]], {Nfeet}), Fighter's Fork weapon data, color system for stat block
+- v0.5.0 started 2026-04-02: Combat Redesign + Spells
 
 ### Pending Todos
 
@@ -106,7 +112,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-02T08:45:02.898Z
-Stopped at: Phase 13 UI-SPEC approved
-Resume file: .planning/phases/13-combat-ux-sweep/13-UI-SPEC.md
-Next step: /gsd:execute-phase 12
+Last session: 2026-04-02T13:55:21.211Z
+Stopped at: Phase 16 context gathered
+Next step: /gsd:execute-phase 16

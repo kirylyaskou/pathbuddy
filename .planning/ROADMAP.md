@@ -8,7 +8,8 @@
 - ✅ **v2.1 Engine-UI Integration** — Phases 07-11 (shipped 2026-03-25)
 - ✅ **v0.2.2-pre-alpha — PF2e Engine** — Phases 1-4 (complete)
 - ✅ **v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration** — Phases 5-10 (complete)
-- 🚧 **v0.4.0-pre-alpha — Stabilization + Polish** — Phases 11-13 (in progress)
+- ✅ **v0.4.0-pre-alpha — Stabilization + Polish** — Phases 11-14 (complete)
+- 🚧 **v0.5.0-pre-alpha — Combat Redesign + Spells** — Phases 15-19 (in progress)
 
 ## Phases
 
@@ -287,7 +288,86 @@ Plans:
 | 11. App Shell Fixes | v0.4.0 | 2/2 | Complete | 2026-04-02 |
 | 12. Stat Block + Bestiary Data Quality | v0.4.0 | 2/2 | Complete | 2026-04-02 |
 | 13. Combat UX Sweep | v0.4.0 | 3/3 | Complete    | 2026-04-02 |
-| 14. Stat Block Polish 2 | v0.4.0 | 2/2 | Complete   | 2026-04-02 |
+| 14. Stat Block Polish 2 | v0.4.0 | 2/2 | Complete    | 2026-04-02 |
+| 15. Combat Tracker Layout Redesign | v0.5.0 | 1/1 | Complete | 2026-04-02 |
+| 16. Encounter Persistence | v0.5.0 | 3/3 | Complete    | 2026-04-02 |
+| 17. Spell Import Pipeline | v0.5.0 | TBD | Planned | — |
+| 18. Spell Display + Catalog | v0.5.0 | TBD | Planned | — |
+| 19. Spell Slot Tracking + Custom Override | v0.5.0 | TBD | Planned | — |
+
+### 🚧 v0.5.0-pre-alpha — Combat Redesign + Spells
+
+**Milestone Goal:** Redesign combat tracker into a 3-panel layout (Bestiary | Initiative+Detail | Stat Card), make Encounters the persistent source of truth for combat state, and add a complete spell system — import 1,797 spells from Foundry VTT, display spellcasting in stat blocks, add a spell catalog page, and track spell slot usage per encounter with non-destructive custom spell overrides.
+
+- [ ] **Phase 15: Combat Tracker Layout Redesign** — New 3-panel layout with merged initiative+detail center, bestiary left, creature stat card right
+- [x] **Phase 16: Encounter Persistence** — Encounters store creature lists; "Load into Combat" populates tracker; HP/conditions/slots save back to encounter SQLite (completed 2026-04-02)
+- [ ] **Phase 17: Spell Import Pipeline** — Parse 1,797 Foundry VTT spell files into SQLite; parse creature spellcasting entries and prepared spell lists
+- [ ] **Phase 18: Spell Display + Catalog** — Spellcasting section in stat block (tradition, DC, attack, spells by rank); standalone Spells catalog page with FTS5 + filters
+- [ ] **Phase 19: Spell Slot Tracking + Custom Override** — Per-encounter slot pip UI (click to toggle); slot state in encounter SQLite; custom spell add/remove per encounter (non-destructive)
+
+### Phase 15: Combat Tracker Layout Redesign
+**Goal**: The combat tracker renders as 3 panels — Bestiary search (left), merged initiative list + creature detail (center), creature stat card (right) — and selecting a combatant in the initiative list updates both the center detail view and the right stat card simultaneously
+**Depends on**: Phase 14
+**Requirements**: CMBL-01, CMBL-02, CMBL-03, CMBL-04
+**Success Criteria** (what must be TRUE):
+  1. The combat tracker page renders 3 resizable panels: bestiary search left, merged initiative+detail center, stat card right — with no separate "detail panel" modal or tab switch needed
+  2. The center panel shows the initiative order list at the top and the selected creature's HP controls, conditions, and turn buttons below it — both visible at once without scrolling off-screen
+  3. Clicking any row in the initiative list selects that combatant and immediately updates the right panel to show that creature's full stat block (same stat block as Bestiary)
+  4. The bestiary search left panel is functional — DM can search creatures and add them to the initiative list from the same panel without a modal
+**Plans**: 1 plan
+Plans:
+- [x] 15-01-PLAN.md — Restructure CombatPage into 3-panel layout: Bestiary left, Initiative+Detail center (nested vertical), Stat Card right; lazy NPC stat block fetch with sticky panel + in-memory cache (CMBL-01, CMBL-02, CMBL-03, CMBL-04)
+**UI hint**: yes
+
+### Phase 16: Encounter Persistence
+**Goal**: Encounters become the source of truth for combat state — each saved encounter stores its creature list, and the combat tracker loads from an encounter rather than managing creatures independently; combat HP/condition changes write back to encounter SQLite
+**Depends on**: Phase 15
+**Requirements**: ENCP-01, ENCP-02, ENCP-03, ENCP-04
+**Success Criteria** (what must be TRUE):
+  1. Creating an encounter in the Encounters page allows adding creatures to a persistent creature list — the list survives app restart
+  2. Clicking "Load into Combat" on a saved encounter navigates to the combat tracker pre-populated with that encounter's creature list, correct HP, and weak/elite tiers
+  3. Dealing damage to a combatant in the tracker writes the updated HP to the encounter's SQLite record in real time — reopening the encounter shows the updated HP
+  4. Clicking "Reset Encounter" restores all combatants to their initial HP, clears all conditions, and marks all spell slots as available
+**Plans**: 3 plans
+Plans:
+- [ ] 16-01-PLAN.md — DB migration (encounters/encounter_combatants/encounter_conditions tables) + shared/api/encounters.ts + Encounter entity type expansion (ENCP-01..04 foundation)
+- [ ] 16-02-PLAN.md — EncountersPage split layout: SavedEncounterList + EncounterEditor + EncounterCreatureSearchPanel with [W][+][E] add (ENCP-01)
+- [ ] 16-03-PLAN.md — Load into Combat + encounter write-back auto-save + Reset Encounter (ENCP-02, ENCP-03, ENCP-04)
+**UI hint**: yes
+
+### Phase 17: Spell Import Pipeline
+**Goal**: All 1,797 Foundry VTT spells are stored in SQLite and accessible by the frontend; spellcasting entries and prepared spell lists for NPC creatures are parsed and linked to creature records
+**Depends on**: Phase 16
+**Requirements**: SPLI-01, SPLI-02, SPLI-03
+**Success Criteria** (what must be TRUE):
+  1. After running sync, the `spells` table contains 1,700+ rows with foundry_id, name, rank, traditions, traits, description, damage, area, range, duration, action_cost, save_stat, and source_book populated
+  2. Spellcaster NPC creatures (e.g. Death Tower Necromancer) have their spellcasting entries stored — tradition "arcane", cast_type "prepared", DC 29, attack +21, slots for ranks 0–5
+  3. The prepared spell list for the Death Tower Necromancer can be queried from SQLite and returns the correct spells for each rank as shown in the Foundry JSON
+**Plans**: TBD
+
+### Phase 18: Spell Display + Catalog
+**Goal**: Spellcaster creatures show their spellcasting section in the stat block with expandable spell cards, and a new Spells page lets the DM browse and search all 1,797 imported spells
+**Depends on**: Phase 17
+**Requirements**: SPLD-01, SPLD-02, SPLD-03, SPLC-01, SPLC-02, SPLC-03
+**Success Criteria** (what must be TRUE):
+  1. Opening the Death Tower Necromancer's stat block shows a "Spellcasting" section with "Arcane Prepared" badge, DC 29, attack +21, and spells grouped by rank (Cantrips through Rank 5)
+  2. Clicking a spell name in the stat block expands it inline showing area, range, duration, damage formula, save type, traits, and heightening rules
+  3. The Spells page loads with all imported spells listed; typing a spell name in the search box filters results via FTS5 in under 200ms
+  4. Filtering by tradition "arcane" and rank "5" shows only arcane rank-5 spells
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 19: Spell Slot Tracking + Custom Override
+**Goal**: The DM can track which spell slots have been used for each spellcasting creature in an encounter, and can non-destructively customize a creature's prepared spell list for a specific encounter
+**Depends on**: Phase 18
+**Requirements**: SLOT-01, SLOT-02, SLOT-03, CUST-01, CUST-02, CUST-03
+**Success Criteria** (what must be TRUE):
+  1. The creature stat card in the combat tracker shows spell slots for each rank as clickable pips (e.g. ●●○○ for 2 used out of 4); clicking a pip toggles it used/available
+  2. After marking slots used and switching away from the combat tab, returning shows the same slot state — stored in encounter SQLite, not lost on navigation
+  3. From the Encounters page, the DM can open a creature's spell override editor, search for a spell by name, and add it to a rank — the encounter's combat load reflects the addition without modifying the base creature
+  4. Removing a spell from a prepared list in the override editor removes it from that encounter's display only — the creature's base spells in the `creatures` table are unchanged
+**Plans**: TBD
+**UI hint**: yes
 
 ## Backlog
 
@@ -295,11 +375,11 @@ Plans:
 
 **Goal:** Integrate the bestiary stat block card into the combat tracker — clicking a combatant in the tracker opens the same full stat block (with MAP, IWR, abilities, etc.) that's shown in the bestiary browser
 **Requirements:** TBD
-**Plans:** 2/2 plans complete
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] TBD (promote with /gsd:review-backlog when ready)
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-02 — Phase 13 planned (3 plans, 1 wave)*
+*Last updated: 2026-04-02 — v0.5.0 roadmap added (5 phases, 23 requirements)*
