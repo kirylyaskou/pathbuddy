@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { LevelBadge } from '@/shared/ui/level-badge'
@@ -85,16 +85,23 @@ export function EncounterCreatureList() {
             return (
               <div
                 key={h.instanceId}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary/30 hover:bg-secondary/50 group"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md border-l-2 border-amber-600/60 bg-amber-950/30 hover:bg-amber-950/50 group"
               >
-                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 font-medium">
-                  {h.type === 'complex' ? 'Complex' : 'Simple'}
-                </span>
-                <span className="flex-1 text-sm font-medium truncate">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <LevelBadge level={h.level} size="sm" />
+                <span className="flex-1 text-sm font-medium truncate text-amber-100/90">
                   {h.name || `Hazard Lv${h.level}`}
                 </span>
-                <span className="text-xs text-muted-foreground font-mono">Lv{h.level}</span>
-                <span className="text-xs text-muted-foreground font-mono w-12 text-right">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
+                    h.type === 'complex'
+                      ? 'bg-orange-900/50 text-orange-300 border border-orange-700/40'
+                      : 'bg-amber-900/40 text-amber-400 border border-amber-700/30'
+                  }`}
+                >
+                  {h.type === 'complex' ? 'complex' : 'simple'}
+                </span>
+                <span className="text-xs text-amber-500/70 font-mono w-12 text-right shrink-0">
                   {xpResult.outOfRange ? '\u2014' : `${xpResult.xp} XP`}
                 </span>
                 <Button
