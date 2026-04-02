@@ -14,7 +14,7 @@ export interface CreatureStatBlockData extends Creature {
   speeds: Record<string, number | null>
   strikes: { name: string; modifier: number; damage: string; traits: string[] }[]
   abilities: { name: string; actionCost?: DisplayActionCost; description: string; traits?: string[] }[]
-  skills: { name: string; modifier: number }[]
+  skills: { name: string; modifier: number; calculated?: boolean }[]
   languages: string[]
   senses: string[]
   description?: string
