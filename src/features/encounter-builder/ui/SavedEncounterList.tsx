@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
@@ -10,6 +10,7 @@ export function SavedEncounterList() {
   const selectedId = useEncounterStore((s) => s.selectedId)
   const setSelectedId = useEncounterStore((s) => s.setSelectedId)
   const createNewEncounter = useEncounterStore((s) => s.createNewEncounter)
+  const deleteEncounterById = useEncounterStore((s) => s.deleteEncounterById)
 
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
@@ -78,7 +79,7 @@ export function SavedEncounterList() {
                 key={enc.id}
                 onClick={() => setSelectedId(enc.id)}
                 title={enc.name}
-                className={`flex items-center px-3 py-2 rounded-md cursor-pointer text-sm transition-colors ${
+                className={`flex items-center px-3 py-2 rounded-md cursor-pointer text-sm transition-colors group ${
                   selectedId === enc.id
                     ? 'bg-secondary/70 border-l-2 border-primary font-medium'
                     : 'hover:bg-secondary/40 border-l-2 border-transparent'
@@ -88,6 +89,18 @@ export function SavedEncounterList() {
                 {enc.isRunning && (
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
                 )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-5 h-5 opacity-0 group-hover:opacity-100 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteEncounterById(enc.id)
+                  }}
+                  title="Delete encounter"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               </div>
             ))}
           </div>

@@ -41,9 +41,12 @@ export interface CreatureSpellItem {
 export async function searchSpells(
   query: string,
   rank?: number,
-  tradition?: string
+  tradition?: string,
+  trait?: string
 ): Promise<SpellRow[]> {
   const db = await getDb()
+  const traitFilter = trait ? `AND s.traits LIKE ?` : ''
+  const traitParam = trait ? [`%"${trait}"%`] : []
 
   if (query.trim()) {
     const ftsQuery = query.trim().replace(/['"*]/g, '') + '*'
@@ -53,27 +56,31 @@ export async function searchSpells(
        WHERE spells_fts MATCH ?
          ${rank !== undefined ? 'AND s.rank = ?' : ''}
          ${tradition ? "AND s.traditions LIKE ?" : ''}
+         ${traitFilter}
        ORDER BY rank(matchinfo(spells_fts)) DESC
        LIMIT 100`,
       [
         ftsQuery,
         ...(rank !== undefined ? [rank] : []),
         ...(tradition ? [`%"${tradition}"%`] : []),
+        ...traitParam,
       ]
     )
     return rows
   }
 
   const rows = await db.select<SpellRow[]>(
-    `SELECT * FROM spells
+    `SELECT * FROM spells s
      WHERE 1=1
-       ${rank !== undefined ? 'AND rank = ?' : ''}
-       ${tradition ? "AND traditions LIKE ?" : ''}
-     ORDER BY rank ASC, name ASC
+       ${rank !== undefined ? 'AND s.rank = ?' : ''}
+       ${tradition ? "AND s.traditions LIKE ?" : ''}
+       ${traitFilter}
+     ORDER BY s.rank ASC, s.name ASC
      LIMIT 100`,
     [
       ...(rank !== undefined ? [rank] : []),
       ...(tradition ? [`%"${tradition}"%`] : []),
+      ...traitParam,
     ]
   )
   return rows

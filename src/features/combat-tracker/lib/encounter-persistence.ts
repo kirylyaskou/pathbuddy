@@ -81,6 +81,25 @@ export function teardownEncounterAutoSave(): void {
   }
 }
 
+/** Immediately persist the current encounter state (flush pending debounced save). */
+export async function flushEncounterSave(): Promise<void> {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  const payload = buildEncounterSavePayload()
+  if (!payload) return
+  await saveEncounterCombatState(
+    payload.encounterId,
+    payload.round,
+    payload.turn,
+    payload.activeCombatantId,
+    payload.isRunning,
+    payload.combatants,
+    payload.conditions
+  )
+}
+
 /**
  * Load a saved encounter into the combat tracker stores.
  * Populates useCombatantStore + useConditionStore (via ConditionManager bridge)

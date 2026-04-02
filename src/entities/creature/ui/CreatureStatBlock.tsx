@@ -8,7 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
-import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search } from "lucide-react"
+import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search, Zap, Flame, Leaf, Feather } from "lucide-react"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
@@ -560,29 +560,61 @@ function SpellCard({ foundryId, name }: { foundryId: string | null; name: string
 
 // ── Slot pips ─────────────────────────────────────────────────────────────────
 
-function SlotPips({ total, used, baseSlots, onToggle }: {
-  total: number; used: number; baseSlots: number; onToggle: (idx: number) => void
+const TRADITION_SLOT_CONFIG: Record<string, {
+  icon: typeof Zap
+  available: string
+  spent: string
+}> = {
+  arcane: {
+    icon: Zap,
+    available: 'bg-blue-500/80 text-blue-100 border-blue-400/70',
+    spent: 'border-blue-500/30',
+  },
+  occult: {
+    icon: Flame,
+    available: 'bg-purple-500/80 text-purple-100 border-purple-400/70',
+    spent: 'border-purple-500/30',
+  },
+  primal: {
+    icon: Leaf,
+    available: 'bg-green-500/80 text-green-100 border-green-400/70',
+    spent: 'border-green-500/30',
+  },
+  divine: {
+    icon: Feather,
+    available: 'bg-yellow-500/80 text-yellow-100 border-yellow-400/70',
+    spent: 'border-yellow-500/30',
+  },
+}
+
+const DEFAULT_SLOT_CONFIG = TRADITION_SLOT_CONFIG.arcane
+
+function SlotPips({ total, used, baseSlots, tradition, onToggle }: {
+  total: number; used: number; baseSlots: number; tradition: string; onToggle: (idx: number) => void
 }) {
   if (total <= 0) return null
+  const cfg = TRADITION_SLOT_CONFIG[tradition] ?? DEFAULT_SLOT_CONFIG
+  const Icon = cfg.icon
   return (
-    <div className="flex gap-0.5 items-center">
+    <div className="flex gap-1 items-center">
       {Array.from({ length: total }).map((_, i) => {
         const isCustom = i >= baseSlots
+        const isAvailable = i >= used
         return (
           <button
             key={i}
             onClick={(e) => { e.stopPropagation(); onToggle(i) }}
-            title={i < used ? 'Mark slot available' : 'Mark slot used'}
+            title={isAvailable ? 'Mark slot spent' : 'Mark slot available'}
             className={cn(
-              "w-3.5 h-3.5 rounded-full transition-colors text-[8px] flex items-center justify-center",
-              isCustom ? "border border-dashed" : "border",
-              i < used
-                ? isCustom
-                  ? "bg-amber-500/70 border-amber-400 text-primary-foreground"
-                  : "bg-primary/70 border-primary text-primary-foreground"
-                : "bg-transparent border-border/60 hover:border-primary/60"
+              "w-5 h-5 rounded flex items-center justify-center border transition-colors",
+              isCustom && "border-dashed",
+              isAvailable
+                ? cfg.available
+                : cn(cfg.spent, "bg-transparent hover:bg-muted/30")
             )}
-          />
+          >
+            {isAvailable && <Icon className="w-3 h-3" />}
+          </button>
         )
       })}
     </div>
@@ -599,11 +631,12 @@ const DIALOG_TRADITION_COLORS: Record<string, string> = {
   primal:  'bg-green-500/20 text-green-300 border-green-500/40',
 }
 
-function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, onAdd }: {
+function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, focusOnly, onAdd }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   defaultRank: number
   defaultTradition?: string
+  focusOnly?: boolean
   onAdd: (name: string, rank: number) => void
 }) {
   const [query, setQuery] = useState('')
@@ -629,18 +662,23 @@ function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, 
     if (!open) return
     setLoading(true)
     const t = setTimeout(async () => {
-      const r = await searchSpells(query, rank ?? undefined, tradition ?? undefined)
+      const r = await searchSpells(
+        query,
+        rank ?? undefined,
+        focusOnly ? undefined : (tradition ?? undefined),
+        focusOnly ? 'focus' : undefined
+      )
       setResults(r)
       setLoading(false)
     }, 200)
     return () => clearTimeout(t)
-  }, [query, rank, tradition, open])
+  }, [query, rank, tradition, open, focusOnly])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="text-sm">Add Spell</DialogTitle>
+          <DialogTitle className="text-sm">{focusOnly ? 'Add Focus Spell' : 'Add Spell'}</DialogTitle>
         </DialogHeader>
 
         {/* Search + filters */}
@@ -649,28 +687,30 @@ function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, 
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               ref={inputRef}
-              placeholder="Search spells…"
+              placeholder={focusOnly ? "Search focus spells…" : "Search spells…"}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-8 h-8 text-sm rounded-md border border-border bg-secondary/30 px-3 focus:outline-none focus:border-primary/50"
             />
           </div>
-          {/* Tradition filter */}
-          <div className="flex flex-wrap gap-1.5">
-            {DIALOG_TRADITIONS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTradition((p) => (p === t ? null : t))}
-                className={cn(
-                  "px-2 py-0.5 text-[11px] rounded border uppercase tracking-wider font-semibold transition-opacity",
-                  DIALOG_TRADITION_COLORS[t],
-                  tradition && tradition !== t && "opacity-30"
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {/* Tradition filter (hidden for focus spells) */}
+          {!focusOnly && (
+            <div className="flex flex-wrap gap-1.5">
+              {DIALOG_TRADITIONS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTradition((p) => (p === t ? null : t))}
+                  className={cn(
+                    "px-2 py-0.5 text-[11px] rounded border uppercase tracking-wider font-semibold transition-opacity",
+                    DIALOG_TRADITION_COLORS[t],
+                    tradition && tradition !== t && "opacity-30"
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Rank filter */}
           <div className="flex flex-wrap gap-1">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
@@ -738,25 +778,17 @@ function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, 
 
 // ── Meme warnings ────────────────────────────────────────────────────────────
 
-const MEME_WARNINGS = {
-  rankExceedsMax:
-    "YOU DIED. Pharasma opens a new file. Working as intended.",
-
-  rankHighOnLowLevel: (rank: number, level: number): string => {
-    if (rank === 1) return `Rank 1 at level ${level}? Try jumping.`;
-    if (rank === 2) return `Rank 2 at level ${level}? Swooping is bad.`;
-    if (rank === 3) return `Rank 3 at level ${level}? Morrigan disapproves.`;
-    if (rank === 4) return `Rank 4 at level ${level}? Fane raises an eyebrow. He has no eyebrows. The gesture is still felt.`;
-    if (rank === 5) return `Rank 5 at level ${level}? Optimism is a moral imperative. But I think you've moved beyond optimism.`;
-    if (rank === 6) return `Rank 6 at level ${level}? Daeran finds this mildly amusing. That's worse than him not caring.`;
-    if (rank === 7) return `Rank 7 at level ${level}? Ignorant slaves, how quickly you forget!`;
-    if (rank === 8) return `Rank 8 at level ${level}? Alduin weeps. The Greybeards shout "FUS RO NO".`;
-    if (rank === 9) return `Rank 9 at level ${level}? Areelu Vorlesh takes notes. This is now a thesis on hubris.`;
-    return `Rank 10 at level ${level}? Fear not the dark, my friend. And let the feast begin.`;
-  },
-
-  lastSlotRemoved:
-    "Slot removed. Morrigan disapproves. The dog is still smarter than you.",
+const RANK_WARNINGS: Record<number, string> = {
+  1: "GIT GUD",
+  2: "Mister wizard pants, huh?",
+  3: "Morrigan disapproves.",
+  4: "Fane raises an eyebrow. He has no eyebrows.",
+  5: "Optimism is a moral imperative. But I think you've moved beyond optimism.",
+  6: "Daeran finds this mildly amusing.",
+  7: "Ignorant slaves, how quickly you forget!",
+  8: "The Greybeards shout \"FUS RO NO\".",
+  9: "Areelu Vorlesh takes notes. This is now a thesis on hubris.",
+  10: "Fear not the dark, my friend. And let the feast begin.",
 }
 
 // ── SpellcastingBlock (with encounter-aware slots + overrides) ────────────────
@@ -912,15 +944,13 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
     return max + 1
   }, [effectiveRanks])
 
-  // Tradition filter for AddSpellRow (innate = no filter)
-  const traditionFilter = section.castType === 'innate' ? undefined : section.tradition
+  // Tradition filter for AddSpellRow (innate/focus = no tradition filter)
+  const isFocus = section.castType === 'focus'
+  const traditionFilter = (section.castType === 'innate' || isFocus) ? undefined : section.tradition
 
-  // Meme warning for a given rank
   function rankWarning(rank: number): string | null {
-    if (rank <= 0) return null
-    if (rank >= 9 && creatureLevel <= 5) return MEME_WARNINGS.rankHighOnLowLevel(rank, creatureLevel)
-    if (rank > recommendedMaxRank) return MEME_WARNINGS.rankExceedsMax
-    return null
+    if (rank <= 0 || rank <= recommendedMaxRank) return null
+    return RANK_WARNINGS[rank] ?? RANK_WARNINGS[10]!
   }
 
   return (
@@ -993,11 +1023,11 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
                   )}
                   {rank === 0 ? null
                   : encounterId && totalSlots > 0 ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleSlotDelta(rank, -1)}
                         disabled={totalSlots <= 0}
-                        className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground hover:text-destructive disabled:opacity-30 transition-colors"
+                        className="w-5 h-5 flex items-center justify-center rounded border border-border/60 bg-secondary/60 text-muted-foreground hover:text-destructive hover:border-destructive/40 disabled:opacity-30 transition-colors"
                         title="Remove slot"
                       >
                         <Minus className="w-3 h-3" />
@@ -1006,22 +1036,23 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
                         total={totalSlots}
                         used={used}
                         baseSlots={baseSlots}
+                        tradition={section.tradition}
                         onToggle={(idx) => handleTogglePip(rank, idx, totalSlots)}
                       />
                       <button
                         onClick={() => handleSlotDelta(rank, 1)}
-                        className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground hover:text-primary transition-colors"
+                        className="w-5 h-5 flex items-center justify-center rounded border border-border/60 bg-secondary/60 text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
                         title="Add slot"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
                   ) : encounterId && totalSlots === 0 ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">(0 slots)</span>
                       <button
                         onClick={() => handleSlotDelta(rank, 1)}
-                        className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground hover:text-primary transition-colors"
+                        className="w-5 h-5 flex items-center justify-center rounded border border-border/60 bg-secondary/60 text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
                         title="Add slot"
                       >
                         <Plus className="w-3 h-3" />
@@ -1097,6 +1128,7 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
           onOpenChange={setSpellDialogOpen}
           defaultRank={spellDialogRank}
           defaultTradition={traditionFilter}
+          focusOnly={isFocus}
           onAdd={(name, rank) => handleAddSpell(name, rank)}
         />
       )}

@@ -17,7 +17,7 @@ import {
 import { useEncounterStore } from '@/entities/encounter'
 import { saveEncounterCombatants, resetEncounterCombat } from '@/shared/api'
 import type { EncounterCombatantRow } from '@/shared/api'
-import { loadEncounterIntoCombat, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
+import { loadEncounterIntoCombat, teardownEncounterAutoSave, flushEncounterSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import { PATHS } from '@/shared/routes'
@@ -44,6 +44,11 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   async function doLoadIntoCombat() {
     setLoading(true)
     try {
+      // Save current encounter state before switching
+      const tracker = useCombatTrackerStore.getState()
+      if (tracker.isRunning && tracker.isEncounterBacked) {
+        await flushEncounterSave()
+      }
       teardownAutoSave()
       teardownEncounterAutoSave()
       await loadEncounterIntoCombat(encounterId)
@@ -54,10 +59,12 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   }
 
   function handleLoadClick() {
-    const isRunning = useCombatTrackerStore.getState().isRunning
-    if (isRunning) {
+    const { isRunning, isEncounterBacked } = useCombatTrackerStore.getState()
+    if (isRunning && !isEncounterBacked) {
+      // Ad-hoc combat will be lost — confirm
       setShowLoadConfirm(true)
     } else {
+      // No combat or encounter-backed (state auto-saved) — switch directly
       doLoadIntoCombat()
     }
   }
