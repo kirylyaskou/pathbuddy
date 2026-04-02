@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 18 complete
+stopped_at: v0.5.0 milestone complete — all phases 15-19 shipped + backlog 999.1 fulfilled
 last_updated: "2026-04-02T14:29:25.632Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 20
-  completed_phases: 18
+  completed_phases: 20
   total_plans: 48
   completed_plans: 42
   percent: 20
@@ -21,7 +21,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-02)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 19 — spell-slot-tracking
+**Current focus:** v0.5.0 COMPLETE — all 20 phases shipped
 
 ## Current Position
 
@@ -114,4 +114,4 @@ None.
 
 Last session: 2026-04-02T14:29:25.632Z
 Stopped at: Phase 17 complete
-Next step: /gsd:execute-phase 19
+Next step: /gsd:plan-milestone v0.6.0

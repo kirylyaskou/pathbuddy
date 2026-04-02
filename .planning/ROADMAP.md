@@ -9,7 +9,7 @@
 - ✅ **v0.2.2-pre-alpha — PF2e Engine** — Phases 1-4 (complete)
 - ✅ **v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration** — Phases 5-10 (complete)
 - ✅ **v0.4.0-pre-alpha — Stabilization + Polish** — Phases 11-14 (complete)
-- 🚧 **v0.5.0-pre-alpha — Combat Redesign + Spells** — Phases 15-19 (in progress)
+- ✅ **v0.5.0-pre-alpha — Combat Redesign + Spells** — Phases 15-19 (complete 2026-04-02)
 
 ## Phases
 
@@ -293,7 +293,7 @@ Plans:
 | 16. Encounter Persistence | v0.5.0 | 3/3 | Complete    | 2026-04-02 |
 | 17. Spell Import Pipeline | v0.5.0 | 2/2 | Complete | 2026-04-02 |
 | 18. Spell Display + Catalog | v0.5.0 | 2/2 | Complete | 2026-04-02 |
-| 19. Spell Slot Tracking + Custom Override | v0.5.0 | TBD | Planned | — |
+| 19. Spell Slot Tracking + Custom Override | v0.5.0 | 2/2 | Complete | 2026-04-02 |
 
 ### 🚧 v0.5.0-pre-alpha — Combat Redesign + Spells
 
@@ -303,7 +303,7 @@ Plans:
 - [x] **Phase 16: Encounter Persistence** — Encounters store creature lists; "Load into Combat" populates tracker; HP/conditions/slots save back to encounter SQLite (completed 2026-04-02)
 - [x] **Phase 17: Spell Import Pipeline** — Parse 1,797 Foundry VTT spell files into SQLite; parse creature spellcasting entries and prepared spell lists (completed 2026-04-02)
 - [x] **Phase 18: Spell Display + Catalog** — Spellcasting section in stat block (tradition, DC, attack, spells by rank); standalone Spells catalog page with FTS5 + filters (completed 2026-04-02)
-- [ ] **Phase 19: Spell Slot Tracking + Custom Override** — Per-encounter slot pip UI (click to toggle); slot state in encounter SQLite; custom spell add/remove per encounter (non-destructive)
+- [x] **Phase 19: Spell Slot Tracking + Custom Override** — Per-encounter slot pip UI (click to toggle); slot state in encounter SQLite; custom spell add/remove per encounter (non-destructive) (completed 2026-04-02)
 
 ### Phase 15: Combat Tracker Layout Redesign
 **Goal**: The combat tracker renders as 3 panels — Bestiary search (left), merged initiative list + creature detail (center), creature stat card (right) — and selecting a combatant in the initiative list updates both the center detail view and the right stat card simultaneously
@@ -372,20 +372,20 @@ Plans:
   2. After marking slots used and switching away from the combat tab, returning shows the same slot state — stored in encounter SQLite, not lost on navigation
   3. From the Encounters page, the DM can open a creature's spell override editor, search for a spell by name, and add it to a rank — the encounter's combat load reflects the addition without modifying the base creature
   4. Removing a spell from a prepared list in the override editor removes it from that encounter's display only — the creature's base spells in the `creatures` table are unchanged
-**Plans**: TBD
+**Plans**: 2/2 plans executed
+Plans:
+- [x] 19-01-PLAN.md — DB migration: encounter_spell_slots + encounter_combatant_spells; API functions in encounters.ts (SLOT-01..03, CUST-01..03 foundation)
+- [x] 19-02-PLAN.md — SlotPips + AddSpellRow + SpellcastingBlock extended with encounterContext; CombatPage wired (SLOT-01, SLOT-02, SLOT-03, CUST-01, CUST-02, CUST-03)
 **UI hint**: yes
 
 ## Backlog
 
-### Phase 999.1: Stat block card in combat tracker (BACKLOG)
+### Phase 999.1: Stat block card in combat tracker (FULFILLED)
 
 **Goal:** Integrate the bestiary stat block card into the combat tracker — clicking a combatant in the tracker opens the same full stat block (with MAP, IWR, abilities, etc.) that's shown in the bestiary browser
-**Requirements:** TBD
-**Plans:** 3/3 plans complete
-
-Plans:
-- [ ] TBD (promote with /gsd:review-backlog when ready)
+**Status:** Fulfilled in Phase 15 (3-panel layout with stat card right panel)
+**Plans:** Delivered as part of Phase 15-01-PLAN.md
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-02 — v0.5.0 roadmap added (5 phases, 23 requirements)*
+*Last updated: 2026-04-02 — v0.5.0 complete (phases 15-19 + backlog 999.1 fulfilled)*
