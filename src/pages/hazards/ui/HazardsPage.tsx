@@ -156,7 +156,7 @@ function HazardCard({ hazard, expanded, onToggle }: {
           {actions.length > 0 && (
             <div className="space-y-1.5">
               {actions.map((action, i) => (
-                <div key={i} className="rounded bg-secondary/40 px-2 py-1.5">
+                <div key={`${action.name}-${i}`} className="rounded bg-secondary/40 px-2 py-1.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-[11px] text-muted-foreground">
                       {ACTION_TYPE_LABEL[action.actionType] ?? '●'}

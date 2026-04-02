@@ -3,7 +3,7 @@ import { Search } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { searchCreatures, fetchCreatures, saveEncounterCombatants } from '@/shared/api'
-import type { CreatureRow, EncounterCombatantRow } from '@/shared/api'
+import type { CreatureRow } from '@/shared/api'
 import { useEncounterStore } from '@/entities/encounter'
 import type { EncounterCombatant } from '@/entities/encounter'
 import { getHpAdjustment } from '@engine'
@@ -44,7 +44,7 @@ export function EncounterCreatureSearchPanel({ encounterId, currentCombatants }:
     const hpDelta = getHpAdjustment(tier, baseLevel)
     const adjustedHp = Math.max(1, baseHp + hpDelta)
 
-    const newCombatant: EncounterCombatantRow = {
+    const newCombatant: EncounterCombatant = {
       id: crypto.randomUUID(),
       encounterId,
       creatureRef: row.id,
@@ -59,40 +59,8 @@ export function EncounterCreatureSearchPanel({ encounterId, currentCombatants }:
       sortOrder: currentCombatants.length,
     }
 
-    const updatedRows: EncounterCombatantRow[] = [
-      ...currentCombatants.map((c) => ({
-        id: c.id,
-        encounterId: c.encounterId,
-        creatureRef: c.creatureRef,
-        displayName: c.displayName,
-        initiative: c.initiative,
-        hp: c.hp,
-        maxHp: c.maxHp,
-        tempHp: c.tempHp,
-        isNPC: c.isNPC,
-        weakEliteTier: c.weakEliteTier,
-        creatureLevel: c.creatureLevel,
-        sortOrder: c.sortOrder,
-      })),
-      newCombatant,
-    ]
-
-    await saveEncounterCombatants(encounterId, updatedRows)
-
-    const updated: EncounterCombatant[] = updatedRows.map((r) => ({
-      id: r.id,
-      encounterId: r.encounterId,
-      creatureRef: r.creatureRef,
-      displayName: r.displayName,
-      initiative: r.initiative,
-      hp: r.hp,
-      maxHp: r.maxHp,
-      tempHp: r.tempHp,
-      isNPC: r.isNPC,
-      weakEliteTier: r.weakEliteTier as Tier,
-      creatureLevel: r.creatureLevel,
-      sortOrder: r.sortOrder,
-    }))
+    const updated = [...currentCombatants, newCombatant]
+    await saveEncounterCombatants(encounterId, updated)
     setEncounterCombatants(encounterId, updated)
   }
 
