@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -12,14 +12,13 @@ import {
   SavedEncounterList,
   EncounterEditor,
 } from '@/features/encounter-builder'
-import { loadEncounterCombatants } from '@/shared/api'
 import { calculateXP } from '@engine'
 
 export function EncountersPage() {
   const encounters = useEncounterStore((s) => s.encounters)
   const selectedId = useEncounterStore((s) => s.selectedId)
   const loadEncounters = useEncounterStore((s) => s.loadEncounters)
-  const setEncounterCombatants = useEncounterStore((s) => s.setEncounterCombatants)
+  const loadCombatantsForEncounter = useEncounterStore((s) => s.loadCombatantsForEncounter)
 
   // Party config from global store (shared with encounter builder)
   const partyLevel = useEncounterBuilderStore((s) => s.partyLevel)
@@ -33,28 +32,10 @@ export function EncountersPage() {
     loadEncounters()
   }, [loadConfig, loadEncounters])
 
-  // Load combatants for selected encounter (lazy, on selection change)
+  // Load combatants for selected encounter (lazy, idempotent)
   useEffect(() => {
-    if (!selectedId) return
-    const enc = encounters.find((e) => e.id === selectedId)
-    if (!enc || enc.combatants.length > 0) return  // already loaded
-    loadEncounterCombatants(selectedId).then((rows) => {
-      setEncounterCombatants(selectedId, rows.map((r) => ({
-        id: r.id,
-        encounterId: r.encounterId,
-        creatureRef: r.creatureRef,
-        displayName: r.displayName,
-        initiative: r.initiative,
-        hp: r.hp,
-        maxHp: r.maxHp,
-        tempHp: r.tempHp,
-        isNPC: r.isNPC,
-        weakEliteTier: r.weakEliteTier,
-        creatureLevel: r.creatureLevel,
-        sortOrder: r.sortOrder,
-      })))
-    })
-  }, [selectedId, encounters, setEncounterCombatants])
+    if (selectedId) loadCombatantsForEncounter(selectedId)
+  }, [selectedId, loadCombatantsForEncounter])
 
   if (!isLoaded) {
     return (
@@ -64,17 +45,20 @@ export function EncountersPage() {
     )
   }
 
-  // XP Budget: compute from selected encounter's combatants
   const selectedEncounter = encounters.find((e) => e.id === selectedId)
-  const adjustedLevels = selectedEncounter?.combatants.map((c) =>
-    c.weakEliteTier === 'elite' ? c.creatureLevel + 1
-    : c.weakEliteTier === 'weak' ? c.creatureLevel - 1
-    : c.creatureLevel
-  ) ?? []
-  const totalXp = selectedEncounter
-    ? calculateXP(adjustedLevels, [], selectedEncounter.partyLevel, selectedEncounter.partySize).totalXp
-    : 0
-  const xpPartySize = selectedEncounter?.partySize ?? partySize
+
+  const { totalXp, xpPartySize } = useMemo(() => {
+    if (!selectedEncounter) return { totalXp: 0, xpPartySize: partySize }
+    const adjustedLevels = selectedEncounter.combatants.map((c) =>
+      c.weakEliteTier === 'elite' ? c.creatureLevel + 1
+      : c.weakEliteTier === 'weak' ? c.creatureLevel - 1
+      : c.creatureLevel
+    )
+    return {
+      totalXp: calculateXP(adjustedLevels, [], selectedEncounter.partyLevel, selectedEncounter.partySize).totalXp,
+      xpPartySize: selectedEncounter.partySize,
+    }
+  }, [selectedEncounter, partySize])
 
   return (
     <div className="flex flex-col h-full">

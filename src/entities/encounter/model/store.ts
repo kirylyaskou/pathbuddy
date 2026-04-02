@@ -5,6 +5,7 @@ import {
   listEncounters,
   createEncounter as apiCreateEncounter,
   deleteEncounter as apiDeleteEncounter,
+  loadEncounterCombatants as apiLoadEncounterCombatants,
 } from '@/shared/api'
 
 export interface EncounterState {
@@ -23,10 +24,12 @@ export interface EncounterState {
   deleteEncounterById: (id: string) => Promise<void>
   /** Set the combatants array on a specific encounter in store (after loading from DB) */
   setEncounterCombatants: (encounterId: string, combatants: EncounterCombatant[]) => void
+  /** Load combatants for an encounter if not already loaded (lazy, idempotent) */
+  loadCombatantsForEncounter: (encounterId: string) => Promise<void>
 }
 
 export const useEncounterStore = create<EncounterState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     encounters: [],
     selectedId: null,
 
@@ -97,5 +100,15 @@ export const useEncounterStore = create<EncounterState>()(
         const enc = state.encounters.find((e) => e.id === encounterId)
         if (enc) enc.combatants = combatants
       }),
+
+    loadCombatantsForEncounter: async (encounterId: string) => {
+      const enc = get().encounters.find((e) => e.id === encounterId)
+      if (!enc || enc.combatants.length > 0) return
+      const rows = await apiLoadEncounterCombatants(encounterId)
+      set((state) => {
+        const e = state.encounters.find((e) => e.id === encounterId)
+        if (e) e.combatants = rows as EncounterCombatant[]
+      })
+    },
   }))
 )

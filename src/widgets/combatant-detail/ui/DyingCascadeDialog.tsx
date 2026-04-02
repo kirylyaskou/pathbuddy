@@ -44,13 +44,15 @@ export function DyingCascadeDialog({
   const woundedValue = conditions.find((c) => c.slug === 'wounded')?.value ?? 0
   const doomedValue = conditions.find((c) => c.slug === 'doomed')?.value ?? 0
 
-  // Apply initial dying on open if not already dying
-  // Engine cm.add('dying') already adds wounded value, so pass base value (1) only
+  // Apply initial dying on open if not already dying.
+  // dyingValue intentionally excluded: adding it would re-trigger after applyCondition sets it.
+  // combatantId included so the effect re-runs if the target changes while open.
   useEffect(() => {
     if (open && dyingValue === 0) {
       applyCondition(combatantId, 'dying' as ConditionSlug, 1)
     }
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, combatantId])
 
   // Reset state when dialog closes
   useEffect(() => {

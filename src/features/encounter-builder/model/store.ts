@@ -43,8 +43,6 @@ export interface EncounterBuilderState {
   loadConfig: () => Promise<void>
 }
 
-let instanceCounter = 0
-
 export const useEncounterBuilderStore = create<EncounterBuilderState>()(
   immer((set, get) => ({
     draftCreatures: [],
@@ -61,7 +59,7 @@ export const useEncounterBuilderStore = create<EncounterBuilderState>()(
           : tier === 'weak' ? creature.level - 1
           : creature.level
         state.draftCreatures.push({
-          instanceId: `draft-${++instanceCounter}`,
+          instanceId: crypto.randomUUID(),
           creatureId: creature.creatureId,
           name: creature.name,
           level: creature.level,
@@ -78,7 +76,7 @@ export const useEncounterBuilderStore = create<EncounterBuilderState>()(
     addHazardToDraft: (hazard) =>
       set((state) => {
         state.draftHazards.push({
-          instanceId: `hazard-${++instanceCounter}`,
+          instanceId: crypto.randomUUID(),
           name: hazard.name,
           level: hazard.level,
           type: hazard.type,

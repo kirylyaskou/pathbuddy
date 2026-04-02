@@ -27,9 +27,6 @@ import { DyingCascadeDialog } from './DyingCascadeDialog'
 
 interface HpControlsProps {
   combatant: Combatant
-  iwrImmunities?: string[]
-  iwrWeaknesses?: { type: string; value: number }[]
-  iwrResistances?: { type: string; value: number }[]
   abilities?: { name: string; description: string }[]
 }
 
@@ -40,7 +37,7 @@ const DAMAGE_TYPE_GROUPS: { label: string; types: DamageType[] }[] = [
   { label: 'Other', types: ['force', 'mental', 'poison', 'spirit', 'vitality', 'void', 'untyped'] },
 ]
 
-export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, abilities }: HpControlsProps) {
+export function HpControls({ combatant, abilities }: HpControlsProps) {
   const [hpInput, setHpInput] = useState(0)
   const [damageType, setDamageType] = useState<DamageType | null>(null)
   const [typeOpen, setTypeOpen] = useState(false)
@@ -51,13 +48,13 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   const iwrPreview = useMemo(() => {
     if (!damageType || hpInput <= 0) return null
 
-    const immunities = (iwrImmunities || [])
+    const immunities = (combatant.iwrImmunities || [])
       .filter((t) => (DAMAGE_TYPES as readonly string[]).includes(t))
       .map((t) => createImmunity(t as ImmunityType))
-    const weaknesses = (iwrWeaknesses || []).map((w) =>
+    const weaknesses = (combatant.iwrWeaknesses || []).map((w) =>
       createWeakness(w.type as WeaknessType, w.value)
     )
-    const resistances = (iwrResistances || []).map((r) =>
+    const resistances = (combatant.iwrResistances || []).map((r) =>
       createResistance(r.type as ResistanceType, r.value)
     )
 
@@ -65,7 +62,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
       return null
 
     return applyIWR({ type: damageType, amount: hpInput }, immunities, weaknesses, resistances)
-  }, [damageType, hpInput, iwrImmunities, iwrWeaknesses, iwrResistances])
+  }, [damageType, hpInput, combatant.iwrImmunities, combatant.iwrWeaknesses, combatant.iwrResistances])
 
   const handleAction = useCallback((action: 'damage' | 'heal' | 'tempHp') => {
     if (hpInput <= 0) return

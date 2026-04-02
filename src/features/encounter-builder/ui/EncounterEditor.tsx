@@ -15,8 +15,9 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useEncounterStore } from '@/entities/encounter'
-import { saveEncounterCombatants, resetEncounterCombat } from '@/shared/api'
+import { saveEncounterCombatants, resetEncounterCombat, loadEncounterCombatants } from '@/shared/api'
 import type { EncounterCombatantRow } from '@/shared/api'
+import type { EncounterCombatant } from '@/entities/encounter'
 import { loadEncounterIntoCombat, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
@@ -64,21 +65,8 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
 
   async function handleReset() {
     await resetEncounterCombat(encounterId)
-    const rows = await (await import('@/shared/api')).loadEncounterCombatants(encounterId)
-    const updated = rows.map((r) => ({
-      id: r.id,
-      encounterId: r.encounterId,
-      creatureRef: r.creatureRef,
-      displayName: r.displayName,
-      initiative: r.initiative,
-      hp: r.hp,
-      maxHp: r.maxHp,
-      tempHp: r.tempHp,
-      isNPC: r.isNPC,
-      weakEliteTier: r.weakEliteTier as 'normal' | 'weak' | 'elite',
-      creatureLevel: r.creatureLevel,
-      sortOrder: r.sortOrder,
-    }))
+    const rows = await loadEncounterCombatants(encounterId)
+    const updated = rows as EncounterCombatant[]
     setEncounterCombatants(encounterId, updated)
     if (encounter) {
       upsertEncounter({ ...encounter, round: 0, turn: 0, activeCombatantId: null, isRunning: false, combatants: updated })
@@ -88,23 +76,11 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   const combatants = encounter.combatants
 
   async function handleRemove(instanceId: string) {
-    const remaining = combatants.filter((c) => c.id !== instanceId)
-    const rows: EncounterCombatantRow[] = remaining.map((c, i) => ({
-      id: c.id,
-      encounterId: c.encounterId,
-      creatureRef: c.creatureRef,
-      displayName: c.displayName,
-      initiative: c.initiative,
-      hp: c.hp,
-      maxHp: c.maxHp,
-      tempHp: c.tempHp,
-      isNPC: c.isNPC,
-      weakEliteTier: c.weakEliteTier,
-      creatureLevel: c.creatureLevel,
-      sortOrder: i,
-    }))
-    await saveEncounterCombatants(encounterId, rows)
-    setEncounterCombatants(encounterId, remaining.map((c, i) => ({ ...c, sortOrder: i })))
+    const remaining = combatants
+      .filter((c) => c.id !== instanceId)
+      .map((c, i) => ({ ...c, sortOrder: i }))
+    await saveEncounterCombatants(encounterId, remaining as EncounterCombatantRow[])
+    setEncounterCombatants(encounterId, remaining)
   }
 
   return (

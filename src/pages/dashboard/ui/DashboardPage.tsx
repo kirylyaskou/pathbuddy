@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -63,10 +63,13 @@ function ActiveCombatCard({
   activeConditions,
   onNavigate,
 }: ActiveCombatCardProps) {
-  const condCountById = new Map<string, number>()
-  for (const c of activeConditions) {
-    condCountById.set(c.combatantId, (condCountById.get(c.combatantId) ?? 0) + 1)
-  }
+  const condCountById = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const c of activeConditions) {
+      m.set(c.combatantId, (m.get(c.combatantId) ?? 0) + 1)
+    }
+    return m
+  }, [activeConditions])
 
   return (
     <div className="rounded-lg border border-border bg-card">
