@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.6.0
 milestone_name: milestone
-status: planned
-stopped_at: v0.6.0 milestone planned — phases 20-24 (Items)
-last_updated: "2026-04-02T15:00:00.000Z"
+status: executing
+stopped_at: v0.6.0 milestone complete — all phases 20-24 shipped
+last_updated: "2026-04-02T16:00:00.000Z"
 last_activity: 2026-04-02
 progress:
   total_phases: 25
-  completed_phases: 20
+  completed_phases: 25
   total_plans: 55
-  completed_plans: 42
-  percent: 20
+  completed_plans: 49
+  percent: 25
 ---
 
 # STATE.md - Pathfinder 2e DM Assistant
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-02)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** v0.6.0 — Items milestone
+**Current focus:** v0.6.0 COMPLETE — all 25 phases shipped
 
 ## Current Position
 
-Phase: 20
-Plan: 20-01 (not started)
-Status: Planned, ready to execute
+Phase: 999
+Plan: Not started
+Status: v0.6.0 complete
 Last activity: 2026-04-02
 
-Progress: [████░░░░░░] 20%
+Progress: [█████░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 42
+- Total plans completed: 49
 - Average duration: —
 - Total execution time: —
 
@@ -86,33 +86,25 @@ Key decisions carrying forward from prior milestones:
 - [Phase 15]: CombatPage.tsx restructured — Bestiary left (22%), Initiative+Detail center (38%, nested vertical ResizablePanelGroup id=combat-center-vertical: 35% list / 65% detail), Stat Card right (40%)
 - [Phase 15]: Sticky right panel — lastNpcStatBlock state only updates on NPC select; PC select leaves last NPC stat block visible
 - [Phase 15]: In-memory stat block cache in CombatPage (useRef<Map<string, CreatureStatBlockData>>), bounded to 10 entries, evicts oldest on overflow
-- [Phase 15]: handleSelect typed (id: string) — matches InitiativeList.onSelect exactly; setSelectedId(null) not needed via onSelect
-- [Phase 15]: CombatControls + AddPCDialog share border-b via items-stretch siblings (CombatControls has its own border-b; AddPCDialog wrapper matches it)
-- [Phase 15]: TurnControls moved to bottom of center lower sub-panel (renders null when !isRunning)
-
-- Combat tracker layout: Bestiary (left) | Initiative+Detail merged (center) | Creature Stat Card (right)
-- Encounters become source of truth: creatures + spell overrides + slot state stored in encounters SQLite
-- Combat tracker is a dynamic view of the active encounter — survives tab navigation via Zustand, not stored forever
-- Custom spell override stored as: encounter_id + combatant_id → custom_spells[] (non-destructive)
-- Spell slot tracking per combatant: DM marks slots used; editable from both Encounters page and combat creature card
-- [Phase 17]: extractAndInsertSpells() + extractCreatureSpellcasting() called at end of syncFoundryData + importLocalPacks
-- [Phase 18]: SpellcastingBlock uses Collapsible; SpellCard lazy-fetches detail on click via getSpellById
 - [Phase 19]: EncounterContext interface exported from entities/creature; conditional spread pattern for TS2322 avoidance
+- Encounters become source of truth: creatures + spell overrides + slot state + item overrides stored in encounters SQLite
 
 ### v0.6.0-specific context
 
-- Foundry equipment packs: `equipment` (weapons/armor/consumables/gear) + `equipment-effects` (effect items)
-- Foundry item types: weapon, armor, consumable, equipment, kit, treasure, backpack, shield, book, effect
-- `bulk` stored as TEXT ("L", "1", "2", "-") — not converted to float
-- `price_gp` converted from price.value object (gp + sp/10 + cp/100 + pp*10) to float
-- damage_formula = "{dice}d{die} {damageType}" string
-- Non-destructive override pattern (encounter_combatant_items) mirrors encounter_combatant_spells from Phase 19
-- @UUID resolution: import-time preferred; runtime fallback via resolveFoundryTokens; unaliased @UUID → DB name lookup
+- [Phase 20]: ITEM_TYPES = ['weapon','armor','consumable','equipment','treasure','backpack','kit','book','shield','effect']
+- [Phase 20]: bulk stored as TEXT ("L","1","2","-"); price_gp converted from {gp,sp,cp,pp} object
+- [Phase 20]: creature_items skips melee/ranged/spell/spellcastingEntry/action/lore item types
+- [Phase 21]: ITEM_TYPE_COLORS, ITEM_TYPE_LABELS, RARITY_COLORS exported from entities/item
+- [Phase 22]: EquipmentBlock collapsible (default closed), grouped weapon→armor→shield→consumable→misc
+- [Phase 23]: encounter_combatant_items: is_removed=1 hides base item; is_removed=0 = added item; resetEncounterCombat clears both spell_slots and item_overrides
+- [Phase 23]: EquipmentBlock renders when encounterContext provided even with empty base inventory
+- [Phase 24]: resolveUUIDTokensInDescriptions() post-processing: builds id→name map from items+spells+entities, updates items.description and spells.description in-place; regex excludes already-aliased @UUID[...]{...}
+- [Phase 24]: resolveFoundryTokensForDisplay replaces resolveFoundryTokensForSpell (backward alias kept); adds @Condition[slug] support; drops raw 16-char Foundry IDs gracefully
 
 ### Roadmap Evolution
 
 - v0.5.0 started 2026-04-02, completed 2026-04-02: Combat Redesign + Spells
-- v0.6.0 started 2026-04-02: Items
+- v0.6.0 started 2026-04-02, completed 2026-04-02: Items
 
 ### Pending Todos
 
@@ -124,6 +116,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-02T15:00:00.000Z
-Stopped at: v0.6.0 milestone planned
-Next step: Execute Phase 20-01 (DB migration + equipment extraction)
+Last session: 2026-04-02T16:00:00.000Z
+Stopped at: v0.6.0 complete (phases 20-24)
+Next step: /gsd:plan-milestone v0.7.0

@@ -10,6 +10,7 @@
 - ✅ **v0.3.0-pre-alpha — Frontend Rebuild + Engine Integration** — Phases 5-10 (complete)
 - ✅ **v0.4.0-pre-alpha — Stabilization + Polish** — Phases 11-14 (complete)
 - ✅ **v0.5.0-pre-alpha — Combat Redesign + Spells** — Phases 15-19 (complete 2026-04-02)
+- ✅ **v0.6.0-pre-alpha — Items** — Phases 20-24 (complete 2026-04-02)
 
 ## Phases
 
@@ -294,11 +295,11 @@ Plans:
 | 17. Spell Import Pipeline | v0.5.0 | 2/2 | Complete | 2026-04-02 |
 | 18. Spell Display + Catalog | v0.5.0 | 2/2 | Complete | 2026-04-02 |
 | 19. Spell Slot Tracking + Custom Override | v0.5.0 | 2/2 | Complete | 2026-04-02 |
-| 20. Equipment Import Pipeline | v0.6.0 | 0/2 | Planned | — |
-| 21. Items Catalog Page | v0.6.0 | 0/2 | Planned | — |
-| 22. Creature Inventory Display | v0.6.0 | 0/1 | Planned | — |
-| 23. Encounter Inventory Editor | v0.6.0 | 0/1 | Planned | — |
-| 24. @-Token Resolution | v0.6.0 | 0/1 | Planned | — |
+| 20. Equipment Import Pipeline | v0.6.0 | 2/2 | Complete | 2026-04-02 |
+| 21. Items Catalog Page | v0.6.0 | 2/2 | Complete | 2026-04-02 |
+| 22. Creature Inventory Display | v0.6.0 | 1/1 | Complete | 2026-04-02 |
+| 23. Encounter Inventory Editor | v0.6.0 | 1/1 | Complete | 2026-04-02 |
+| 24. @-Token Resolution | v0.6.0 | 1/1 | Complete | 2026-04-02 |
 
 ### 🚧 v0.5.0-pre-alpha — Combat Redesign + Spells
 
@@ -387,11 +388,11 @@ Plans:
 
 **Milestone Goal:** Full equipment system — import all Foundry VTT equipment (weapons, armor, consumables, gear) into SQLite, build an Items catalog page with FTS5 search and filters, display creature inventory in stat blocks, add per-encounter inventory editing with non-destructive overrides, and audit/fix @-token resolution for item and creature descriptions.
 
-- [ ] **Phase 20: Equipment Import Pipeline** — Parse all equipment entity types into dedicated `items` table + FTS5; `creature_items` for NPC inventory; shared/api/items.ts (planned 2026-04-02)
-- [ ] **Phase 21: Items Catalog Page** — Replace placeholder ItemsPage with FTS5 search, type/level/rarity filters, expandable ItemCard rows (planned 2026-04-02)
-- [ ] **Phase 22: Creature Inventory Display** — Parse NPC carried items from raw_json; show Equipment section in stat block grouped by type (planned 2026-04-02)
-- [ ] **Phase 23: Encounter Inventory Editor** — Per-encounter item overrides (add/remove items non-destructively); same pattern as spell overrides (planned 2026-04-02)
-- [ ] **Phase 24: @-Token Resolution** — Audit all @UUID token types in item/creature descriptions; resolve unaliased item/spell/condition links from DB; import-time pre-resolution (planned 2026-04-02)
+- [x] **Phase 20: Equipment Import Pipeline** — Parse all equipment entity types into dedicated `items` table + FTS5; `creature_items` for NPC inventory; shared/api/items.ts (completed 2026-04-02)
+- [x] **Phase 21: Items Catalog Page** — Replace placeholder ItemsPage with FTS5 search, type/level/rarity filters, expandable ItemCard rows (completed 2026-04-02)
+- [x] **Phase 22: Creature Inventory Display** — Parse NPC carried items from raw_json; show Equipment section in stat block grouped by type (completed 2026-04-02)
+- [x] **Phase 23: Encounter Inventory Editor** — Per-encounter item overrides (add/remove items non-destructively); same pattern as spell overrides (completed 2026-04-02)
+- [x] **Phase 24: @-Token Resolution** — Audit all @UUID token types in item/creature descriptions; resolve unaliased item/spell/condition links from DB; import-time pre-resolution (completed 2026-04-02)
 
 ### Phase 20: Equipment Import Pipeline
 **Goal**: All Foundry VTT equipment items are stored in a dedicated SQLite table with FTS5 search, and NPC creature inventories are parsed and linked to creature records
@@ -464,11 +465,11 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 20. Equipment Import Pipeline | v0.6.0 | 0/2 | Planned | — |
-| 21. Items Catalog Page | v0.6.0 | 0/2 | Planned | — |
-| 22. Creature Inventory Display | v0.6.0 | 0/1 | Planned | — |
-| 23. Encounter Inventory Editor | v0.6.0 | 0/1 | Planned | — |
-| 24. @-Token Resolution | v0.6.0 | 0/1 | Planned | — |
+| 20. Equipment Import Pipeline | v0.6.0 | 2/2 | Complete | 2026-04-02 |
+| 21. Items Catalog Page | v0.6.0 | 2/2 | Complete | 2026-04-02 |
+| 22. Creature Inventory Display | v0.6.0 | 1/1 | Complete | 2026-04-02 |
+| 23. Encounter Inventory Editor | v0.6.0 | 1/1 | Complete | 2026-04-02 |
+| 24. @-Token Resolution | v0.6.0 | 1/1 | Complete | 2026-04-02 |
 
 ## Backlog
 
