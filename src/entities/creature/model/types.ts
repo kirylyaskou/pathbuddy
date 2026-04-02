@@ -1,5 +1,6 @@
 import type { Rarity as EngineRarity } from '@engine'
 import type { DisplaySize } from '@/shared/lib/size-map'
+import type { SpellcastingSection } from '@/entities/spell'
 
 export type { Rarity, CreatureSize, ActionCost, WeakEliteTier } from '@engine'
 export type { DisplaySize } from '@/shared/lib/size-map'
@@ -28,6 +29,7 @@ export interface CreatureStatBlockData extends Creature {
   source: string
   spellDC?: number
   classDC?: number
+  spellcasting?: SpellcastingSection[]
 }
 
 // Serializable creature entity for display and SQLite persistence.

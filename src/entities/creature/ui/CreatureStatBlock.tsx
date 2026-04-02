@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { useState } from "react"
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Separator } from "@/shared/ui/separator"
@@ -7,11 +8,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
 import type { CreatureStatBlockData } from '../model/types'
+import type { SpellcastingSection, SpellsByRank } from '@/entities/spell'
+import type { SpellRow } from '@/entities/spell'
+import { getSpellById } from '@/shared/api'
 
 interface CreatureStatBlockProps {
   creature: CreatureStatBlockData
@@ -250,6 +254,16 @@ export function CreatureStatBlock({ creature, className }: CreatureStatBlockProp
           </>
         )}
 
+        {/* Spellcasting */}
+        {creature.spellcasting && creature.spellcasting.length > 0 && (
+          <>
+            {creature.spellcasting.map((section) => (
+              <SpellcastingBlock key={section.entryId} section={section} />
+            ))}
+            <Separator />
+          </>
+        )}
+
         {/* Skills — all 17 standard skills in Collapsible */}
         <Collapsible defaultOpen>
           <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40 hover:from-primary/15 hover:to-transparent transition-colors">
@@ -391,6 +405,190 @@ function highlightGameText(raw: string): ReactNode {
   if (lastIndex === 0) return text
   if (lastIndex < text.length) parts.push(text.slice(lastIndex))
   return <>{parts}</>
+}
+
+// ── Spellcasting ──────────────────────────────────────────────────────────────
+
+function traditionColor(tradition: string): string {
+  const map: Record<string, string> = {
+    arcane:  'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    divine:  'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    occult:  'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    primal:  'bg-green-500/20 text-green-300 border-green-500/30',
+  }
+  return map[tradition.toLowerCase()] ?? 'bg-secondary text-secondary-foreground border-border'
+}
+
+function rankLabel(rank: number): string {
+  return rank === 0 ? 'Cantrips' : `Rank ${rank}`
+}
+
+function actionCostLabel(cost: string): string {
+  if (cost === 'free') return '◇'
+  if (cost === 'reaction') return '↺'
+  const n = parseInt(cost)
+  if (n === 1) return '◆'
+  if (n === 2) return '◆◆'
+  if (n === 3) return '◆◆◆'
+  return cost
+}
+
+function SpellCard({ foundryId, name }: { foundryId: string | null; name: string }) {
+  const [open, setOpen] = useState(false)
+  const [spell, setSpell] = useState<SpellRow | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleToggle() {
+    if (!open && !spell && foundryId) {
+      setLoading(true)
+      try {
+        const data = await getSpellById(foundryId)
+        setSpell(data)
+      } finally {
+        setLoading(false)
+      }
+    }
+    setOpen((v) => !v)
+  }
+
+  const traditions: string[] = spell?.traditions ? JSON.parse(spell.traditions) : []
+  const traits: string[] = spell?.traits ? JSON.parse(spell.traits) : []
+
+  return (
+    <div className="rounded border border-border/30 bg-secondary/30 overflow-hidden">
+      <button
+        onClick={handleToggle}
+        className="w-full flex items-center gap-1.5 px-2 py-1 text-sm text-left hover:bg-secondary/60 transition-colors"
+      >
+        {open
+          ? <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
+          : <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
+        }
+        <span className="font-medium">{name}</span>
+        {loading && <span className="text-xs text-muted-foreground ml-auto">…</span>}
+        {!spell && !loading && !foundryId && (
+          <span className="text-xs text-muted-foreground ml-auto italic">no data</span>
+        )}
+      </button>
+
+      {open && spell && (
+        <div className="px-3 pb-2 pt-1 space-y-1.5 border-t border-border/30">
+          {/* Meta row */}
+          <div className="flex flex-wrap gap-1.5 text-xs">
+            {spell.action_cost && (
+              <span className="font-mono text-primary">{actionCostLabel(spell.action_cost)}</span>
+            )}
+            {spell.range_text && (
+              <span className="text-muted-foreground">Range: <span className="text-foreground">{spell.range_text}</span></span>
+            )}
+            {spell.area && (() => {
+              const a = JSON.parse(spell.area) as { type?: string; value?: number }
+              return a.value
+                ? <span className="text-muted-foreground">Area: <span className="text-foreground">{a.value}-foot {a.type}</span></span>
+                : null
+            })()}
+            {spell.duration_text && (
+              <span className="text-muted-foreground">Duration: <span className="text-foreground">{spell.duration_text}</span></span>
+            )}
+            {spell.save_stat && (
+              <span className="text-muted-foreground">Save: <span className="text-foreground capitalize">{spell.save_stat}</span></span>
+            )}
+          </div>
+          {/* Damage */}
+          {spell.damage && (() => {
+            const dmg = JSON.parse(spell.damage) as Record<string, { formula?: string; damage?: string; damageType?: string; type?: string }>
+            const parts = Object.values(dmg)
+              .map((d) => `${d.formula ?? d.damage ?? '?'} ${d.damageType ?? d.type ?? ''}`.trim())
+              .filter(Boolean)
+            return parts.length > 0
+              ? <p className="text-xs"><span className="text-muted-foreground">Damage: </span><span className="font-mono text-pf-blood">{parts.join(' + ')}</span></p>
+              : null
+          })()}
+          {/* Traits */}
+          {(traits.length > 0 || traditions.length > 0) && (
+            <div className="flex flex-wrap gap-1">
+              {[...traditions, ...traits].map((t) => (
+                <span key={t} className="px-1 py-0.5 text-[10px] rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">{t}</span>
+              ))}
+            </div>
+          )}
+          {/* Description */}
+          {spell.description && (
+            <p className="text-xs text-foreground/75 leading-relaxed line-clamp-4">
+              {stripHtml(resolveFoundryTokensForSpell(spell.description))}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SpellcastingBlock({ section }: { section: SpellcastingSection }) {
+  const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
+
+  return (
+    <Collapsible defaultOpen>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40 hover:from-primary/15 hover:to-transparent transition-colors">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm text-foreground">Spellcasting</span>
+          <span className={cn("px-1.5 py-0.5 text-[10px] rounded border uppercase tracking-wider font-semibold", traditionColor(section.tradition))}>
+            {section.tradition} {section.castType}
+          </span>
+        </div>
+        <ChevronDown className="w-4 h-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="px-4 pb-3 pt-2 space-y-3">
+          {/* DC + Attack */}
+          <div className="flex gap-4 text-sm">
+            {section.spellDc > 0 && (
+              <span className="text-muted-foreground">DC <span className="font-mono text-primary font-bold">{section.spellDc}</span></span>
+            )}
+            {section.spellAttack !== 0 && (
+              <span className="text-muted-foreground">Attack <span className="font-mono text-primary font-bold">{fmt(section.spellAttack)}</span></span>
+            )}
+          </div>
+          {/* Spells by rank */}
+          {section.spellsByRank.map((byRank: SpellsByRank) => (
+            <div key={byRank.rank}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {rankLabel(byRank.rank)}
+                </span>
+                {byRank.slots > 0 && (
+                  <span className="text-xs text-muted-foreground">({byRank.slots} slots)</span>
+                )}
+              </div>
+              <div className="space-y-1">
+                {byRank.spells.map((spell, i) => (
+                  <SpellCard key={i} name={spell.name} foundryId={spell.foundryId} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
+
+// Minimal token resolver for spell descriptions (subset of full resolver)
+function resolveFoundryTokensForSpell(text: string): string {
+  text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
+  text = text.replace(/@UUID\[([^\]]+)\]/g, (_, path: string) => path.split('.').pop() ?? '')
+  text = text.replace(/@Damage\[([^\]]*)\]/g, (_, inner: string) => {
+    return inner.split(/,\s*/).map((p: string) => {
+      const m = p.trim().match(/^(.+?)\[(.+?)\]$/)
+      return m ? `${m[1]} ${m[2]}` : p.trim()
+    }).join(' plus ')
+  })
+  text = text.replace(/@Check\[([^\]]+)\]/g, (_, inner: string) => {
+    const params = Object.fromEntries(inner.split('|').map((p: string) => p.split(':')))
+    return `${params.dc ? `DC ${params.dc} ` : ''}${params.type ?? 'check'} check`
+  })
+  text = text.replace(/@Localize\[[^\]]+\]/g, '')
+  return text
 }
 
 interface StatItemProps {

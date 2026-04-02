@@ -11,9 +11,8 @@ import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import { setupAutoSave, teardownAutoSave, loadActiveCombat } from '@/features/combat-tracker/lib/combat-persistence'
 import { setupEncounterAutoSave, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { useCombatantStore } from '@/entities/combatant'
-import { CreatureStatBlock, toCreatureStatBlockData } from '@/entities/creature'
+import { CreatureStatBlock, fetchCreatureStatBlockData } from '@/entities/creature'
 import type { CreatureStatBlockData } from '@/entities/creature'
-import { fetchCreatureById } from '@/shared/api'
 import { useShallow } from 'zustand/react/shallow'
 
 export function CombatPage() {
@@ -62,9 +61,8 @@ export function CombatPage() {
     // Cache miss — fetch from SQLite
     setStatBlockLoading(true)
     try {
-      const row = await fetchCreatureById(combatant.creatureRef)
-      if (row) {
-        const data = toCreatureStatBlockData(row)
+      const data = await fetchCreatureStatBlockData(combatant.creatureRef)
+      if (data) {
         // Keep cache bounded to last 10 entries
         if (statBlockCache.current.size >= 10) {
           const firstKey = statBlockCache.current.keys().next().value
