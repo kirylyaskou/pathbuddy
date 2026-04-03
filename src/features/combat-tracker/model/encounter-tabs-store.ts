@@ -30,6 +30,7 @@ export interface EncounterTabsState {
   setActiveTab: (tabId: string) => void
   updateActiveSnapshot: () => void
   resetTab: (tabId: string) => Promise<void>
+  addCombatantToTab: (tabId: string, combatant: Combatant) => void
   getActiveTab: () => EncounterTab | undefined
 }
 
@@ -179,6 +180,18 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
       // If resetting the active tab, also restore to global stores
       if (get().activeTabId === tabId) {
         restoreSnapshotToGlobalStores(freshSnapshot)
+      }
+    },
+
+    addCombatantToTab: (tabId, combatant) => {
+      const clone: Combatant = { ...combatant, id: crypto.randomUUID() }
+      set((state) => {
+        const tab = state.openTabs.find((t) => t.id === tabId)
+        if (tab) tab.snapshot.combatants.push(clone)
+      })
+      // If the target tab is active, also push to the global combatant store
+      if (get().activeTabId === tabId) {
+        useCombatantStore.getState().addCombatant(clone)
       }
     },
 
