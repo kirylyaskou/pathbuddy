@@ -1,11 +1,53 @@
-import { useState, useEffect } from 'react'
-import { Package } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Package, Star } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs'
-import { searchItems } from '@/shared/api'
+import { searchItems, getFavoriteIds, toggleFavoriteDb, getItemById } from '@/shared/api'
 import type { ItemRow } from '@/shared/api'
-import { useItemsCatalogStore, ItemFilterPanel, ItemsTable } from '@/features/items-catalog'
-import { ItemReferenceDrawer } from '@/entities/item'
+import { useItemsCatalogStore, ItemFilterPanel, ItemsTable, FavoritesStar, FavoritesCategoryGroup } from '@/features/items-catalog'
+import { ItemReferenceDrawer, ITEM_TYPE_LABELS } from '@/entities/item'
 import { useShallow } from 'zustand/react/shallow'
+
+const CATEGORY_ORDER = ['weapon', 'armor', 'shield', 'consumable', 'equipment', 'treasure', 'backpack', 'kit', 'book', 'effect']
+
+interface FavoritesContentProps {
+  favoriteIds: Set<string>
+  onItemClick: (id: string) => void
+  onToggleFavorite: (id: string) => void
+}
+
+function FavoritesContent({ favoriteIds, onItemClick, onToggleFavorite }: FavoritesContentProps) {
+  const [favoriteItems, setFavoriteItems] = useState<ItemRow[]>([])
+
+  useEffect(() => {
+    const ids = Array.from(favoriteIds)
+    Promise.all(ids.map((id) => getItemById(id)))
+      .then((results) => setFavoriteItems(results.filter((r): r is ItemRow => r !== null)))
+      .catch(() => {})
+  }, [favoriteIds])
+
+  const grouped = CATEGORY_ORDER.reduce<Record<string, ItemRow[]>>((acc, cat) => {
+    const items = favoriteItems.filter((i) => i.item_type === cat)
+    if (items.length > 0) acc[cat] = items
+    return acc
+  }, {})
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      {Object.entries(grouped).map(([category, items]) => (
+        <FavoritesCategoryGroup
+          key={category}
+          category={category}
+          label={ITEM_TYPE_LABELS[category] ?? category}
+          count={items.length}
+          items={items}
+          onItemClick={onItemClick}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={onToggleFavorite}
+        />
+      ))}
+    </div>
+  )
+}
 
 export function ItemsPage() {
   const {
@@ -31,6 +73,24 @@ export function ItemsPage() {
   const [items, setItems] = useState<ItemRow[]>([])
   const [loading, setLoading] = useState(false)
   const [drawerItemId, setDrawerItemId] = useState<string | null>(null)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+
+  // Load favorites on mount
+  useEffect(() => {
+    getFavoriteIds().then((ids) => setFavoriteIds(new Set(ids))).catch(() => {})
+  }, [])
+
+  // Optimistic toggle
+  const handleToggleFavorite = useCallback(async (itemId: string) => {
+    const wasFavorited = favoriteIds.has(itemId)
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+    await toggleFavoriteDb(itemId, !wasFavorited).catch(() => {})
+  }, [favoriteIds])
 
   useEffect(() => {
     setItems([])
@@ -100,19 +160,45 @@ export function ItemsPage() {
               sortDir={sortDir}
               onToggleSort={toggleSort}
               onItemClick={setDrawerItemId}
+              renderStar={(item) => (
+                <FavoritesStar
+                  itemId={item.id}
+                  isFavorited={favoriteIds.has(item.id)}
+                  onToggle={handleToggleFavorite}
+                />
+              )}
             />
           )}
         </TabsContent>
 
         <TabsContent value="favorites" className="flex flex-col flex-1 overflow-hidden mt-0">
-          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-            <p className="text-sm">No favorites yet</p>
-            <p className="text-xs mt-1">Star an item from the All Items tab to save it here.</p>
-          </div>
+          {favoriteIds.size === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+              <Star className="w-8 h-8 mb-2 opacity-40" />
+              <p className="text-sm">No favorites yet</p>
+              <p className="text-xs mt-1">Star an item from the All Items tab to save it here.</p>
+            </div>
+          ) : (
+            <FavoritesContent
+              favoriteIds={favoriteIds}
+              onItemClick={setDrawerItemId}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
-      <ItemReferenceDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
+      <ItemReferenceDrawer
+        itemId={drawerItemId}
+        onClose={() => setDrawerItemId(null)}
+        extraActions={drawerItemId ? (
+          <FavoritesStar
+            itemId={drawerItemId}
+            isFavorited={favoriteIds.has(drawerItemId)}
+            onToggle={handleToggleFavorite}
+          />
+        ) : undefined}
+      />
     </div>
   )
 }
