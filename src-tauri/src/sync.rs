@@ -132,6 +132,10 @@ pub async fn import_local_packs(
 
     for (i, pack_entry) in packs.iter().enumerate() {
         let pack_name = pack_entry.file_name().to_string_lossy().to_string();
+        // Skip non-PF2e pack directories
+        if pack_name != "pf2e" {
+            continue;
+        }
         let _ = app.emit(
             "sync-progress",
             SyncProgress {
@@ -264,6 +268,11 @@ pub async fn sync_foundry_data(
 
         let file_name = file.name().to_string();
         if !file_name.ends_with(".json") {
+            continue;
+        }
+
+        // Skip non-PF2e packs (e.g. Starfinder sf2e content)
+        if !file_name.contains("/packs/pf2e/") {
             continue;
         }
 
