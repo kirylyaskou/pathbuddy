@@ -149,7 +149,7 @@ export async function getCreatureItems(creatureId: string): Promise<CreatureItem
   )
 }
 
-export async function fetchDistinctTraits(): Promise<string[]> {
+export async function fetchDistinctItemTraits(): Promise<string[]> {
   const db = await getDb()
   const rows = await db.select<{ value: string }[]>(
     `SELECT DISTINCT value FROM items, json_each(items.traits)
@@ -160,7 +160,7 @@ export async function fetchDistinctTraits(): Promise<string[]> {
   return rows.map((r) => r.value)
 }
 
-export async function fetchDistinctSources(): Promise<string[]> {
+export async function fetchDistinctItemSources(): Promise<string[]> {
   const db = await getDb()
   const rows = await db.select<{ value: string }[]>(
     `SELECT DISTINCT source_book as value FROM items

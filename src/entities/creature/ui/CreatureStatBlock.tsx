@@ -1347,6 +1347,7 @@ function EquipmentBlock({
   }
 
   return (
+    <>
     <Collapsible defaultOpen={false}>
       <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40 hover:from-primary/15 hover:to-transparent transition-colors">
         <div className="flex items-center gap-2">
@@ -1424,5 +1425,6 @@ function EquipmentBlock({
       </CollapsibleContent>
     </Collapsible>
     <ItemReferenceDrawer itemId={drawerItemId} onClose={() => setDrawerItemId(null)} />
+    </>
   )
 }

@@ -5,7 +5,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/shared/ui/popover'
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '@/shared/ui/command'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/ui/select'
 import { ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '@/entities/item'
-import { fetchDistinctTraits, fetchDistinctSources, fetchDistinctSubcategories } from '@/shared/api'
+import { fetchDistinctItemTraits, fetchDistinctItemSources, fetchDistinctSubcategories } from '@/shared/api'
 import { useItemsCatalogStore } from '../model/store'
 import { cn } from '@/shared/lib/utils'
 
@@ -37,8 +37,8 @@ export function ItemFilterPanel() {
   const [traitsOpen, setTraitsOpen] = useState(false)
 
   useEffect(() => {
-    fetchDistinctTraits().then(setTraits).catch(() => {})
-    fetchDistinctSources().then(setSources).catch(() => {})
+    fetchDistinctItemTraits().then(setTraits).catch(() => {})
+    fetchDistinctItemSources().then(setSources).catch(() => {})
   }, [])
 
   useEffect(() => {
