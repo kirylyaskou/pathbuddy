@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Check } from 'lucide-react'
+import { Search, Check, X } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
 import { Popover, PopoverTrigger, PopoverContent } from '@/shared/ui/popover'
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '@/shared/ui/command'
@@ -187,6 +187,22 @@ export function ItemFilterPanel() {
           </Select>
         )}
       </div>
+
+      {/* Selected trait chips */}
+      {selectedTraits.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedTraits.map((trait) => (
+            <button
+              key={trait}
+              onClick={() => toggleTrait(trait)}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider hover:bg-destructive/20 hover:text-destructive hover:border-destructive/30 transition-colors"
+            >
+              {trait}
+              <X className="w-2.5 h-2.5" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

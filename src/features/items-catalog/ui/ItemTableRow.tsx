@@ -1,5 +1,5 @@
 import type { ItemRow } from '@/shared/api'
-import { ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, formatPrice } from '@/entities/item'
+import { ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS, formatPrice } from '@/entities/item'
 import { cn } from '@/shared/lib/utils'
 
 interface ItemTableRowProps {
@@ -16,12 +16,12 @@ export function ItemTableRow({ item, onNameClick, starSlot }: ItemTableRowProps)
   return (
     <div className="flex items-center gap-2 px-3 h-9 border-b border-border/20 hover:bg-secondary/30 transition-colors">
       {/* Star column */}
-      <div className="w-8 shrink-0 flex items-center justify-center">
+      <div className="w-7 shrink-0 flex items-center justify-center">
         {starSlot ?? null}
       </div>
 
       {/* Name column */}
-      <div className="flex-1 min-w-[160px] overflow-hidden">
+      <div className="flex-[20] min-w-0 overflow-hidden">
         <button
           className="font-medium text-[13px] text-left truncate w-full hover:text-primary hover:underline cursor-pointer"
           onClick={() => onNameClick(item.id)}
@@ -30,15 +30,24 @@ export function ItemTableRow({ item, onNameClick, starSlot }: ItemTableRowProps)
         </button>
       </div>
 
-      {/* Category column */}
-      <div className="w-[90px] shrink-0">
+      {/* Type column */}
+      <div className="flex-[8] min-w-0">
         <span className={cn('px-1.5 py-0.5 text-[10px] rounded border uppercase tracking-wider font-semibold', typeColor)}>
           {typeLabel}
         </span>
       </div>
 
+      {/* Rarity column */}
+      <div className="flex-[7] min-w-0">
+        {item.rarity && item.rarity !== 'common' ? (
+          <span className={cn('text-[11px] capitalize', RARITY_COLORS[item.rarity] ?? 'text-muted-foreground')}>
+            {item.rarity}
+          </span>
+        ) : null}
+      </div>
+
       {/* Traits column */}
-      <div className="w-[180px] shrink-0 flex flex-nowrap gap-0.5 overflow-hidden items-center">
+      <div className="flex-[15] min-w-0 flex flex-nowrap gap-0.5 overflow-hidden items-center">
         {traits.slice(0, 3).map((t) => (
           <span
             key={t}
@@ -53,27 +62,27 @@ export function ItemTableRow({ item, onNameClick, starSlot }: ItemTableRowProps)
       </div>
 
       {/* Level column */}
-      <div className="w-14 shrink-0 text-right">
+      <div className="flex-[4] min-w-0 text-right">
         <span className="font-mono text-xs">{item.level}</span>
       </div>
 
       {/* Price column */}
-      <div className="w-20 shrink-0 text-right">
+      <div className="flex-[7] min-w-0 text-right">
         <span className="font-mono text-xs">{formatPrice(item.price_gp)}</span>
       </div>
 
       {/* Bulk column */}
-      <div className="w-12 shrink-0 text-center">
+      <div className="flex-[4] min-w-0 text-center">
         <span className="text-xs text-muted-foreground">{item.bulk ?? '—'}</span>
       </div>
 
       {/* Usage column */}
-      <div className="w-[100px] shrink-0 overflow-hidden">
+      <div className="flex-[9] min-w-0 overflow-hidden">
         <span className="text-xs text-muted-foreground truncate block">{item.usage ?? '—'}</span>
       </div>
 
       {/* Source column */}
-      <div className="w-[100px] shrink-0 overflow-hidden">
+      <div className="flex-[10] min-w-0 overflow-hidden">
         <span className="text-xs text-muted-foreground truncate block">{item.source_book ?? '—'}</span>
       </div>
     </div>

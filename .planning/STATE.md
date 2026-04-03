@@ -125,6 +125,7 @@ Key decisions carrying forward from prior milestones:
 - v0.7.0 started 2026-04-02, completed 2026-04-02: Conditions
 - v0.8.0 started 2026-04-02, completed 2026-04-02: Hazards
 - v0.8.5 started 2026-04-02, completed 2026-04-02: Actions Reference
+- Phase 35 added 2026-04-04: UX Polish + Starfinder Purge + Encounter Tabs
 
 ### Pending Todos
 
