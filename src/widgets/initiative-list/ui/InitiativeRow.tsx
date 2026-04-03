@@ -24,7 +24,7 @@ export function InitiativeRow({
   onRemove,
 }: InitiativeRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: combatant.id })
+    useSortable({ id: combatant.id, data: { combatant } })
 
   const style = {
     transform: CSS.Transform.toString(transform),

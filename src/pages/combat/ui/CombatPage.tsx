@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Shield } from 'lucide-react'
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
 import { Button } from '@/shared/ui/button'
 import { InitiativeList } from '@/widgets/initiative-list'
@@ -33,6 +35,7 @@ export function CombatPage() {
   )
 
   const combatants = useCombatantStore(useShallow((s) => s.combatants))
+  const { reorderInitiative } = useCombatantStore()
   const openTabs = useEncounterTabsStore((s) => s.openTabs)
   const activeTabId = useEncounterTabsStore((s) => s.activeTabId)
 
@@ -93,6 +96,37 @@ export function CombatPage() {
     }
   }, [combatants])
 
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    const overId = String(over.id)
+
+    // Route 1: Cross-tab drop (tab header droppable)
+    if (overId.startsWith('tab-drop-')) {
+      const tabId = overId.replace('tab-drop-', '')
+      const combatant = active.data.current?.combatant
+      if (combatant) {
+        useEncounterTabsStore.getState().addCombatantToTab(tabId, combatant)
+      }
+      return
+    }
+
+    // Route 2: Initiative reorder
+    if (active.id !== over.id) {
+      const oldIndex = combatants.findIndex((c) => c.id === active.id)
+      const newIndex = combatants.findIndex((c) => c.id === over.id)
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reordered = arrayMove(
+          combatants.map((c) => c.id),
+          oldIndex,
+          newIndex
+        )
+        reorderInitiative(reordered)
+      }
+    }
+  }, [combatants, reorderInitiative])
+
   return (
     <div className="flex flex-col h-full">
       <PersistentDamageDialog
@@ -109,7 +143,7 @@ export function CombatPage() {
           <BlueprintSelectorDialog open={showSelector} onOpenChange={setShowSelector} />
         </div>
       ) : (
-        <>
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <EncounterTabBar />
           <ResizablePanelGroup direction="horizontal" className="flex-1">
 
@@ -190,7 +224,7 @@ export function CombatPage() {
             </ResizablePanel>
 
           </ResizablePanelGroup>
-        </>
+        </DndContext>
       )}
     </div>
   )
