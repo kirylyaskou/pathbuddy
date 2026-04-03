@@ -100,7 +100,7 @@ export async function searchCreaturesFiltered(
   }
   if (filters.traits && filters.traits.length > 0) {
     for (const trait of filters.traits) {
-      conditions.push("e.traits LIKE '%' || ? || '%'")
+      conditions.push("EXISTS (SELECT 1 FROM json_each(e.traits) WHERE value = ?)")
       params.push(trait)
     }
   }

@@ -598,7 +598,7 @@ Plans:
 
 **Milestone Goal:** Overhaul the Items page with a production-quality catalog — fix FTS5 search/filter bugs, add Favorites system, ItemReferenceDrawer, multi-filter panel with traits/source/subcategory, column sorting, and wire EquipmentBlock item names to the drawer.
 
-- [ ] **Phase 34: Items Catalog Overhaul** — Fix search/filter bugs, add Favorites tab, ItemReferenceDrawer, full filter panel (type/level/rarity/traits/source/subcategory), column sorting, EquipmentBlock item links
+- [x] **Phase 34: Items Catalog Overhaul** — Fix search/filter bugs, add Favorites tab, ItemReferenceDrawer, full filter panel (type/level/rarity/traits/source/subcategory), column sorting, EquipmentBlock item links (completed 2026-04-03)
 
 ### Phase 34: Items Catalog Overhaul
 **Goal**: Items page is a production-quality reference catalog — FTS5 search and filter bugs fixed, Favorites system with SQLite persistence, ItemReferenceDrawer showing full item details, multi-filter panel (type/level/rarity/traits/source/subcategory), column sorting by level and price, and EquipmentBlock item names clickable to open the drawer
@@ -611,7 +611,7 @@ Plans:
   4. Clicking any item name opens ItemReferenceDrawer with full stats, description, and favorites star
   5. Level and Price columns are sortable (↑↓ toggle, ArrowUp/ArrowDown icons); sort applied client-side
   6. EquipmentBlock in creature stat block has clickable item names that open ItemReferenceDrawer
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 34-01-PLAN.md — DB migration (item_favorites + usage column), extend searchItems API, add filter/favorites queries, sync usage extraction, install @tanstack/react-virtual
 - [ ] 34-02-PLAN.md — Zustand store + ItemFilterPanel + ItemsTable (virtualized) + ItemTableRow + ItemReferenceDrawer + rewrite ItemsPage with All Items tab
@@ -622,7 +622,7 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 34. Items Catalog Overhaul | v0.9.0 | 0/3 | Planned | — |
+| 34. Items Catalog Overhaul | v0.9.0 | 0/3 | Complete    | 2026-04-03 |
 
 ## Backlog
 

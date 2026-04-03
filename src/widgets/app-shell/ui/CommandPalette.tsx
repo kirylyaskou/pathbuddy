@@ -1,24 +1,10 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Swords, BookOpen, Sparkles, Package,
-  Activity, Map, Settings,
-} from 'lucide-react'
-import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput,
   CommandItem, CommandList,
 } from '@/shared/ui/command'
-
-const pages = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Combat Tracker', href: '/combat', icon: Swords },
-  { name: 'Encounters', href: '/encounters', icon: Map },
-  { name: 'Bestiary', href: '/bestiary', icon: BookOpen },
-  { name: 'Spells', href: '/spells', icon: Sparkles },
-  { name: 'Items', href: '/items', icon: Package },
-  { name: 'Conditions', href: '/conditions', icon: Activity },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
+import { NAV_ITEMS } from '@/shared/config/nav'
 
 interface CommandPaletteProps {
   open: boolean
@@ -46,17 +32,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search pages, creatures, spells..." />
+      <CommandInput placeholder="Search pages..." />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
         <CommandGroup heading="Pages">
-          {pages.map((page) => (
+          {NAV_ITEMS.map((page) => (
             <CommandItem
               key={page.href}
               onSelect={() => runCommand(() => navigate(page.href))}
             >
               <page.icon className="mr-2 h-4 w-4" />
-              {page.name}
+              {page.label}
             </CommandItem>
           ))}
         </CommandGroup>

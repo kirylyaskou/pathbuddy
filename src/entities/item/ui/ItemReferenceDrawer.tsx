@@ -5,17 +5,8 @@ import { getItemById } from '@/shared/api'
 import type { ItemRow } from '@/shared/api'
 import { formatPrice, ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '@/entities/item'
 import { cn } from '@/shared/lib/utils'
+import { stripHtml } from '@/shared/lib/html'
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-    .trim()
-}
 
 interface ItemReferenceDrawerProps {
   itemId: string | null

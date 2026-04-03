@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { SplashScreen } from './app/SplashScreen'
 import { AppRouter } from './app/router'
 import { AppProviders } from './app/providers'
+import { ErrorBoundary } from './shared/ui/error-boundary'
 import './app/styles/globals.css'
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 )

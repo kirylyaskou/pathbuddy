@@ -38,7 +38,7 @@ export function ItemTableRow({ item, onNameClick, starSlot }: ItemTableRowProps)
       </div>
 
       {/* Traits column */}
-      <div className="w-[180px] shrink-0 flex flex-wrap gap-0.5 overflow-hidden">
+      <div className="w-[180px] shrink-0 flex flex-nowrap gap-0.5 overflow-hidden items-center">
         {traits.slice(0, 3).map((t) => (
           <span
             key={t}

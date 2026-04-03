@@ -1,20 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  Swords,
-  BookOpen,
-  Sparkles,
-  Package,
-  Activity,
-  AlertTriangle,
-  Zap,
-  Map,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import {
@@ -23,27 +9,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/shared/ui/tooltip'
+import { NAV_ITEMS } from '@/shared/config/nav'
 
-const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard', section: 'main' },
-  { href: '/combat', icon: Swords, label: 'Combat Tracker', section: 'main' },
-  { href: '/encounters', icon: Map, label: 'Encounters', section: 'main' },
-  { href: '/bestiary', icon: BookOpen, label: 'Bestiary', section: 'reference' },
-  { href: '/actions', icon: Zap, label: 'Actions', section: 'reference' },
-  { href: '/spells', icon: Sparkles, label: 'Spells', section: 'reference' },
-  { href: '/items', icon: Package, label: 'Items', section: 'reference' },
-  { href: '/conditions', icon: Activity, label: 'Conditions', section: 'reference' },
-  { href: '/hazards', icon: AlertTriangle, label: 'Hazards', section: 'reference' },
-  { href: '/settings', icon: Settings, label: 'Settings', section: 'settings' },
-]
+const STORAGE_KEY = 'sidebar_collapsed'
 
 interface AppSidebarProps {
   onSearchOpen?: () => void
 }
 
 export function AppSidebar({ onSearchOpen }: AppSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY) === 'true' } catch { return false }
+  })
   const { pathname } = useLocation()
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, String(collapsed)) } catch {}
+  }, [collapsed])
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -59,7 +41,7 @@ export function AppSidebar({ onSearchOpen }: AppSidebarProps) {
           collapsed ? 'justify-center' : 'gap-3'
         )}>
           <div className="flex items-center justify-center w-8 h-8 rounded bg-primary/90">
-            <Swords className="w-5 h-5 text-primary-foreground" />
+            <Search className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <span className="font-bold text-sidebar-foreground tracking-tight text-sm">
@@ -101,123 +83,47 @@ export function AppSidebar({ onSearchOpen }: AppSidebarProps) {
 
         {/* Navigation - Grouped */}
         <nav className="flex-1 px-2 py-2 overflow-y-auto">
-          {/* Main tools */}
-          <div className="space-y-1">
-            {!collapsed && (
-              <p className="px-3 py-1 text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider">
-                Tools
-              </p>
-            )}
-            {navItems.filter(i => i.section === 'main').map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(item.href))
-
-              return (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-all',
-                        collapsed && 'justify-center px-2',
-                        isActive
-                          ? 'bg-primary/15 text-primary border-l-2 border-primary'
-                          : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+          {(['main', 'reference', 'settings'] as const).map((section) => {
+            const items = NAV_ITEMS.filter((i) => i.section === section)
+            const sectionLabel = section === 'main' ? 'Tools' : section === 'reference' ? 'Reference' : null
+            return (
+              <div key={section} className="space-y-1 mt-4 first:mt-0">
+                {sectionLabel && !collapsed && (
+                  <p className="px-3 py-1 text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider">
+                    {sectionLabel}
+                  </p>
+                )}
+                {items.map((item) => {
+                  const isActive = pathname === item.href ||
+                    (item.href !== '/' && pathname.startsWith(item.href))
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={item.href}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-all',
+                            collapsed && 'justify-center px-2',
+                            isActive
+                              ? 'bg-primary/15 text-primary border-l-2 border-primary'
+                              : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                          )}
+                        >
+                          <item.icon className={cn('w-4 h-4 flex-shrink-0', isActive && 'text-primary')} />
+                          {!collapsed && <span>{item.label}</span>}
+                        </Link>
+                      </TooltipTrigger>
+                      {collapsed && (
+                        <TooltipContent side="right">
+                          <p>{item.label}</p>
+                        </TooltipContent>
                       )}
-                    >
-                      <item.icon className={cn(
-                        'w-4 h-4 flex-shrink-0',
-                        isActive && 'text-primary'
-                      )} />
-                      {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                  </TooltipTrigger>
-                  {collapsed && (
-                    <TooltipContent side="right">
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )
-            })}
-          </div>
-
-          {/* Reference */}
-          <div className="space-y-1 mt-4">
-            {!collapsed && (
-              <p className="px-3 py-1 text-[10px] font-medium text-sidebar-foreground/40 uppercase tracking-wider">
-                Reference
-              </p>
-            )}
-            {navItems.filter(i => i.section === 'reference').map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(item.href))
-
-              return (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-all',
-                        collapsed && 'justify-center px-2',
-                        isActive
-                          ? 'bg-primary/15 text-primary border-l-2 border-primary'
-                          : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
-                      )}
-                    >
-                      <item.icon className={cn(
-                        'w-4 h-4 flex-shrink-0',
-                        isActive && 'text-primary'
-                      )} />
-                      {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                  </TooltipTrigger>
-                  {collapsed && (
-                    <TooltipContent side="right">
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )
-            })}
-          </div>
-
-          {/* Settings */}
-          <div className="space-y-1 mt-4">
-            {navItems.filter(i => i.section === 'settings').map((item) => {
-              const isActive = pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(item.href))
-
-              return (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-all',
-                        collapsed && 'justify-center px-2',
-                        isActive
-                          ? 'bg-primary/15 text-primary border-l-2 border-primary'
-                          : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
-                      )}
-                    >
-                      <item.icon className={cn(
-                        'w-4 h-4 flex-shrink-0',
-                        isActive && 'text-primary'
-                      )} />
-                      {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                  </TooltipTrigger>
-                  {collapsed && (
-                    <TooltipContent side="right">
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              )
-            })}
-          </div>
+                    </Tooltip>
+                  )
+                })}
+              </div>
+            )
+          })}
         </nav>
 
         {/* Collapse Toggle */}

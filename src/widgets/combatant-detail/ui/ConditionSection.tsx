@@ -9,6 +9,7 @@ import type { ConditionSlug } from '@engine'
 import { useShallow } from 'zustand/react/shallow'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
+import { stripHtml } from '@/shared/lib/html'
 
 const GROUP_BADGE: Record<string, string> = {
   death:     'bg-red-900/50 text-red-300 border-red-700/40',
@@ -18,14 +19,6 @@ const GROUP_BADGE: Record<string, string> = {
   attitudes: 'bg-amber-900/50 text-amber-300 border-amber-700/40',
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-    .trim()
-}
 
 function ConditionDetailPanel({ row, onClose }: { row: ConditionRow | 'not-found'; onClose: () => void }) {
   if (row === 'not-found') {

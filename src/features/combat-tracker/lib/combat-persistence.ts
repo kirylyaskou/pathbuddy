@@ -81,14 +81,14 @@ export async function loadActiveCombat(): Promise<boolean> {
     }
 
     clearAllManagers()
-    const conditionsByComba = new Map<string, typeof snapshot.conditions>()
+    const conditionsByCombatant = new Map<string, typeof snapshot.conditions>()
     for (const c of snapshot.conditions) {
-      if (!conditionsByComba.has(c.combatantId)) {
-        conditionsByComba.set(c.combatantId, [])
+      if (!conditionsByCombatant.has(c.combatantId)) {
+        conditionsByCombatant.set(c.combatantId, [])
       }
-      conditionsByComba.get(c.combatantId)!.push(c)
+      conditionsByCombatant.get(c.combatantId)!.push(c)
     }
-    for (const [combatantId, conditions] of conditionsByComba) {
+    for (const [combatantId, conditions] of conditionsByCombatant) {
       // Hydrate engine-managed conditions only (not persistent-*)
       const engineConditions = conditions.filter((c) => !c.slug.startsWith('persistent-'))
       hydrateManager(

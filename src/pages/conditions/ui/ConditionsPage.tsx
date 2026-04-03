@@ -4,6 +4,7 @@ import { Input } from '@/shared/ui/input'
 import { getAllConditions } from '@/shared/api'
 import type { ConditionRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
+import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 
 type GroupFilter = 'all' | 'death' | 'abilities' | 'senses' | 'detection' | 'attitudes' | 'other'
 
@@ -25,30 +26,6 @@ const GROUP_BADGE: Record<string, string> = {
   attitudes: 'bg-amber-900/50 text-amber-300 border-amber-700/40',
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-    .trim()
-}
-
-function resolveTokens(text: string): string {
-  text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
-  text = text.replace(/@UUID\[([^\]]+)\]/g, (_, path: string) => {
-    const seg = path.split('.').pop() ?? ''
-    return /^[A-Za-z0-9]{16,}$/.test(seg) ? '' : seg.replace(/-/g, ' ')
-  })
-  text = text.replace(/@Condition\[[^\]]*\]\{([^}]+)\}/g, '$1')
-  text = text.replace(/@Condition\[([^\]]+)\]/g, (_, s: string) => s)
-  text = text.replace(/@Localize\[[^\]]+\]/g, '')
-  text = text.replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-  return text
-}
 
 function ConditionCard({ condition, expanded, onToggle }: {
   condition: ConditionRow
@@ -116,7 +93,7 @@ function ConditionCard({ condition, expanded, onToggle }: {
           {/* Description */}
           {condition.description && (
             <p className="text-xs text-foreground/80 leading-relaxed">
-              {stripHtml(resolveTokens(condition.description))}
+              {sanitizeFoundryText(condition.description)}
             </p>
           )}
 

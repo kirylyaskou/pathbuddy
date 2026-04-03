@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Package, Star } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs'
-import { searchItems, getFavoriteIds, toggleFavoriteDb, getItemById } from '@/shared/api'
+import { searchItems, getFavoriteIds, toggleFavoriteDb, getItemsByIds } from '@/shared/api'
 import type { ItemRow } from '@/shared/api'
 import { useItemsCatalogStore, ItemFilterPanel, ItemsTable, FavoritesStar, FavoritesCategoryGroup } from '@/features/items-catalog'
 import { ItemReferenceDrawer, ITEM_TYPE_LABELS } from '@/entities/item'
@@ -20,8 +20,8 @@ function FavoritesContent({ favoriteIds, onItemClick, onToggleFavorite }: Favori
 
   useEffect(() => {
     const ids = Array.from(favoriteIds)
-    Promise.all(ids.map((id) => getItemById(id)))
-      .then((results) => setFavoriteItems(results.filter((r): r is ItemRow => r !== null)))
+    getItemsByIds(ids)
+      .then(setFavoriteItems)
       .catch(() => {})
   }, [favoriteIds])
 

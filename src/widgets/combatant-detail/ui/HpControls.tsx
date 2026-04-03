@@ -45,7 +45,8 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   const [damageType, setDamageType] = useState<DamageType | null>(null)
   const [typeOpen, setTypeOpen] = useState(false)
   const [dyingDialogOpen, setDyingDialogOpen] = useState(false)
-  const { updateHp, updateTempHp } = useCombatantStore()
+  const updateHp = useCombatantStore((s) => s.updateHp)
+  const updateTempHp = useCombatantStore((s) => s.updateTempHp)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const iwrPreview = useMemo(() => {
@@ -268,7 +269,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
               <span>
                 Weakness ({iwrPreview.appliedWeaknesses.map((w) => `${w.type} ${w.value}`).join(', ')})
               </span>
-              <span className="font-mono">+{iwrPreview.appliedWeaknesses[0].value}</span>
+              <span className="font-mono">+{iwrPreview.appliedWeaknesses.reduce((s, w) => s + w.value, 0)}</span>
             </div>
           )}
           {iwrPreview.appliedResistances.length > 0 && (
@@ -276,7 +277,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
               <span>
                 Resist ({iwrPreview.appliedResistances.map((r) => `${r.type} ${r.value}`).join(', ')})
               </span>
-              <span className="font-mono">-{iwrPreview.appliedResistances[0].value}</span>
+              <span className="font-mono">-{iwrPreview.appliedResistances.reduce((s, r) => s + r.value, 0)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold border-t border-border/30 pt-0.5">

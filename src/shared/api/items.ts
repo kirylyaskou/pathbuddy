@@ -100,8 +100,19 @@ export async function searchItems(
      WHERE 1=1
        ${typeFilter} ${minLvlFilter} ${maxLvlFilter} ${rarityFilter}
        ${traitsFilter} ${sourceFilter} ${subcategoryFilter}
-     ORDER BY level ASC, name ASC`,
+     ORDER BY level ASC, name ASC
+     LIMIT 500`,
     extraParams
+  )
+}
+
+export async function getItemsByIds(ids: string[]): Promise<ItemRow[]> {
+  if (ids.length === 0) return []
+  const db = await getDb()
+  const placeholders = ids.map(() => '?').join(', ')
+  return db.select<ItemRow[]>(
+    `SELECT * FROM items WHERE id IN (${placeholders})`,
+    ids
   )
 }
 

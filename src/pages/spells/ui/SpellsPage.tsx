@@ -4,6 +4,7 @@ import { Input } from '@/shared/ui/input'
 import { searchSpells } from '@/shared/api'
 import type { SpellRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
+import { stripHtml } from '@/shared/lib/html'
 
 const TRADITIONS = ['arcane', 'divine', 'occult', 'primal'] as const
 const RANKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
@@ -30,16 +31,6 @@ function rankLabel(rank: number) {
   return rank === 0 ? 'Cantrip' : `Rank ${rank}`
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-    .trim()
-}
 
 function SpellCard({ spell, expanded, onToggle }: {
   spell: SpellRow

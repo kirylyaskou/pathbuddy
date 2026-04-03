@@ -5,38 +5,11 @@ import { LevelBadge } from '@/shared/ui/level-badge'
 import { getAllHazards } from '@/shared/api'
 import type { HazardRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
+import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 
 type TypeFilter = 'all' | 'simple' | 'complex'
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-    .trim()
-}
-
-function resolveTokens(text: string): string {
-  text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
-  text = text.replace(/@UUID\[([^\]]+)\]/g, (_, path: string) => {
-    const seg = path.split('.').pop() ?? ''
-    return /^[A-Za-z0-9]{16,}$/.test(seg) ? '' : seg.replace(/-/g, ' ')
-  })
-  text = text.replace(/@Condition\[[^\]]*\]\{([^}]+)\}/g, '$1')
-  text = text.replace(/@Condition\[([^\]]+)\]/g, (_, s: string) => s)
-  text = text.replace(/@Localize\[[^\]]+\]/g, '')
-  text = text.replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
-  return text
-}
-
-function sanitize(html: string | null | undefined): string {
-  if (!html) return ''
-  return stripHtml(resolveTokens(html))
-}
+const sanitize = sanitizeFoundryText
 
 interface HazardAction {
   name: string

@@ -23,8 +23,6 @@ export interface CombatTrackerState {
     turn: number,
     activeCombatantId: string | null
   ) => void
-  nextTurn: () => void
-  previousTurn: () => void
   setActiveCombatant: (id: string | null) => void
   setRound: (round: number) => void
   setTurn: (turn: number) => void
@@ -65,14 +63,6 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
         state.activeCombatantId = activeCombatantId
         state.isRunning = true
         state.isEncounterBacked = true
-      }),
-    nextTurn: () =>
-      set((state) => {
-        state.turn += 1
-      }),
-    previousTurn: () =>
-      set((state) => {
-        if (state.turn > 0) state.turn -= 1
       }),
     setActiveCombatant: (id) =>
       set((state) => {

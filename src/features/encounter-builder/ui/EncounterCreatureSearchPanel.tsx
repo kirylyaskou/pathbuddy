@@ -150,12 +150,6 @@ export function EncounterCreatureSearchPanel({ encounterId, currentCombatants }:
                     </button>
                   </div>
                 </div>
-                {/* HP preview for weak/elite */}
-                {(getHpAdjustment('elite', baseLevel) !== 0) && (
-                  <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-0.5 hidden" aria-hidden>
-                    HP {baseHp} | W: {Math.max(1, baseHp + getHpAdjustment('weak', baseLevel))} / E: {Math.max(1, baseHp + getHpAdjustment('elite', baseLevel))}
-                  </p>
-                )}
               </div>
             )
           })}
