@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Shield } from 'lucide-react'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
+import { Button } from '@/shared/ui/button'
 import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
@@ -8,17 +9,21 @@ import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/Persistent
 import { CombatControls, AddPCDialog } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
-import { setupAutoSave, teardownAutoSave, loadActiveCombat } from '@/features/combat-tracker/lib/combat-persistence'
+import { useEncounterTabsStore, snapshotFromGlobalStores } from '@/features/combat-tracker'
+import { setupAutoSave, teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { setupEncounterAutoSave, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { useCombatantStore } from '@/entities/combatant'
 import { CreatureStatBlock, fetchCreatureStatBlockData } from '@/entities/creature'
 import type { CreatureStatBlockData } from '@/entities/creature'
 import { useShallow } from 'zustand/react/shallow'
+import { EncounterTabBar } from './EncounterTabBar'
+import { BlueprintSelectorDialog } from './BlueprintSelectorDialog'
 
 export function CombatPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [lastNpcStatBlock, setLastNpcStatBlock] = useState<CreatureStatBlockData | null>(null)
   const [statBlockLoading, setStatBlockLoading] = useState(false)
+  const [showSelector, setShowSelector] = useState(false)
   const statBlockCache = useRef<Map<string, CreatureStatBlockData>>(new Map())
 
   const pendingPersistentDamage = useCombatTrackerStore((s) => s.pendingPersistentDamage)
@@ -28,17 +33,26 @@ export function CombatPage() {
   )
 
   const combatants = useCombatantStore(useShallow((s) => s.combatants))
+  const openTabs = useEncounterTabsStore((s) => s.openTabs)
+  const activeTabId = useEncounterTabsStore((s) => s.activeTabId)
 
+  // Mount: migrate existing running combat to a tab, then setup auto-save per active tab
   useEffect(() => {
-    const { isRunning, isEncounterBacked } = useCombatTrackerStore.getState()
-
-    // Only auto-load from DB if no combat is already running in stores.
-    // (When encounter was just loaded via loadEncounterIntoCombat, stores are
-    //  already populated — do not overwrite with stale ad-hoc combat from DB.)
-    if (!isRunning) {
-      loadActiveCombat()
+    // Migration: if combat is running but no tabs exist, create a tab from current state
+    const { isRunning, isEncounterBacked: isBacked, combatId: cId } = useCombatTrackerStore.getState()
+    const { openTabs: tabs } = useEncounterTabsStore.getState()
+    if (isRunning && tabs.length === 0) {
+      const snapshot = snapshotFromGlobalStores()
+      useEncounterTabsStore.getState().openTab({
+        encounterId: isBacked ? cId : null,
+        name: isBacked ? 'Loaded Encounter' : 'Ad-hoc Combat',
+        snapshot,
+      })
     }
+  }, [])
 
+  // Re-setup auto-save whenever active tab changes
+  useEffect(() => {
     if (isEncounterBacked) {
       setupEncounterAutoSave()
       return () => teardownEncounterAutoSave()
@@ -46,7 +60,7 @@ export function CombatPage() {
       setupAutoSave()
       return () => teardownAutoSave()
     }
-  }, [])
+  }, [activeTabId, isEncounterBacked])
 
   const handleSelect = useCallback(async (id: string) => {
     setSelectedId(id)
@@ -85,85 +99,99 @@ export function CombatPage() {
         pending={pendingPersistentDamage}
         onClose={() => setPendingPersistentDamage(null)}
       />
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      {openTabs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+          <Shield className="w-12 h-12 opacity-30" />
+          <p className="text-sm">No encounters open</p>
+          <Button variant="outline" onClick={() => setShowSelector(true)}>
+            Open Encounter
+          </Button>
+          <BlueprintSelectorDialog open={showSelector} onOpenChange={setShowSelector} />
+        </div>
+      ) : (
+        <>
+          <EncounterTabBar />
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
 
-        {/* Left panel — Bestiary search */}
-        <ResizablePanel defaultSize={22} minSize={16} maxSize={32}>
-          <BestiarySearchPanel />
-        </ResizablePanel>
+            {/* Left panel — Bestiary search */}
+            <ResizablePanel defaultSize={22} minSize={16} maxSize={32}>
+              <BestiarySearchPanel />
+            </ResizablePanel>
 
-        <ResizableHandle withHandle />
+            <ResizableHandle withHandle />
 
-        {/* Center panel — Initiative list + Combatant detail */}
-        <ResizablePanel defaultSize={38} minSize={28}>
-          <div className="flex flex-col h-full">
-            {/* Center header: combat controls + add PC (share the same border-b) */}
-            <div className="flex items-stretch shrink-0">
-              <div className="flex-1">
-                <CombatControls />
-              </div>
-              <div className="flex items-center px-2 border-b border-border/50">
-                <AddPCDialog />
-              </div>
-            </div>
-
-            {/* Nested vertical split: initiative list (top) + combatant detail (bottom) */}
-            <ResizablePanelGroup direction="vertical" id="combat-center-vertical" className="flex-1">
-              <ResizablePanel defaultSize={35} minSize={20}>
-                <InitiativeList selectedId={selectedId} onSelect={handleSelect} />
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              <ResizablePanel defaultSize={65} minSize={30}>
-                <div className="flex flex-col h-full">
-                  {selectedId ? (
-                    <div className="flex-1 min-h-0">
-                      <CombatantDetail combatantId={selectedId} />
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                      <p className="text-sm">Select a combatant to view details</p>
-                    </div>
-                  )}
-                  <TurnControls />
+            {/* Center panel — Initiative list + Combatant detail */}
+            <ResizablePanel defaultSize={38} minSize={28}>
+              <div className="flex flex-col h-full">
+                {/* Center header: combat controls + add PC (share the same border-b) */}
+                <div className="flex items-stretch shrink-0">
+                  <div className="flex-1">
+                    <CombatControls />
+                  </div>
+                  <div className="flex items-center px-2 border-b border-border/50">
+                    <AddPCDialog />
+                  </div>
                 </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </div>
-        </ResizablePanel>
 
-        <ResizableHandle withHandle />
+                {/* Nested vertical split: initiative list (top) + combatant detail (bottom) */}
+                <ResizablePanelGroup direction="vertical" id="combat-center-vertical" className="flex-1">
+                  <ResizablePanel defaultSize={35} minSize={20}>
+                    <InitiativeList selectedId={selectedId} onSelect={handleSelect} />
+                  </ResizablePanel>
 
-        {/* Right panel — Creature stat card */}
-        <ResizablePanel defaultSize={40} minSize={28}>
-          <div className="h-full overflow-y-auto">
-            {lastNpcStatBlock ? (
-              <CreatureStatBlock
-                creature={lastNpcStatBlock}
-                className="rounded-none border-x-0 border-t-0"
-                encounterContext={
-                  isEncounterBacked && combatId && selectedId
-                    ? { encounterId: combatId, combatantId: selectedId }
-                    : undefined
-                }
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
-                {statBlockLoading ? (
-                  <p className="text-sm">Loading...</p>
+                  <ResizableHandle withHandle />
+
+                  <ResizablePanel defaultSize={65} minSize={30}>
+                    <div className="flex flex-col h-full">
+                      {selectedId ? (
+                        <div className="flex-1 min-h-0">
+                          <CombatantDetail combatantId={selectedId} />
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                          <p className="text-sm">Select a combatant to view details</p>
+                        </div>
+                      )}
+                      <TurnControls />
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Right panel — Creature stat card */}
+            <ResizablePanel defaultSize={40} minSize={28}>
+              <div className="h-full overflow-y-auto">
+                {lastNpcStatBlock ? (
+                  <CreatureStatBlock
+                    creature={lastNpcStatBlock}
+                    className="rounded-none border-x-0 border-t-0"
+                    encounterContext={
+                      isEncounterBacked && combatId && selectedId
+                        ? { encounterId: combatId, combatantId: selectedId }
+                        : undefined
+                    }
+                  />
                 ) : (
-                  <>
-                    <Shield className="w-8 h-8 opacity-30" />
-                    <p className="text-sm">Select a creature to view its stat block</p>
-                  </>
+                  <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+                    {statBlockLoading ? (
+                      <p className="text-sm">Loading...</p>
+                    ) : (
+                      <>
+                        <Shield className="w-8 h-8 opacity-30" />
+                        <p className="text-sm">Select a creature to view its stat block</p>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </ResizablePanel>
+            </ResizablePanel>
 
-      </ResizablePanelGroup>
+          </ResizablePanelGroup>
+        </>
+      )}
     </div>
   )
 }

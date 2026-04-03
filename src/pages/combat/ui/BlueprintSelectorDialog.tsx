@@ -1,0 +1,107 @@
+import { useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { ScrollArea } from '@/shared/ui/scroll-area'
+import { useEncounterStore } from '@/entities/encounter'
+import { useEncounterTabsStore, createEmptySnapshot } from '@/features/combat-tracker'
+import type { TabSnapshot } from '@/features/combat-tracker'
+import { loadEncounterCombatants } from '@/shared/api'
+import type { Combatant } from '@/entities/combatant'
+
+interface BlueprintSelectorDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function BlueprintSelectorDialog({ open, onOpenChange }: BlueprintSelectorDialogProps) {
+  const encounters = useEncounterStore((s) => s.encounters)
+
+  useEffect(() => {
+    if (open) {
+      useEncounterStore.getState().loadEncounters()
+    }
+  }, [open])
+
+  async function handleSelectBlueprint(encounterId: string, encounterName: string) {
+    try {
+      const encounterCombatants = await loadEncounterCombatants(encounterId)
+      const combatants: Combatant[] = encounterCombatants.map((ec) => ({
+        id: crypto.randomUUID(),
+        creatureRef: ec.creatureRef,
+        displayName: ec.displayName,
+        initiative: 0,
+        hp: ec.maxHp,
+        maxHp: ec.maxHp,
+        tempHp: 0,
+        isNPC: ec.isNPC,
+      }))
+      const snapshot: TabSnapshot = {
+        combatants,
+        combatId: encounterId,
+        activeCombatantId: null,
+        round: 1,
+        turn: 0,
+        isRunning: false,
+        isEncounterBacked: true,
+      }
+      useEncounterTabsStore.getState().openTab({ encounterId, name: encounterName, snapshot })
+      onOpenChange(false)
+    } catch (err) {
+      console.error('Failed to open encounter blueprint:', err)
+    }
+  }
+
+  function handleBlankEncounter() {
+    useEncounterTabsStore.getState().openTab({
+      encounterId: null,
+      name: 'New Combat',
+      snapshot: createEmptySnapshot(),
+    })
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Open Encounter</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[400px]">
+          <div className="space-y-1 p-1">
+            {/* Blank encounter option */}
+            <button
+              className="w-full text-left px-3 py-2 rounded hover:bg-secondary/50 transition-colors"
+              onClick={handleBlankEncounter}
+            >
+              <div className="text-sm font-medium">Blank Encounter</div>
+              <div className="text-xs text-muted-foreground">Start from scratch</div>
+            </button>
+
+            {encounters.length > 0 && (
+              <div className="border-t border-border/30 pt-1 mt-1">
+                {encounters.map((enc) => (
+                  <button
+                    key={enc.id}
+                    className="w-full text-left px-3 py-2 rounded hover:bg-secondary/50 transition-colors"
+                    onClick={() => handleSelectBlueprint(enc.id, enc.name)}
+                  >
+                    <div className="text-sm font-medium">{enc.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Party {enc.partySize} @ Level {enc.partyLevel}
+                      {enc.combatants.length > 0 && ` · ${enc.combatants.length} creatures`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {encounters.length === 0 && (
+              <p className="text-xs text-muted-foreground px-3 py-2">
+                No saved encounters. Create one in the Encounters page first.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -86,7 +86,7 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
     },
 
     closeTab: (tabId) => {
-      const { openTabs, activeTabId } = get()
+      const { activeTabId } = get()
       const isActive = tabId === activeTabId
       set((state) => {
         state.openTabs = state.openTabs.filter((t) => t.id !== tabId)
