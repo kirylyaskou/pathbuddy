@@ -7,6 +7,7 @@ import { formatPrice, ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '
 import { cn } from '@/shared/lib/utils'
 import { stripHtml } from '@/shared/lib/html'
 import { ClickableFormula } from '@/shared/ui/clickable-formula'
+import { SpellInlineCard } from '@/entities/spell'
 
 
 interface ItemReferenceDrawerProps {
@@ -148,6 +149,11 @@ export function ItemReferenceDrawer({ itemId, onClose, extraActions }: ItemRefer
                 <p className="text-[13px] text-foreground/80 leading-relaxed">
                   {stripHtml(item.description)}
                 </p>
+              )}
+
+              {/* Linked Spell */}
+              {item.linked_spell_id && (
+                <SpellInlineCard spellId={item.linked_spell_id} />
               )}
 
               {/* Source */}
