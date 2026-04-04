@@ -22,7 +22,7 @@ export function AppHeader() {
               <span className="sr-only">Roll History</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="p-0 w-80">
+          <PopoverContent align="end" className="p-0 w-[420px]">
             <RollHistoryPanel />
           </PopoverContent>
         </Popover>

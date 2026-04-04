@@ -41,7 +41,10 @@ interface CreatureStatBlockProps {
 export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
   const addRoll = useRollStore((state) => state.addRoll)
   function handleRoll(formula: string, label?: string) {
-    addRoll(rollDice(formula, label))
+    addRoll(rollDice(formula, label, {
+      source: creature.name,
+      ...(encounterContext ? { combatId: encounterContext.encounterId } : {}),
+    }))
   }
 
   return (
@@ -317,9 +320,13 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                 {creature.skills.map((skill) => (
                   <span key={skill.name} className={skill.calculated ? "opacity-40" : ""}>
                     <span className="text-muted-foreground">{skill.name}</span>{" "}
-                    <span className="font-mono text-primary">
+                    <button
+                      onClick={() => handleRoll(`1d20+${skill.modifier}`, `${skill.name} check`)}
+                      title={`Roll ${skill.name} check`}
+                      className="font-mono text-primary font-bold cursor-pointer underline decoration-dotted underline-offset-2 decoration-primary/50 hover:text-pf-gold transition-colors duration-100"
+                    >
                       {skill.modifier >= 0 ? "+" : ""}{skill.modifier}
-                    </span>
+                    </button>
                   </span>
                 ))}
               </div>
@@ -558,10 +565,25 @@ function SpellCard({ foundryId, name }: { foundryId: string | null; name: string
           {spell.damage && (() => {
             const dmg = JSON.parse(spell.damage) as Record<string, { formula?: string; damage?: string; damageType?: string; type?: string }>
             const parts = Object.values(dmg)
-              .map((d) => `${d.formula ?? d.damage ?? '?'} ${d.damageType ?? d.type ?? ''}`.trim())
-              .filter(Boolean)
+              .map((d) => ({ formula: d.formula ?? d.damage ?? null, type: d.damageType ?? d.type ?? null }))
+              .filter((d) => d.formula)
             return parts.length > 0
-              ? <p className="text-xs"><span className="text-muted-foreground">Damage: </span><span className="font-mono text-pf-blood">{parts.join(' + ')}</span></p>
+              ? (
+                <p className="text-xs flex flex-wrap items-center gap-1">
+                  <span className="text-muted-foreground">Damage:</span>
+                  {parts.map((d, i) => (
+                    <span key={i} className="flex items-center gap-0.5">
+                      {i > 0 && <span className="text-muted-foreground">+</span>}
+                      <ClickableFormula
+                        formula={d.formula!}
+                        label={`${name} damage`}
+                        className="text-xs"
+                      />
+                      {d.type && <span className={cn("font-mono", damageTypeColor(d.type))}>{d.type}</span>}
+                    </span>
+                  ))}
+                </p>
+              )
               : null
           })()}
           {/* Traits */}
@@ -825,6 +847,12 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
   encounterContext?: EncounterContext
 }) {
   const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
+  const addRoll = useRollStore((state) => state.addRoll)
+  function handleSpellRoll(formula: string, label?: string) {
+    addRoll(rollDice(formula, label, {
+      ...(encounterContext ? { combatId: encounterContext.encounterId } : {}),
+    }))
+  }
 
   // Slot state — keyed by rank
   const [usedSlots, setUsedSlots] = useState<Record<number, number>>({})
@@ -1013,7 +1041,15 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
               <span className="text-muted-foreground">DC <span className="font-mono text-primary font-bold">{section.spellDc}</span></span>
             )}
             {section.spellAttack !== 0 && (
-              <span className="text-muted-foreground">Attack <span className="font-mono text-primary font-bold">{fmt(section.spellAttack)}</span></span>
+              <span className="text-muted-foreground">Attack{' '}
+                <button
+                  onClick={() => handleSpellRoll(`1d20+${section.spellAttack}`, `${section.tradition} spell attack`)}
+                  title={`Roll spell attack 1d20+${section.spellAttack}`}
+                  className="font-mono text-primary font-bold cursor-pointer underline decoration-dotted underline-offset-2 decoration-primary/50 hover:text-pf-gold transition-colors duration-100"
+                >
+                  {fmt(section.spellAttack)}
+                </button>
+              </span>
             )}
           </div>
           {/* Spells by rank */}
