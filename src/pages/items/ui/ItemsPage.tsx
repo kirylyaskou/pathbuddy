@@ -156,6 +156,7 @@ export function ItemsPage() {
           ) : (
             <ItemsTable
               items={items}
+              selectedType={selectedType}
               sortField={sortField}
               sortDir={sortDir}
               onToggleSort={toggleSort}

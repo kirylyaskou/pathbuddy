@@ -600,7 +600,7 @@ Plans:
 
 - [x] **Phase 34: Items Catalog Overhaul** — Fix search/filter bugs, add Favorites tab, ItemReferenceDrawer, full filter panel (type/level/rarity/traits/source/subcategory), column sorting, EquipmentBlock item links
  (completed 2026-04-03)
-- [ ] **Phase 35: UX Polish + Starfinder Purge + Encounter Tabs** — Items table proportional flex columns + Rarity, Starfinder content purge, trait filter chips, VS Code-style encounter tabs with independent combat state
+- [x] **Phase 35: UX Polish + Starfinder Purge + Encounter Tabs** — Items table proportional flex columns + Rarity, Starfinder content purge, trait filter chips, VS Code-style encounter tabs with independent combat state (completed 2026-04-03)
 
 ### Phase 34: Items Catalog Overhaul
 **Goal**: Items page is a production-quality reference catalog — FTS5 search and filter bugs fixed, Favorites system with SQLite persistence, ItemReferenceDrawer showing full item details, multi-filter panel (type/level/rarity/traits/source/subcategory), column sorting by level and price, and EquipmentBlock item names clickable to open the drawer
@@ -630,19 +630,19 @@ Plans:
   3. Trait filter in Items page shows selected traits as visible removable chips below the filter panel
   4. Hazard search tab in CreatureSearchSidebar works correctly with encounter tabs (already implemented Phase 30)
   5. Combat page supports multiple open encounter tabs with independent combat state; blueprint selector; cross-tab drag&drop; reset to blueprint
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 Plans:
-- [ ] 35-01-PLAN.md — Items table proportional flex weights + Rarity column + trait filter chips
-- [ ] 35-02-PLAN.md — Starfinder content purge: Rust path filter in sync.rs + migration to truncate entity tables
-- [ ] 35-03-PLAN.md — Encounter tabs store (snapshot-swap) + tab bar + BlueprintSelectorDialog + CombatPage multi-tab
-- [ ] 35-04-PLAN.md — Cross-tab drag&drop + reset-to-blueprint + hazard UX verification
+- [x] 35-01-PLAN.md — Items table proportional flex weights + Rarity column + trait filter chips
+- [x] 35-02-PLAN.md — Starfinder content purge: Rust path filter in sync.rs + migration to truncate entity tables
+- [x] 35-03-PLAN.md — Encounter tabs store (snapshot-swap) + tab bar + BlueprintSelectorDialog + CombatPage multi-tab
+- [x] 35-04-PLAN.md — Cross-tab drag&drop + reset-to-blueprint + hazard UX verification
 
 ## Progress (v0.9.0)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 34. Items Catalog Overhaul | v0.9.0 | 3/3 | Complete    | 2026-04-03 |
-| 35. UX Polish + Starfinder Purge + Encounter Tabs | v0.9.0 | 0/4 | Planned | |
+| 35. UX Polish + Starfinder Purge + Encounter Tabs | v0.9.0 | 4/4 | Complete    | 2026-04-03 |
 
 ## Backlog
 

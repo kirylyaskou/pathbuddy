@@ -6,6 +6,7 @@ import { ItemTableRow } from './ItemTableRow'
 
 interface ItemsTableProps {
   items: ItemRow[]
+  selectedType?: string | null
   sortField: 'level' | 'price' | null
   sortDir: 'asc' | 'desc'
   onToggleSort: (field: 'level' | 'price') => void
@@ -23,7 +24,7 @@ function SortIcon({ field, sortField, sortDir }: {
   return <ArrowDown className="w-3 h-3" />
 }
 
-export function ItemsTable({ items, sortField, sortDir, onToggleSort, onItemClick, renderStar }: ItemsTableProps) {
+export function ItemsTable({ items, selectedType, sortField, sortDir, onToggleSort, onItemClick, renderStar }: ItemsTableProps) {
   const parentRef = useRef<HTMLDivElement>(null)
 
   const sortedItems = useMemo(() => {
@@ -42,37 +43,64 @@ export function ItemsTable({ items, sortField, sortDir, onToggleSort, onItemClic
     overscan: 10,
   })
 
-  return (
-    <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-      {/* Sticky header */}
-      <div className="flex items-center gap-2 px-3 h-9 bg-card border-b border-border/40 shrink-0 text-xs text-muted-foreground font-medium">
-        <div className="w-7 shrink-0" />
-        <div className="flex-[20] min-w-0">Name</div>
+  const isWeapon = selectedType === 'weapon'
+  const isArmor  = selectedType === 'armor' || selectedType === 'shield'
+  const hasSubcat = selectedType === 'consumable'
+
+  const header = (
+    <div className="flex items-center gap-2 px-3 h-9 bg-card border-b border-border/40 shrink-0 text-xs text-muted-foreground font-medium">
+      <div className="w-7 shrink-0" />
+      <div className="flex-[20] min-w-0">Name</div>
+
+      {isWeapon && <>
+        <div className="flex-[10] min-w-0">Damage</div>
+        <div className="flex-[8] min-w-0">Category</div>
+        <div className="flex-[8] min-w-0">Group</div>
+        <div className="flex-[12] min-w-0">Traits</div>
+      </>}
+
+      {isArmor && <>
+        <div className="flex-[6] min-w-0 text-right">AC+</div>
+        <div className="flex-[6] min-w-0 text-right">Dex</div>
+        <div className="flex-[6] min-w-0">Rarity</div>
+        <div className="flex-[13] min-w-0">Traits</div>
+      </>}
+
+      {hasSubcat && <>
+        <div className="flex-[12] min-w-0">Subcategory</div>
+        <div className="flex-[7] min-w-0">Rarity</div>
+        <div className="flex-[12] min-w-0">Traits</div>
+      </>}
+
+      {!isWeapon && !isArmor && !hasSubcat && <>
         <div className="flex-[8] min-w-0">Category</div>
         <div className="flex-[7] min-w-0">Rarity</div>
         <div className="flex-[15] min-w-0">Traits</div>
-        <button
-          onClick={() => onToggleSort('level')}
-          className="flex-[4] min-w-0 text-right flex items-center justify-end gap-1 hover:text-foreground transition-colors"
-        >
-          Level <SortIcon field="level" sortField={sortField} sortDir={sortDir} />
-        </button>
-        <button
-          onClick={() => onToggleSort('price')}
-          className="flex-[7] min-w-0 text-right flex items-center justify-end gap-1 hover:text-foreground transition-colors"
-        >
-          Price <SortIcon field="price" sortField={sortField} sortDir={sortDir} />
-        </button>
-        <div className="flex-[4] min-w-0 text-center">Bulk</div>
-        <div className="flex-[9] min-w-0">Usage</div>
-        <div className="flex-[10] min-w-0">Source</div>
-      </div>
+      </>}
 
-      {/* Virtualized rows */}
+      <button
+        onClick={() => onToggleSort('level')}
+        className="flex-[4] min-w-0 text-right flex items-center justify-end gap-1 hover:text-foreground transition-colors"
+      >
+        Level <SortIcon field="level" sortField={sortField} sortDir={sortDir} />
+      </button>
+      <button
+        onClick={() => onToggleSort('price')}
+        className="flex-[7] min-w-0 text-right flex items-center justify-end gap-1 hover:text-foreground transition-colors"
+      >
+        Price <SortIcon field="price" sortField={sortField} sortDir={sortDir} />
+      </button>
+      <div className="flex-[4] min-w-0 text-center">Bulk</div>
+      {!isWeapon && <div className="flex-[9] min-w-0">Usage</div>}
+      <div className="flex-[10] min-w-0">Source</div>
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+      {header}
       <div ref={parentRef} className="flex-1 overflow-y-auto">
-        <div
-          style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
-        >
+        <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => (
             <div
               key={sortedItems[virtualRow.index].id}
@@ -86,6 +114,7 @@ export function ItemsTable({ items, sortField, sortDir, onToggleSort, onItemClic
             >
               <ItemTableRow
                 item={sortedItems[virtualRow.index]}
+                selectedType={selectedType}
                 onNameClick={onItemClick}
                 starSlot={renderStar?.(sortedItems[virtualRow.index])}
               />
