@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import { LevelBadge } from '@/shared/ui/level-badge'
@@ -16,13 +16,13 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { useEncounterStore } from '@/entities/encounter'
 import { saveEncounterCombatants, resetEncounterCombat } from '@/shared/api'
-import type { EncounterCombatantRow } from '@/shared/api'
+import type { EncounterCombatantRow, CreatureRow, HazardRow } from '@/shared/api'
 import { loadEncounterIntoCombat, teardownEncounterAutoSave, flushEncounterSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import { PATHS } from '@/shared/routes'
-import { EncounterCreatureSearchPanel } from './EncounterCreatureSearchPanel'
-import { calculateCreatureXP } from '@engine'
+import { calculateCreatureXP, getHpAdjustment } from '@engine'
+import type { WeakEliteTier } from '@/entities/creature'
 
 interface Props {
   encounterId: string
@@ -34,7 +34,6 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   const setEncounterCombatants = useEncounterStore((s) => s.setEncounterCombatants)
   const upsertEncounter = useEncounterStore((s) => s.upsertEncounter)
   const navigate = useNavigate()
-  const [searchOpen, setSearchOpen] = useState(false)
   const [showLoadConfirm, setShowLoadConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -118,6 +117,129 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
     setEncounterCombatants(encounterId, remaining.map((c, i) => ({ ...c, sortOrder: i })))
   }
 
+  async function handleAddCreature(row: CreatureRow, tier: WeakEliteTier) {
+    const baseLevel = row.level ?? 0
+    const baseHp = row.hp ?? 0
+    const hpDelta = getHpAdjustment(tier, baseLevel)
+    const adjustedHp = Math.max(1, baseHp + hpDelta)
+
+    const newCombatant: EncounterCombatantRow = {
+      id: crypto.randomUUID(),
+      encounterId,
+      creatureRef: row.id,
+      displayName: row.name,
+      initiative: 0,
+      hp: adjustedHp,
+      maxHp: adjustedHp,
+      tempHp: 0,
+      isNPC: true,
+      weakEliteTier: tier,
+      creatureLevel: baseLevel,
+      sortOrder: combatants.length,
+      isHazard: false,
+      hazardRef: null,
+    }
+
+    const updatedRows: EncounterCombatantRow[] = [
+      ...combatants.map((c) => ({
+        id: c.id,
+        encounterId: c.encounterId,
+        creatureRef: c.creatureRef,
+        displayName: c.displayName,
+        initiative: c.initiative,
+        hp: c.hp,
+        maxHp: c.maxHp,
+        tempHp: c.tempHp,
+        isNPC: c.isNPC,
+        weakEliteTier: c.weakEliteTier,
+        creatureLevel: c.creatureLevel,
+        sortOrder: c.sortOrder,
+        isHazard: c.isHazard ?? false,
+        hazardRef: c.hazardRef ?? null,
+      })),
+      newCombatant,
+    ]
+
+    await saveEncounterCombatants(encounterId, updatedRows)
+    setEncounterCombatants(encounterId, updatedRows.map((r) => ({
+      id: r.id,
+      encounterId: r.encounterId,
+      creatureRef: r.creatureRef,
+      displayName: r.displayName,
+      initiative: r.initiative,
+      hp: r.hp,
+      maxHp: r.maxHp,
+      tempHp: r.tempHp,
+      isNPC: r.isNPC,
+      weakEliteTier: r.weakEliteTier,
+      creatureLevel: r.creatureLevel,
+      sortOrder: r.sortOrder,
+      isHazard: r.isHazard,
+      hazardRef: r.hazardRef,
+    })))
+  }
+
+  async function handleAddHazard(hazard: HazardRow) {
+    const newCombatant: EncounterCombatantRow = {
+      id: crypto.randomUUID(),
+      encounterId,
+      creatureRef: '',
+      displayName: hazard.name,
+      initiative: 0,
+      hp: hazard.hp ?? 0,
+      maxHp: hazard.hp ?? 0,
+      tempHp: 0,
+      isNPC: true,
+      weakEliteTier: 'normal',
+      creatureLevel: hazard.level,
+      sortOrder: combatants.length,
+      isHazard: true,
+      hazardRef: hazard.id,
+    }
+
+    const updatedRows: EncounterCombatantRow[] = [
+      ...combatants.map((c) => ({
+        id: c.id,
+        encounterId: c.encounterId,
+        creatureRef: c.creatureRef,
+        displayName: c.displayName,
+        initiative: c.initiative,
+        hp: c.hp,
+        maxHp: c.maxHp,
+        tempHp: c.tempHp,
+        isNPC: c.isNPC,
+        weakEliteTier: c.weakEliteTier,
+        creatureLevel: c.creatureLevel,
+        sortOrder: c.sortOrder,
+        isHazard: c.isHazard ?? false,
+        hazardRef: c.hazardRef ?? null,
+      })),
+      newCombatant,
+    ]
+
+    await saveEncounterCombatants(encounterId, updatedRows)
+    setEncounterCombatants(encounterId, updatedRows.map((r) => ({
+      id: r.id,
+      encounterId: r.encounterId,
+      creatureRef: r.creatureRef,
+      displayName: r.displayName,
+      initiative: r.initiative,
+      hp: r.hp,
+      maxHp: r.maxHp,
+      tempHp: r.tempHp,
+      isNPC: r.isNPC,
+      weakEliteTier: r.weakEliteTier,
+      creatureLevel: r.creatureLevel,
+      sortOrder: r.sortOrder,
+      isHazard: r.isHazard,
+      hazardRef: r.hazardRef,
+    })))
+  }
+
+  // Expose add handlers so Plan 02 can lift them to EncountersPage
+  void handleAddCreature
+  void handleAddHazard
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -155,7 +277,7 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
             </p>
           )}
 
-          {combatants.length === 0 && !searchOpen && (
+          {combatants.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
               No creatures added yet.
             </p>
@@ -167,14 +289,22 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
               : c.weakEliteTier === 'weak' ? c.creatureLevel - 1
               : c.creatureLevel
             const xpResult = calculateCreatureXP(adjustedLevel, partyLevel)
+            const isHazard = c.isHazard === true
 
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary/30 hover:bg-secondary/50 group"
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md group ${
+                  isHazard
+                    ? 'border-l-2 border-amber-600/60 bg-amber-950/30 hover:bg-amber-950/50'
+                    : 'bg-secondary/30 hover:bg-secondary/50'
+                }`}
               >
+                {isHazard && (
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                )}
                 <LevelBadge level={adjustedLevel} size="sm" />
-                {c.weakEliteTier !== 'normal' && (
+                {!isHazard && c.weakEliteTier !== 'normal' && (
                   <span
                     className={`text-[10px] px-1 rounded ${
                       c.weakEliteTier === 'elite'
@@ -203,23 +333,6 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
         </div>
       </ScrollArea>
 
-      {/* Add Creature toggle */}
-      <div className="shrink-0 border-t border-border/50">
-        <button
-          onClick={() => setSearchOpen((v) => !v)}
-          className="flex items-center gap-1.5 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
-        >
-          {searchOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          + Add Creature
-        </button>
-
-        {searchOpen && (
-          <EncounterCreatureSearchPanel
-            encounterId={encounterId}
-            currentCombatants={combatants}
-          />
-        )}
-      </div>
       {/* Load into Combat — confirm when combat is active */}
       <AlertDialog open={showLoadConfirm} onOpenChange={setShowLoadConfirm}>
         <AlertDialogContent>
