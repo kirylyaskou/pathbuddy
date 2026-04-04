@@ -729,10 +729,10 @@ Plans:
 **Goal:** Clickable rolls for skills, DC saves, spell attacks/damage, and item damage in the stat block; roll history enriched with source context (who/what/which combat); roll result drawer repositioned to right side
 **Requirements**: null
 **Depends on:** Phase 37
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 40 to break down)
+- [x] TBD (run /gsd:plan-phase 40 to break down) (completed 2026-04-04)
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
