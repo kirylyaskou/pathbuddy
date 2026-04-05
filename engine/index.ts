@@ -163,3 +163,14 @@ export type { ConditionInput, StatModifierResult } from './statistics/compute-st
 // -- Dice ────────────────────────────────────────────────────────────────────
 export { parseFormula, rollDice, heightenFormula } from './dice/dice'
 export type { Roll, DiceEntry, ParsedFormula } from './dice/dice'
+
+// ── PC ────────────────────────────────────────────────────────────────────────
+export type {
+  PathbuilderAbilities,
+  PathbuilderAttributes,
+  PathbuilderProficiencies,
+  PathbuilderSpellEntry,
+  PathbuilderBuild,
+  PathbuilderExport,
+} from './pc/types'
+export { calculatePCMaxHP } from './pc/hp'

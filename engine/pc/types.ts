@@ -1,0 +1,98 @@
+// ─── Pathbuilder 2e PC Types ──────────────────────────────────────────────────
+// Full type coverage for Pathbuilder 2e JSON export format.
+// Covers all fields needed by Phase 44 (skills, equipment, spells, feats, specials, mods).
+
+export interface PathbuilderAbilities {
+  str: number
+  dex: number
+  con: number
+  int: number
+  wis: number
+  cha: number
+}
+
+export interface PathbuilderAttributes {
+  ancestryhp: number
+  classhp: number
+  bonushp: number
+  bonushpPerLevel: number
+  speed: number
+  speedBonus: number
+}
+
+export interface PathbuilderProficiencies {
+  classDC: number
+  perception: number
+  fortitude: number
+  reflex: number
+  will: number
+  heavy: number
+  medium: number
+  light: number
+  unarmored: number
+  advanced: number
+  martial: number
+  simple: number
+  unarmed: number
+  castingArcane: number
+  castingDivine: number
+  castingOccult: number
+  castingPrimal: number
+}
+
+export interface PathbuilderSpellEntry {
+  name: string
+  magicTradition: string      // 'arcane' | 'divine' | 'occult' | 'primal'
+  spellcastingType: string    // 'prepared' | 'spontaneous' | 'focus'
+  ability: string             // e.g. 'int', 'wis', 'cha'
+  proficiency: number
+  focusPoints?: number
+  spells: Array<{ spellLevel: number; list: string[] }>
+  perDay: number[]
+}
+
+export interface PathbuilderBuild {
+  name: string
+  class: string
+  ancestry: string
+  heritage: string
+  background: string
+  alignment: string
+  gender: string
+  age: string
+  deity: string
+  level: number
+  abilities: PathbuilderAbilities
+  attributes: PathbuilderAttributes
+  proficiencies: PathbuilderProficiencies
+  /** Array of { name, proficiency, ability } */
+  skills: Array<{ name: string; proficiency: number; ability: string }>
+  /** Array of [name, proficiency] */
+  lores: Array<[string, number]>
+  /** Array of [name, source, type, level, note] */
+  feats: Array<[string, string, string, number, string]>
+  /** Array of [name, level, note] */
+  specials: Array<[string, number, string]>
+  /** Array of [name, category, quantity] */
+  equipment: Array<[string, string, number]>
+  spellCasters: PathbuilderSpellEntry[]
+  focusPoints: number
+  focus: Record<string, unknown>
+  mods: Record<string, unknown>
+  formula: unknown[]
+  languages: string[]
+  resistances: unknown[]
+  traits: string[]
+  acTotal: {
+    acProfBonus: number
+    acAbilityBonus: number
+    acItemBonus: number
+  }
+  pets: unknown[]
+}
+
+/** Top-level Pathbuilder 2e JSON export wrapper */
+export interface PathbuilderExport {
+  success: boolean
+  build: PathbuilderBuild
+}
