@@ -9,7 +9,7 @@ import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
-import { CombatControls, AddPCDialog } from '@/features/combat-tracker'
+import { CombatControls, AddPCDialog, createCombatantFromCreature } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import {
@@ -20,8 +20,9 @@ import type { EncounterTab } from '@/features/combat-tracker'
 import { setupAutoSave, teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { setupEncounterAutoSave, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { useCombatantStore } from '@/entities/combatant'
-import { CreatureStatBlock, fetchCreatureStatBlockData } from '@/entities/creature'
-import type { CreatureStatBlockData } from '@/entities/creature'
+import { CreatureStatBlock, fetchCreatureStatBlockData, toCreature, extractIwr } from '@/entities/creature'
+import type { CreatureStatBlockData, WeakEliteTier } from '@/entities/creature'
+import { getHpAdjustment } from '@engine'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/shared/lib/utils'
 import { EncounterTabBar } from './EncounterTabBar'
@@ -290,6 +291,23 @@ export function CombatPage() {
     if (!over) return
 
     const overId = String(over.id)
+    const dragData = active.data.current as { type?: string; row?: import('@/shared/api').CreatureRow; tier?: WeakEliteTier } | undefined
+
+    // Route 0: Bestiary creature add
+    if (dragData?.type === 'bestiary-add' && dragData.row) {
+      const { row, tier = 'normal' } = dragData
+      const creature = toCreature(row)
+      const hpDelta = getHpAdjustment(tier, creature.level)
+      const adjustedHp = Math.max(1, creature.hp + hpDelta)
+      const iwr = extractIwr(row)
+      const c = createCombatantFromCreature(creature.id, creature.name, creature.perception, adjustedHp, useCombatantStore.getState().combatants)
+      c.maxHp = adjustedHp
+      c.iwrImmunities = iwr.immunities
+      c.iwrWeaknesses = iwr.weaknesses
+      c.iwrResistances = iwr.resistances
+      useCombatantStore.getState().addCombatant(c)
+      return
+    }
 
     // Route 1: Cross-tab drop (tab header droppable)
     if (overId.startsWith('tab-drop-')) {

@@ -90,10 +90,10 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
           <div className="flex flex-nowrap overflow-hidden">
             <StatItem label="HP" value={creature.hp} highlight />
             <StatItem label="AC" value={creature.ac} colorClass="text-pf-gold" modResult={modStats.get('ac')} />
-            <StatItem label="Fort" value={creature.fort} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('fortitude')} />
-            <StatItem label="Ref" value={creature.ref} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('reflex')} />
-            <StatItem label="Will" value={creature.will} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('will')} />
-            <StatItem label="Perception" value={creature.perception} modifier colorClass="text-pf-gold-dim" showDc modResult={modStats.get('perception')} />
+            <StatItem label="Fort" value={creature.fort} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('fortitude')} onRoll={(f) => handleRoll(f, 'Fortitude save')} />
+            <StatItem label="Ref" value={creature.ref} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('reflex')} onRoll={(f) => handleRoll(f, 'Reflex save')} />
+            <StatItem label="Will" value={creature.will} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('will')} onRoll={(f) => handleRoll(f, 'Will save')} />
+            <StatItem label="Perception" value={creature.perception} modifier colorClass="text-pf-gold-dim" showDc modResult={modStats.get('perception')} onRoll={(f) => handleRoll(f, 'Perception check')} />
           </div>
           {(creature.spellDC != null || creature.classDC != null) && (
             <div className="flex gap-6 mt-3 pt-3 border-t border-border/40">
@@ -280,7 +280,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                         {strike.damage.map((d, di) => (
                           <span key={di}>
                             {di > 0 && <span className="text-muted-foreground"> plus </span>}
-                            <ClickableFormula formula={d.formula} label={`${strike.name} damage`} />
+                            <ClickableFormula formula={d.formula} label={`${strike.name} damage`} source={creature.name} combatId={encounterContext?.encounterId} />
                             {d.type && (
                               <span className={cn("font-mono", damageTypeColor(d.type))}> {d.type}</span>
                             )}
@@ -296,7 +296,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                             {ad.label && (
                               <span className="text-muted-foreground text-xs">{ad.label}: </span>
                             )}
-                            <ClickableFormula formula={ad.formula} label={ad.label ?? `${strike.name} damage`} />
+                            <ClickableFormula formula={ad.formula} label={ad.label ?? `${strike.name} damage`} source={creature.name} combatId={encounterContext?.encounterId} />
                             {ad.type && (
                               <span className={cn("font-mono", damageTypeColor(ad.type))}> {ad.type}</span>
                             )}
@@ -360,7 +360,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                         )}
                         <span className="font-semibold text-sm">{ability.name}</span>
                       </div>
-                      <p className="mt-1 text-sm text-foreground/80 leading-relaxed">{highlightGameText(ability.description, handleRoll)}</p>
+                      <p className="mt-1 text-sm text-foreground/80 leading-relaxed">{highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}</p>
                       {ability.traits && ability.traits.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {ability.traits.map((trait) => (
@@ -390,6 +390,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                 key={section.entryId}
                 section={section}
                 creatureLevel={creature.level}
+                creatureName={creature.name}
                 {...(encounterContext ? { encounterContext } : {})}
               />
             ))}
@@ -633,7 +634,7 @@ function actionCostLabel(cost: string): string {
 
 const stripHtmlInline = stripHtml
 
-function SpellCard({ foundryId, name }: { foundryId: string | null; name: string }) {
+function SpellCard({ foundryId, name, source, combatId }: { foundryId: string | null; name: string; source?: string; combatId?: string }) {
   const [open, setOpen] = useState(false)
   const [spell, setSpell] = useState<SpellRow | null>(null)
   const [loading, setLoading] = useState(false)
@@ -713,6 +714,8 @@ function SpellCard({ foundryId, name }: { foundryId: string | null; name: string
                       <ClickableFormula
                         formula={d.formula!}
                         label={`${name} damage`}
+                        source={source}
+                        combatId={combatId}
                         className="text-xs"
                       />
                       {d.type && <span className={cn("font-mono", damageTypeColor(d.type))}>{d.type}</span>}
@@ -977,15 +980,17 @@ const RANK_WARNINGS: Record<number, string> = {
 
 // ── SpellcastingBlock (with encounter-aware slots + overrides) ────────────────
 
-function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
+function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureName }: {
   section: SpellcastingSection
   creatureLevel: number
   encounterContext?: EncounterContext
+  creatureName?: string
 }) {
   const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
   const addRoll = useRollStore((state) => state.addRoll)
   function handleSpellRoll(formula: string, label?: string) {
     addRoll(rollDice(formula, label, {
+      ...(creatureName ? { source: creatureName } : {}),
       ...(encounterContext ? { combatId: encounterContext.encounterId } : {}),
     }))
   }
@@ -1326,7 +1331,7 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
                   {visibleSpells.map((spell, i) => (
                     <div key={i} className="flex items-center gap-1 group/spell">
                       <div className="flex-1">
-                        <SpellCard name={spell.name} foundryId={spell.foundryId} />
+                        <SpellCard name={spell.name} foundryId={spell.foundryId} source={creatureName} combatId={encounterContext?.encounterId} />
                       </div>
                       {encounterId && (
                         <button
@@ -1342,7 +1347,7 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext }: {
                   {added.map((name, i) => (
                     <div key={`added-${i}`} className="flex items-center gap-1 group/spell">
                       <div className="flex-1">
-                        <SpellCard name={name} foundryId={null} />
+                        <SpellCard name={name} foundryId={null} source={creatureName} combatId={encounterContext?.encounterId} />
                       </div>
                       {encounterId && (
                         <button
@@ -1407,26 +1412,35 @@ interface StatItemProps {
   colorClass?: string
   showDc?: boolean
   modResult?: StatModifierResult
+  onRoll?: (formula: string) => void
 }
 
-function StatItem({ label, value, modifier, highlight, colorClass, showDc, modResult }: StatItemProps) {
+function StatItem({ label, value, modifier, highlight, colorClass, showDc, modResult, onRoll }: StatItemProps) {
   const netMod = modResult?.netModifier ?? 0
   const finalValue = value + netMod
   const displayValue = modifier && finalValue > 0 ? `+${finalValue}` : `${finalValue}`
   const dc = showDc ? ` (${10 + finalValue})` : ''
 
-  const valueEl = (
-    <p
-      className={cn(
-        'font-mono font-bold text-[clamp(0.7rem,2.8cqw,1.125rem)]',
-        highlight && 'text-pf-threat-extreme',
-        !highlight && netMod < 0 && 'text-pf-blood',
-        !highlight && netMod > 0 && 'text-pf-threat-low',
-        !highlight && netMod === 0 && colorClass,
-      )}
+  const valClassName = cn(
+    'font-mono font-bold text-[clamp(0.7rem,2.8cqw,1.125rem)]',
+    highlight && 'text-pf-threat-extreme',
+    !highlight && netMod < 0 && 'text-pf-blood',
+    !highlight && netMod > 0 && 'text-pf-threat-low',
+    !highlight && netMod === 0 && colorClass,
+  )
+
+  const formula = `1d20${finalValue >= 0 ? '+' : ''}${finalValue}`
+
+  const valueEl = onRoll ? (
+    <button
+      onClick={() => onRoll(formula)}
+      title={`Roll ${formula}`}
+      className={cn(valClassName, 'cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100')}
     >
       {displayValue}{dc}
-    </p>
+    </button>
+  ) : (
+    <p className={valClassName}>{displayValue}{dc}</p>
   )
 
   return (

@@ -23,7 +23,7 @@ import { loadEncounterIntoCombat, teardownEncounterAutoSave, flushEncounterSave 
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import { PATHS } from '@/shared/routes'
-import { calculateCreatureXP } from '@engine'
+import { calculateCreatureXP, getHazardXp } from '@engine'
 
 interface Props {
   encounterId: string
@@ -164,12 +164,15 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
           )}
 
           {combatants.map((c) => {
+            const effectivePartyLevel = encounter.partyLevel ?? partyLevel
             const adjustedLevel =
               c.weakEliteTier === 'elite' ? c.creatureLevel + 1
               : c.weakEliteTier === 'weak' ? c.creatureLevel - 1
               : c.creatureLevel
-            const xpResult = calculateCreatureXP(adjustedLevel, partyLevel)
             const isHazard = c.isHazard === true
+            const xpResult = isHazard
+              ? getHazardXp(c.creatureLevel, effectivePartyLevel, 'simple')
+              : calculateCreatureXP(adjustedLevel, effectivePartyLevel)
 
             return (
               <div

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core'
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -18,6 +18,7 @@ import { loadEncounterCombatants, saveEncounterCombatants } from '@/shared/api'
 import type { CreatureRow, HazardRow, EncounterCombatantRow } from '@/shared/api'
 import type { WeakEliteTier } from '@/entities/creature'
 import { calculateXP, getHpAdjustment } from '@engine'
+import { CreatureCard, toCreature } from '@/entities/creature'
 
 type DragData =
   | { type: 'creature'; row: CreatureRow; tier: WeakEliteTier }
@@ -34,6 +35,8 @@ export function EncountersPage() {
   const partySize = useEncounterBuilderStore((s) => s.partySize)
   const isLoaded = useEncounterBuilderStore((s) => s.isLoaded)
   const loadConfig = useEncounterBuilderStore((s) => s.loadConfig)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   // Drag-and-drop state
   const [activeDragData, setActiveDragData] = useState<DragData | null>(null)
@@ -222,7 +225,7 @@ export function EncountersPage() {
       </div>
 
       {/* 3-panel layout wrapped in DndContext */}
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           {/* Left: Saved encounters list */}
           <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
@@ -255,11 +258,9 @@ export function EncountersPage() {
 
         <DragOverlay>
           {activeDragData && (
-            <div className="opacity-80 pointer-events-none">
+            <div className="opacity-90 pointer-events-none w-[280px]">
               {activeDragData.type === 'creature' ? (
-                <div className="px-3 py-2 bg-card rounded-md border border-border text-sm font-medium shadow-lg">
-                  {activeDragData.row.name}
-                </div>
+                <CreatureCard creature={toCreature(activeDragData.row)} compact />
               ) : (
                 <div className="px-3 py-2 bg-card rounded-md border-l-2 border-amber-600/60 border border-border text-sm font-medium shadow-lg text-amber-100/90">
                   {activeDragData.hazard.name}
