@@ -60,7 +60,7 @@ export function BlueprintSelectorDialog({ open, onOpenChange }: BlueprintSelecto
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog modal={false} open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Open Encounter</DialogTitle>

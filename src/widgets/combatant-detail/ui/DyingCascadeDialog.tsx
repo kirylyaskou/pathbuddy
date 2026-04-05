@@ -120,7 +120,7 @@ export function DyingCascadeDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+    <Dialog modal={false} open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

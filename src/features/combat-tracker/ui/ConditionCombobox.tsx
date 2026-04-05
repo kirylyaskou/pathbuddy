@@ -3,40 +3,53 @@ import { Plus, Minus, Check } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs'
 import { CONDITION_SLUGS, VALUED_CONDITIONS, CONDITION_GROUPS } from '@engine'
 import type { ConditionSlug } from '@engine'
 import { applyCondition } from '@/features/combat-tracker'
 import { useConditionStore } from '@/entities/condition'
 import { toast } from 'sonner'
 
-interface ConditionComboboxProps {
+interface Props {
   combatantId: string
   existingSlugs: string[]
 }
 
 const PERSISTENT_SLUGS = [
-  'persistent-fire', 'persistent-cold', 'persistent-acid',
-  'persistent-bleed', 'persistent-electricity', 'persistent-poison',
+  'persistent-fire',
+  'persistent-cold',
+  'persistent-acid',
+  'persistent-bleed',
+  'persistent-electricity',
+  'persistent-poison',
 ] as const
 
-const groupedSlugs = new Set([
-  ...Object.values(CONDITION_GROUPS).flat(),
-  ...PERSISTENT_SLUGS,
-])
-const otherSlugs = CONDITION_SLUGS.filter((s) => !groupedSlugs.has(s))
+const SECTIONS: { label: string; slugs: readonly string[] }[] = [
+  { label: 'Persistent Damage', slugs: PERSISTENT_SLUGS },
+  { label: 'Death',             slugs: CONDITION_GROUPS['death']     ?? [] },
+  { label: 'Abilities',         slugs: CONDITION_GROUPS['abilities'] ?? [] },
+  { label: 'Senses',            slugs: CONDITION_GROUPS['senses']    ?? [] },
+  { label: 'Detection',         slugs: CONDITION_GROUPS['detection'] ?? [] },
+  { label: 'Attitudes',         slugs: CONDITION_GROUPS['attitudes'] ?? [] },
+]
 
-const TABS = [
-  { id: 'persistent', label: 'Persistent', slugs: PERSISTENT_SLUGS as readonly string[] },
-  { id: 'death', label: 'Death', slugs: CONDITION_GROUPS.death as readonly string[] },
-  { id: 'abilities', label: 'Abilities', slugs: CONDITION_GROUPS.abilities as readonly string[] },
-  { id: 'senses', label: 'Senses', slugs: CONDITION_GROUPS.senses as readonly string[] },
-  { id: 'other', label: 'Other', slugs: otherSlugs as readonly string[] },
-] as const
+const groupedSet = new Set(SECTIONS.flatMap((s) => [...s.slugs]))
+const otherSlugs = CONDITION_SLUGS.filter((s) => !groupedSet.has(s))
+const allSlugs = [...SECTIONS.flatMap((s) => [...s.slugs]), ...otherSlugs]
 
-const allSlugs = TABS.flatMap((t) => [...t.slugs])
+const fmt = (s: string) => s.split('-').join(' ')
+const norm = (s: string) => fmt(s).toLowerCase()
 
-function ConditionPill({ slug, disabled, onClick }: { slug: string; disabled: boolean; onClick: () => void }) {
+function ConditionPill({
+  slug,
+  disabled,
+  selected,
+  onClick,
+}: {
+  slug: string
+  disabled: boolean
+  selected: boolean
+  onClick: () => void
+}) {
   return (
     <button
       className={`px-2 py-1.5 rounded text-xs capitalize cursor-pointer text-left break-words
@@ -47,25 +60,41 @@ function ConditionPill({ slug, disabled, onClick }: { slug: string; disabled: bo
       disabled={disabled}
       onClick={onClick}
     >
-      {slug.split('-').join(' ')}
+      {fmt(slug)}
       {disabled && <Check className="w-2.5 h-2.5 inline ml-1 opacity-50" />}
     </button>
   )
 }
 
-const normalize = (s: string) => s.split('-').join(' ').toLowerCase()
-
-export function ConditionCombobox({ combatantId, existingSlugs }: ConditionComboboxProps) {
+export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
   const [open, setOpen] = useState(false)
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
   const [value, setValue] = useState(1)
   const [formula, setFormula] = useState('')
-  const [search, setSearch] = useState('')
 
-  const isPersistent = selectedSlug?.startsWith('persistent-')
-  const isValued = selectedSlug && !isPersistent && (VALUED_CONDITIONS as readonly string[]).includes(selectedSlug)
+  const isPersistent = selected?.startsWith('persistent-') ?? false
+  const isValued =
+    selected != null &&
+    !isPersistent &&
+    (VALUED_CONDITIONS as readonly string[]).includes(selected)
 
-  const matchesSearch = (slug: string) => normalize(slug).includes(normalize(search))
+  const close = useCallback(() => {
+    setOpen(false)
+    setSelected(null)
+    setValue(1)
+    setFormula('')
+    setSearch('')
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, close])
 
   const handleOpenChange = useCallback((o: boolean) => {
     setOpen(o)
@@ -75,10 +104,10 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
   const handleSelect = useCallback(
     (slug: string) => {
       if (slug.startsWith('persistent-')) {
-        setSelectedSlug(slug)
+        setSelected(slug)
         setFormula('')
       } else if ((VALUED_CONDITIONS as readonly string[]).includes(slug)) {
-        setSelectedSlug(slug)
+        setSelected(slug)
         setValue(1)
       } else {
         // Close dialog BEFORE store update to avoid useSyncExternalStore race with Radix effects
@@ -90,7 +119,7 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
         }
       }
     },
-    [combatantId]
+    [combatantId, close],
   )
 
   const handleApplyValued = useCallback(() => {
@@ -124,11 +153,9 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
     toast(`Applied ${slug.replace('persistent-', 'persistent ')} (${f})`)
   }, [combatantId, selectedSlug, formula])
 
-  const handleBack = useCallback(() => {
-    setSelectedSlug(null)
-    setValue(1)
-    setFormula('')
-  }, [])
+  const filtered = search
+    ? allSlugs.filter((s) => norm(s).includes(norm(search)))
+    : null
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -242,15 +269,119 @@ export function ConditionCombobox({ combatantId, existingSlugs }: ConditionCombo
                           key={slug}
                           slug={slug}
                           disabled={existingSlugs.includes(slug)}
+                          selected={selected === slug}
                           onClick={() => handleSelect(slug)}
                         />
                       ))}
                     </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
-          </div>
+                  )
+                ) : (
+                  <div className="space-y-3">
+                    {SECTIONS.map((section) => (
+                      <div key={section.label}>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                          {section.label}
+                        </p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {section.slugs.map((slug) => (
+                            <ConditionPill
+                              key={slug}
+                              slug={slug}
+                              disabled={existingSlugs.includes(slug)}
+                              selected={selected === slug}
+                              onClick={() => handleSelect(slug)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {otherSlugs.length > 0 && (
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                          Other
+                        </p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {otherSlugs.map((slug) => (
+                            <ConditionPill
+                              key={slug}
+                              slug={slug}
+                              disabled={existingSlugs.includes(slug)}
+                              selected={selected === slug}
+                              onClick={() => handleSelect(slug)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom config bar — valued or persistent */}
+              {selected && (isPersistent || isValued) && (
+                <div className="border-t border-border px-4 py-3 shrink-0 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium capitalize">{fmt(selected)}</span>
+                    <button
+                      onClick={() => setSelected(null)}
+                      className="opacity-70 hover:opacity-100 transition-opacity text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {isPersistent ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={formula}
+                        onChange={(e) => setFormula(e.target.value)}
+                        placeholder="e.g. 2d6"
+                        className="h-8 text-xs flex-1"
+                        onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+                        autoFocus
+                      />
+                      <Button
+                        className="h-8 text-xs px-3"
+                        onClick={handleApply}
+                        disabled={!formula.trim()}
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Apply
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="w-8 h-8 shrink-0"
+                        onClick={() => setValue((v) => Math.max(1, v - 1))}
+                        disabled={value <= 1}
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </Button>
+                      <span className="text-2xl font-mono font-bold w-8 text-center">
+                        {value}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="w-8 h-8 shrink-0"
+                        onClick={() => setValue((v) => v + 1)}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button className="h-8 text-xs flex-1" onClick={handleApply}>
+                        <Check className="w-3 h-3 mr-1" />
+                        Apply {fmt(selected)} {value}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body,
         )}
       </DialogContent>
     </Dialog>

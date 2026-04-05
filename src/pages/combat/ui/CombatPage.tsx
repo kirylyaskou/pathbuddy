@@ -3,7 +3,6 @@ import { Shield } from 'lucide-react'
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
-import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Button } from '@/shared/ui/button'
 import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
@@ -171,7 +170,7 @@ function CombatColumn({ tab, isActive, onActivate, onSelect, className }: Combat
         <span className="ml-2 text-muted-foreground/60">(click to focus)</span>
       </div>
       {/* Read-only initiative list from snapshot */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="p-2 space-y-0.5">
           {combatants.map((c) => (
             <div
@@ -201,7 +200,7 @@ function CombatColumn({ tab, isActive, onActivate, onSelect, className }: Combat
             <p className="text-sm text-muted-foreground text-center py-8">No combatants</p>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
