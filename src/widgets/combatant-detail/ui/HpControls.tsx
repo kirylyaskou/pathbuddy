@@ -231,133 +231,124 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {/* Stepper — used for Heal/TempHP and untyped damage */}
-        <div className="flex flex-col items-center">
+      <div className="flex flex-col gap-1">
+        {/* Damage button — full width */}
+        <Button
+          variant="destructive"
+          className="h-9 text-xs justify-start gap-1.5 w-full"
+          onClick={() => handleAction('damage')}
+          disabled={!canDamage}
+        >
+          <Swords className="w-3.5 h-3.5" />
+          Damage
+          {hasEntries && totalTypedDamage > 0 && (
+            <span className="ml-auto font-mono opacity-80">{totalTypedDamage}</span>
+          )}
+        </Button>
+
+        {/* Damage entries area — full width */}
+        <div className="min-h-7 w-full flex flex-wrap items-center gap-1 px-2 py-1 rounded border border-border/50 bg-secondary/20">
+          {!hasEntries && materials.length === 0 && (
+            <span className="text-xs text-muted-foreground">Untyped</span>
+          )}
+
+          {/* Typed entries: [chip][amount][×] */}
+          {damageEntries.map((entry) => (
+            <div key={entry.damageType} className="flex items-center gap-0.5">
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-l capitalize ${CHIP_COLOR[entry.damageType] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {entry.damageType}
+              </span>
+              <input
+                type="number"
+                value={entry.amount || ''}
+                onChange={(e) =>
+                  updateEntryAmount(entry.damageType, Math.max(0, parseInt(e.target.value, 10) || 0))
+                }
+                placeholder="0"
+                className="w-9 h-[22px] text-center text-[10px] font-mono font-bold bg-secondary/50 border-y border-border/50 focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                min={0}
+              />
+              <button
+                onClick={() => removeEntry(entry.damageType)}
+                className="h-[22px] px-1 text-muted-foreground hover:text-foreground bg-secondary/30 border border-border/50 rounded-r hover:bg-secondary/60 transition-colors"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+
+          {/* Material chips (no amount) */}
+          {materials.map((m) => (
+            <div key={m} className="flex items-center gap-0.5">
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-l capitalize ${CHIP_COLOR[m] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {m}
+              </span>
+              <button
+                onClick={() => toggleMaterial(m)}
+                className="h-[22px] px-1 text-muted-foreground hover:text-foreground bg-secondary/30 border border-border/50 rounded-r hover:bg-secondary/60 transition-colors"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+
           <button
-            className="h-5 w-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-t transition-colors"
-            onClick={() => stepValue(1)}
+            onClick={() => setTraitSelectorOpen(true)}
+            className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-dashed border-border/40 hover:border-border/70 transition-colors"
           >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-          <input
-            ref={inputRef}
-            type="number"
-            value={hpInput || ''}
-            onChange={(e) => setHpInput(Math.max(0, parseInt(e.target.value, 10) || 0))}
-            onKeyDown={(e) => e.key === 'Enter' && handleAction('damage')}
-            onWheel={handleWheel}
-            placeholder="0"
-            className="w-10 h-10 text-center text-lg font-mono font-bold bg-secondary/30 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            min={0}
-          />
-          <button
-            className="h-5 w-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-b transition-colors"
-            onClick={() => stepValue(-1)}
-          >
-            <ChevronDown className="w-4 h-4" />
+            + traits
           </button>
         </div>
 
-        {/* Action column */}
-        <div className="flex flex-col gap-1 flex-1 min-w-0">
-          {/* Damage button */}
-          <Button
-            variant="destructive"
-            className="h-9 text-xs justify-start gap-1.5 w-full"
-            onClick={() => handleAction('damage')}
-            disabled={!canDamage}
-          >
-            <Swords className="w-3.5 h-3.5" />
-            Damage
-            {hasEntries && totalTypedDamage > 0 && (
-              <span className="ml-auto font-mono opacity-80">{totalTypedDamage}</span>
-            )}
-          </Button>
-
-          {/* Damage entries area */}
-          <div className="min-h-7 w-full flex flex-wrap items-center gap-1 px-2 py-1 rounded border border-border/50 bg-secondary/20">
-            {!hasEntries && materials.length === 0 && (
-              <span className="text-xs text-muted-foreground">Untyped</span>
-            )}
-
-            {/* Typed entries: [chip] [amount input] [×] */}
-            {damageEntries.map((entry) => (
-              <div
-                key={entry.damageType}
-                className="flex items-center gap-0.5"
-              >
-                <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-l capitalize ${CHIP_COLOR[entry.damageType] ?? 'bg-muted text-muted-foreground'}`}
-                >
-                  {entry.damageType}
-                </span>
-                <input
-                  type="number"
-                  value={entry.amount || ''}
-                  onChange={(e) =>
-                    updateEntryAmount(entry.damageType, Math.max(0, parseInt(e.target.value, 10) || 0))
-                  }
-                  placeholder="0"
-                  className="w-9 h-[22px] text-center text-[10px] font-mono font-bold bg-secondary/50 border-y border-border/50 focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  min={0}
-                />
-                <button
-                  onClick={() => removeEntry(entry.damageType)}
-                  className="h-[22px] px-1 text-muted-foreground hover:text-foreground bg-secondary/30 border border-border/50 rounded-r hover:bg-secondary/60 transition-colors"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ))}
-
-            {/* Material trait chips (no amount) */}
-            {materials.map((m) => (
-              <div key={m} className="flex items-center gap-0.5">
-                <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-l capitalize ${CHIP_COLOR[m] ?? 'bg-muted text-muted-foreground'}`}
-                >
-                  {m}
-                </span>
-                <button
-                  onClick={() => toggleMaterial(m)}
-                  className="h-[22px] px-1 text-muted-foreground hover:text-foreground bg-secondary/30 border border-border/50 rounded-r hover:bg-secondary/60 transition-colors"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ))}
-
-            {/* Add traits button */}
+        {/* Heal / TempHP row — stepper here controls these (and untyped damage above) */}
+        <div className="flex gap-1 items-center">
+          <div className="flex flex-col items-center shrink-0">
             <button
-              onClick={() => setTraitSelectorOpen(true)}
-              className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-dashed border-border/40 hover:border-border/70 transition-colors"
+              className="h-4 w-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-t transition-colors"
+              onClick={() => stepValue(1)}
             >
-              + traits
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+            <input
+              ref={inputRef}
+              type="number"
+              value={hpInput || ''}
+              onChange={(e) => setHpInput(Math.max(0, parseInt(e.target.value, 10) || 0))}
+              onKeyDown={(e) => e.key === 'Enter' && handleAction('damage')}
+              onWheel={handleWheel}
+              placeholder="0"
+              className="w-10 h-8 text-center text-sm font-mono font-bold bg-secondary/30 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min={0}
+            />
+            <button
+              className="h-4 w-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-b transition-colors"
+              onClick={() => stepValue(-1)}
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </div>
-
-          {/* Heal + TempHP */}
-          <div className="flex gap-1">
-            <Button
-              variant="secondary"
-              className="h-7 text-xs justify-start gap-1.5 flex-1 bg-emerald-900/50 hover:bg-emerald-900/70 text-emerald-300"
-              onClick={() => handleAction('heal')}
-              disabled={hpInput <= 0}
-            >
-              <Plus className="w-3 h-3" />
-              Heal
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-7 text-xs justify-start gap-1.5 flex-1 bg-blue-900/50 hover:bg-blue-900/70 text-blue-300"
-              onClick={() => handleAction('tempHp')}
-              disabled={hpInput <= 0}
-            >
-              <Shield className="w-3 h-3" />
-              Temp HP
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            className="h-full text-xs justify-start gap-1.5 flex-1 bg-emerald-900/50 hover:bg-emerald-900/70 text-emerald-300"
+            onClick={() => handleAction('heal')}
+            disabled={hpInput <= 0}
+          >
+            <Plus className="w-3 h-3" />
+            Heal
+          </Button>
+          <Button
+            variant="secondary"
+            className="h-full text-xs justify-start gap-1.5 flex-1 bg-blue-900/50 hover:bg-blue-900/70 text-blue-300"
+            onClick={() => handleAction('tempHp')}
+            disabled={hpInput <= 0}
+          >
+            <Shield className="w-3 h-3" />
+            Temp HP
+          </Button>
         </div>
       </div>
 
