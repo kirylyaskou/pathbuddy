@@ -355,7 +355,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
       </div>
 
       {/* Trait selector dialog */}
-      <Dialog open={traitSelectorOpen} onOpenChange={setTraitSelectorOpen}>
+      <Dialog modal={false} open={traitSelectorOpen} onOpenChange={setTraitSelectorOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold flex items-center justify-between">

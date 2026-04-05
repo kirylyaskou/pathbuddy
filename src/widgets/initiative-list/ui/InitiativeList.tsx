@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { ScrollArea } from '@/shared/ui/scroll-area'
 import { useCombatantStore } from '@/entities/combatant'
 import { useConditionStore } from '@/entities/condition'
 import { useCombatTrackerStore, clearCombatantManager } from '@/features/combat-tracker'
@@ -29,7 +28,7 @@ export function InitiativeList({ selectedId, onSelect }: InitiativeListProps) {
   )
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto">
       <div className="p-2 space-y-0.5">
         <SortableContext
           items={combatants.map((c) => c.id)}
@@ -55,6 +54,6 @@ export function InitiativeList({ selectedId, onSelect }: InitiativeListProps) {
           </p>
         )}
       </div>
-    </ScrollArea>
+    </div>
   )
 }

@@ -862,7 +862,7 @@ function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, 
   }, [query, rank, tradition, open, focusOnly])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog modal={false} open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-sm">{focusOnly ? 'Add Focus Spell' : 'Add Spell'}</DialogTitle>

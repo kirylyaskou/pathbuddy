@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/shared/ui/input'
-import { ScrollArea } from '@/shared/ui/scroll-area'
 import { CreatureCard, toCreature, extractIwr } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
 import { searchCreatures, fetchCreatures } from '@/shared/api'
@@ -118,7 +117,7 @@ export function BestiarySearchPanel() {
           ))}
         </div>
       </div>
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="p-2 space-y-1.5">
           {loading && results.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
@@ -155,7 +154,7 @@ export function BestiarySearchPanel() {
             )
           })}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
