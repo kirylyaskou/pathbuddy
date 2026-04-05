@@ -36,18 +36,26 @@ export function useModifiedStats(
   combatantId: string | undefined,
   statSlugs: string[],
 ): Map<string, StatModifierResult> {
-  // Subscribe to only this combatant's conditions (shallow compare)
-  const conditions = useConditionStore(
+  // Subscribe to only this combatant's raw ActiveCondition objects (stable immer refs).
+  // IMPORTANT: do NOT .map() inside the selector — that creates new ConditionInput objects
+  // on every getSnapshot() call, making Object.is always false → useSyncExternalStore
+  // calls forceStoreRerender on every render → infinite loop.
+  const rawConditions = useConditionStore(
     useShallow((s) =>
       combatantId
-        ? s.activeConditions
-            .filter((c) => c.combatantId === combatantId)
-            .map((c): ConditionInput => ({
-              slug: c.slug as ConditionInput['slug'],
-              value: c.value ?? 1,
-            }))
-        : ([] as ConditionInput[]),
+        ? s.activeConditions.filter((c) => c.combatantId === combatantId)
+        : [],
     ),
+  )
+
+  // Convert to ConditionInput only when rawConditions actually changed (stable immer refs)
+  const conditions = useMemo(
+    () =>
+      rawConditions.map((c): ConditionInput => ({
+        slug: c.slug as ConditionInput['slug'],
+        value: c.value ?? 1,
+      })),
+    [rawConditions],
   )
 
   // Use joined key for stable memo dependency (avoids array reference churn)
@@ -162,17 +170,22 @@ export function useSpellModifiers(
   combatantId: string | undefined,
   tradition: string,
 ): StatModifierResult {
-  const conditions = useConditionStore(
+  // Same fix as useModifiedStats: filter returns stable immer refs, map outside selector
+  const rawConditions = useConditionStore(
     useShallow((s) =>
       combatantId
-        ? s.activeConditions
-            .filter((c) => c.combatantId === combatantId)
-            .map((c): ConditionInput => ({
-              slug: c.slug as ConditionInput['slug'],
-              value: c.value ?? 1,
-            }))
-        : ([] as ConditionInput[]),
+        ? s.activeConditions.filter((c) => c.combatantId === combatantId)
+        : [],
     ),
+  )
+
+  const conditions = useMemo(
+    () =>
+      rawConditions.map((c): ConditionInput => ({
+        slug: c.slug as ConditionInput['slug'],
+        value: c.value ?? 1,
+      })),
+    [rawConditions],
   )
 
   return useMemo(
