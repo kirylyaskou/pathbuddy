@@ -8,7 +8,7 @@ import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
-import { CombatControls, AddPCDialog, createCombatantFromCreature } from '@/features/combat-tracker'
+import { CombatControls, createCombatantFromCreature } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import {
@@ -126,9 +126,6 @@ function CombatColumn({ tab, isActive, onActivate, onSelect, className }: Combat
         <div className="flex items-stretch shrink-0">
           <div className="flex-1">
             <CombatControls />
-          </div>
-          <div className="flex items-center px-2 border-b border-border/50">
-            <AddPCDialog />
           </div>
         </div>
         <ResizablePanelGroup direction="vertical" className="flex-1">
@@ -387,13 +384,10 @@ export function CombatPage() {
               ) : (
                 // Single column mode
                 <div className="flex flex-col h-full">
-                  {/* Center header: combat controls + add PC (share the same border-b) */}
+                  {/* Center header: combat controls */}
                   <div className="flex items-stretch shrink-0">
                     <div className="flex-1">
                       <CombatControls />
-                    </div>
-                    <div className="flex items-center px-2 border-b border-border/50">
-                      <AddPCDialog />
                     </div>
                   </div>
 

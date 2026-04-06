@@ -39,6 +39,9 @@ export function CombatantDetail({ combatantId }: CombatantDetailProps) {
           <p className="text-xs text-muted-foreground">
             Initiative: <span className="font-mono">{combatant.initiative}</span>
             {combatant.isNPC ? ' — NPC' : ' — PC'}
+            {!combatant.isNPC && combatant.ac !== undefined && (
+              <> · AC <span className="font-mono">{combatant.ac}</span></>
+            )}
           </p>
         </div>
       </div>
