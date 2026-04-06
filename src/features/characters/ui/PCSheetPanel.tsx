@@ -5,7 +5,7 @@ import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Textarea } from '@/shared/ui/textarea'
 import type { CharacterRecord } from '@/shared/api/characters'
 import { updateCharacterNotes } from '@/shared/api/characters'
-import type { PathbuilderBuild, PathbuilderExport } from '@engine'
+import type { PathbuilderBuild } from '@engine'
 import { calculatePCMaxHP } from '@engine'
 import type { PathbuilderAbilities } from '@engine'
 
@@ -389,7 +389,7 @@ export function PCSheetPanel({ character, onClose }: PCSheetPanelProps) {
   const build = useMemo(() => {
     if (!character) return null
     try {
-      return (JSON.parse(character.rawJson) as PathbuilderExport).build
+      return JSON.parse(character.rawJson) as PathbuilderBuild
     } catch {
       return null
     }
