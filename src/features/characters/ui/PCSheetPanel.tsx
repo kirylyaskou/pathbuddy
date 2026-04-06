@@ -57,7 +57,8 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
     thievery: 'dex',
   }
 
-  const sortedSkills = [...build.skills].sort((a, b) => a.name.localeCompare(b.name))
+  const sortedSkills = (Array.isArray(build.skills) ? [...build.skills] : [])
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="space-y-6">
