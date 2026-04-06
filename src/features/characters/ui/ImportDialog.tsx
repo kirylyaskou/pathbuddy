@@ -115,11 +115,11 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>Import Character</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="file" onValueChange={(v) => { setActiveTab(v as 'file' | 'paste'); setError(null) }}>
+        <Tabs defaultValue="file" onValueChange={(v) => { setActiveTab(v as 'file' | 'paste'); setError(null) }} className="flex flex-col flex-1 overflow-y-auto min-h-0">
           <TabsList className="w-full">
             <TabsTrigger value="file" className="flex-1">File</TabsTrigger>
             <TabsTrigger value="paste" className="flex-1">Paste JSON</TabsTrigger>
