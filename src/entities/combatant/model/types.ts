@@ -9,6 +9,7 @@ export interface Combatant {
   maxHp: number
   tempHp: number
   isNPC: boolean
+  ac?: number          // PC only — calculated from Pathbuilder acTotal; undefined for NPCs
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]
