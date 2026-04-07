@@ -1,15 +1,28 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, UserPlus } from 'lucide-react'
+import { Search, UserPlus, SlidersHorizontal, Check, X } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
 import { Input } from '@/shared/ui/input'
+import { Button } from '@/shared/ui/button'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { LevelBadge } from '@/shared/ui/level-badge'
+import { Popover, PopoverTrigger, PopoverContent } from '@/shared/ui/popover'
+import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '@/shared/ui/command'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/ui/select'
 import { CreatureCard, toCreature } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
-import { searchCreatures, fetchCreatures, searchHazards, getAllHazards, getAllCharacters } from '@/shared/api'
+import {
+  searchCreaturesFiltered,
+  fetchDistinctCreatureTypes,
+  fetchDistinctCreatureSources,
+  fetchDistinctTraits,
+  searchHazards,
+  getAllHazards,
+  getAllCharacters,
+} from '@/shared/api'
 import type { CreatureRow, HazardRow, CharacterRecord } from '@/shared/api'
 import { useEncounterBuilderStore } from '../model/store'
 import { getHpAdjustment, getStatAdjustment } from '@engine'
+import { cn } from '@/shared/lib/utils'
 
 type SidebarTab = 'creatures' | 'hazards' | 'characters'
 
@@ -18,6 +31,8 @@ const TIERS: { value: WeakEliteTier; label: string }[] = [
   { value: 'normal', label: 'Normal' },
   { value: 'elite', label: 'Elite' },
 ]
+
+const RARITIES = ['common', 'uncommon', 'rare', 'unique'] as const
 
 interface CreatureSearchSidebarProps {
   onAddCreature?: (row: CreatureRow, tier: WeakEliteTier) => void
@@ -72,6 +87,21 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, onAddCharact
   const [creatureLoading, setCreatureLoading] = useState(false)
   const [selectedTier, setSelectedTier] = useState<WeakEliteTier>('normal')
 
+  // Filter panel state — creatures tab only
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [levelMin, setLevelMin] = useState<string>('')
+  const [levelMax, setLevelMax] = useState<string>('')
+  const [selectedRarities, setSelectedRarities] = useState<string[]>([])
+  const [creatureType, setCreatureType] = useState<string | null>(null)
+  const [selectedTraits, setSelectedTraits] = useState<string[]>([])
+  const [sourceName, setSourceName] = useState<string | null>(null)
+  const [traitsOpen, setTraitsOpen] = useState(false)
+
+  // Distinct value pools (loaded once on mount)
+  const [availableTypes, setAvailableTypes] = useState<string[]>([])
+  const [availableSources, setAvailableSources] = useState<string[]>([])
+  const [availableTraits, setAvailableTraits] = useState<string[]>([])
+
   // Hazard state
   const [hazardResults, setHazardResults] = useState<HazardRow[]>([])
   const [hazardLoading, setHazardLoading] = useState(false)
@@ -83,6 +113,34 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, onAddCharact
   const addCreatureToDraft = useEncounterBuilderStore((s) => s.addCreatureToDraft)
   const addHazardToDraft = useEncounterBuilderStore((s) => s.addHazardToDraft)
 
+  // Load filter option pools once
+  useEffect(() => {
+    fetchDistinctCreatureTypes().then(setAvailableTypes).catch(() => {})
+    fetchDistinctCreatureSources().then(setAvailableSources).catch(() => {})
+    fetchDistinctTraits().then(setAvailableTraits).catch(() => {})
+  }, [])
+
+  const toggleRarity = useCallback((r: string) => {
+    setSelectedRarities((prev) =>
+      prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]
+    )
+  }, [])
+
+  const toggleTrait = useCallback((t: string) => {
+    setSelectedTraits((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+    )
+  }, [])
+
+  const activeFilterCount = [
+    levelMin !== '' ? 1 : 0,
+    levelMax !== '' ? 1 : 0,
+    selectedRarities.length,
+    creatureType ? 1 : 0,
+    selectedTraits.length,
+    sourceName ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
+
   // Creature search
   useEffect(() => {
     if (activeTab !== 'creatures') return
@@ -90,9 +148,18 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, onAddCharact
     const search = async () => {
       setCreatureLoading(true)
       try {
-        const rows = query.trim()
-          ? await searchCreatures(query, 50)
-          : await fetchCreatures(50, 0)
+        const parsedMin = levelMin.trim() === '' ? null : Number(levelMin)
+        const parsedMax = levelMax.trim() === '' ? null : Number(levelMax)
+        const filters = {
+          query: query.trim() || undefined,
+          levelMin: Number.isFinite(parsedMin) ? parsedMin : null,
+          levelMax: Number.isFinite(parsedMax) ? parsedMax : null,
+          rarity: selectedRarities.length > 0 ? selectedRarities : null,
+          creatureType: creatureType,
+          traits: selectedTraits,
+          sourceName: sourceName,
+        }
+        const rows = await searchCreaturesFiltered(filters, 50, 0)
         if (!cancelled) setCreatureResults(rows)
       } finally {
         if (!cancelled) setCreatureLoading(false)
@@ -100,7 +167,7 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, onAddCharact
     }
     const timer = setTimeout(search, 200)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [query, activeTab])
+  }, [query, activeTab, levelMin, levelMax, selectedRarities, creatureType, selectedTraits, sourceName])
 
   // Hazard search
   useEffect(() => {
@@ -243,6 +310,159 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, onAddCharact
                 {t.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Filters toggle + panel — creatures tab only */}
+        {activeTab === 'creatures' && (
+          <div className="space-y-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start h-7 text-xs"
+              onClick={() => setFiltersOpen((o) => !o)}
+            >
+              <SlidersHorizontal className="w-3 h-3 mr-1.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="text-primary font-normal ml-1">({activeFilterCount})</span>
+              )}
+            </Button>
+
+            {filtersOpen && (
+              <div className="space-y-2 pt-1.5">
+                {/* Level range */}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="text-[10px] uppercase tracking-wider">Lv</span>
+                  <Input
+                    type="number"
+                    placeholder="min"
+                    value={levelMin}
+                    onChange={(e) => setLevelMin(e.target.value)}
+                    className="w-14 h-6 text-xs px-1.5"
+                    min={0}
+                    max={25}
+                  />
+                  <span>–</span>
+                  <Input
+                    type="number"
+                    placeholder="max"
+                    value={levelMax}
+                    onChange={(e) => setLevelMax(e.target.value)}
+                    className="w-14 h-6 text-xs px-1.5"
+                    min={0}
+                    max={25}
+                  />
+                </div>
+
+                {/* Rarity chips (multi-select) */}
+                <div className="flex gap-1">
+                  {RARITIES.map((r) => {
+                    const active = selectedRarities.includes(r)
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => toggleRarity(r)}
+                        className={cn(
+                          'px-2 py-0.5 text-[10px] rounded border capitalize font-normal transition-colors',
+                          active
+                            ? 'bg-secondary border-current text-[var(--pf-rarity-' + r + ')]'
+                            : 'text-muted-foreground border-border/40 hover:border-border'
+                        )}
+                      >
+                        {r}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Creature type (family) dropdown */}
+                <Select
+                  value={creatureType ?? '__all__'}
+                  onValueChange={(v) => setCreatureType(v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger className="h-6 text-xs w-full border-border/40">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All types</SelectItem>
+                    {availableTypes.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Traits combobox */}
+                <Popover open={traitsOpen} onOpenChange={setTraitsOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="h-6 px-2 text-xs border border-border/40 rounded hover:border-border transition-colors text-muted-foreground w-full text-left">
+                      {selectedTraits.length > 0
+                        ? `${selectedTraits.length} trait${selectedTraits.length !== 1 ? 's' : ''}`
+                        : 'Traits'}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search traits..." />
+                      <CommandList className="max-h-[300px]">
+                        <CommandEmpty>No traits found.</CommandEmpty>
+                        {availableTraits.map((trait) => (
+                          <CommandItem
+                            key={trait}
+                            onSelect={() => toggleTrait(trait)}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <div
+                              className={cn(
+                                'w-3 h-3 border rounded-sm flex items-center justify-center shrink-0',
+                                selectedTraits.includes(trait) ? 'bg-primary border-primary' : 'border-border'
+                              )}
+                            >
+                              {selectedTraits.includes(trait) && (
+                                <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                              )}
+                            </div>
+                            <span className="uppercase tracking-wider text-[10px]">{trait}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Selected trait chips */}
+                {selectedTraits.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTraits.map((trait) => (
+                      <button
+                        key={trait}
+                        onClick={() => toggleTrait(trait)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider hover:bg-destructive/20 hover:text-destructive hover:border-destructive/30 transition-colors"
+                      >
+                        {trait}
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Source book dropdown */}
+                <Select
+                  value={sourceName ?? '__all__'}
+                  onValueChange={(v) => setSourceName(v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger className="h-6 text-xs w-full border-border/40">
+                    <SelectValue placeholder="All sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All sources</SelectItem>
+                    {availableSources.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -17,6 +17,7 @@ export interface CreatureRow {
   source_pack: string | null
   raw_json: string
   source_name: string | null
+  creature_type: string | null
 }
 
 export async function fetchCreatures(
@@ -25,7 +26,7 @@ export async function fetchCreatures(
 ): Promise<CreatureRow[]> {
   const db = await getDb()
   return db.select<CreatureRow[]>(
-    "SELECT * FROM entities WHERE type = 'npc' ORDER BY name LIMIT ? OFFSET ?",
+    "SELECT * FROM entities WHERE type = 'npc' ORDER BY level ASC, name ASC LIMIT ? OFFSET ?",
     [limit, offset]
   )
 }
@@ -63,9 +64,10 @@ export interface CreatureFilters {
   query?: string
   levelMin?: number | null
   levelMax?: number | null
-  rarity?: string | null
+  rarity?: string[] | null
+  creatureType?: string | null
   traits?: string[]
-  source?: string | null
+  sourceName?: string | null
 }
 
 export async function searchCreaturesFiltered(
@@ -90,13 +92,18 @@ export async function searchCreaturesFiltered(
     conditions.push('e.level <= ?')
     params.push(filters.levelMax)
   }
-  if (filters.rarity) {
-    conditions.push('e.rarity = ?')
-    params.push(filters.rarity)
+  if (filters.rarity && filters.rarity.length > 0) {
+    const placeholders = filters.rarity.map(() => '?').join(', ')
+    conditions.push(`e.rarity IN (${placeholders})`)
+    params.push(...filters.rarity)
   }
-  if (filters.source) {
-    conditions.push('e.source_pack = ?')
-    params.push(filters.source)
+  if (filters.creatureType) {
+    conditions.push('e.creature_type = ?')
+    params.push(filters.creatureType)
+  }
+  if (filters.sourceName) {
+    conditions.push('e.source_name = ?')
+    params.push(filters.sourceName)
   }
   if (filters.traits && filters.traits.length > 0) {
     for (const trait of filters.traits) {
@@ -108,7 +115,7 @@ export async function searchCreaturesFiltered(
   params.push(limit, offset)
   const where = conditions.join(' AND ')
   return db.select<CreatureRow[]>(
-    `SELECT e.* FROM entities e WHERE ${where} ORDER BY e.name LIMIT ? OFFSET ?`,
+    `SELECT e.* FROM entities e WHERE ${where} ORDER BY e.level ASC, e.name ASC LIMIT ? OFFSET ?`,
     params
   )
 }
@@ -131,6 +138,22 @@ export async function fetchDistinctTraits(): Promise<string[]> {
      WHERE entities.type = 'npc' ORDER BY value LIMIT 200`
   )
   return rows.map(r => r.trait)
+}
+
+export async function fetchDistinctCreatureTypes(): Promise<string[]> {
+  const db = await getDb()
+  const rows = await db.select<{ creature_type: string }[]>(
+    "SELECT DISTINCT creature_type FROM entities WHERE type = 'npc' AND creature_type IS NOT NULL AND creature_type != '' ORDER BY creature_type"
+  )
+  return rows.map(r => r.creature_type)
+}
+
+export async function fetchDistinctCreatureSources(): Promise<string[]> {
+  const db = await getDb()
+  const rows = await db.select<{ source_name: string }[]>(
+    "SELECT DISTINCT source_name FROM entities WHERE type = 'npc' AND source_name IS NOT NULL AND source_name != '' ORDER BY source_name"
+  )
+  return rows.map(r => r.source_name)
 }
 
 export async function getCreatureCount(): Promise<number> {
