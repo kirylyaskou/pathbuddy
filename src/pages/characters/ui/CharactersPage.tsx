@@ -10,6 +10,14 @@ import { calculatePCMaxHP } from '@engine'
 import type { PathbuilderBuild } from '@engine'
 import type { Combatant } from '@/entities/combatant/model/types'
 import { CharacterCard, ImportDialog, DeleteCharacterDialog, PCSheetPanel } from '@/features/characters'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
+import { useEncounterTabsStore } from '@/features/combat-tracker'
+import type { EncounterTab } from '@/features/combat-tracker'
 
 export function CharactersPage() {
   const navigate = useNavigate()
@@ -19,6 +27,9 @@ export function CharactersPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<CharacterRecord | null>(null)
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterRecord | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pendingCombatant, setPendingCombatant] = useState<Combatant | null>(null)
+  const [pickerTabs, setPickerTabs] = useState<EncounterTab[]>([])
 
   async function loadCharacters() {
     const data = await getAllCharacters()
@@ -56,12 +67,23 @@ export function CharactersPage() {
         isNPC: false,
         ac,
       }
-      addCombatant(combatant)
+
+      const openTabs = useEncounterTabsStore.getState().openTabs
+
+      if (openTabs.length > 1) {
+        setPendingCombatant(combatant)
+        setPickerTabs([...openTabs])
+        setPickerOpen(true)
+        return
+      }
+
+      if (openTabs.length === 1) {
+        useEncounterTabsStore.getState().addCombatantToTab(openTabs[0].id, combatant)
+      } else {
+        addCombatant(combatant)
+      }
       toast(`${character.name} added to combat`, {
-        action: {
-          label: 'Go to Combat',
-          onClick: () => navigate('/combat'),
-        },
+        action: { label: 'Go to Combat', onClick: () => navigate('/combat') },
       })
     } catch {
       toast(`Failed to add ${character.name} to combat`)
@@ -116,6 +138,35 @@ export function CharactersPage() {
         character={selectedCharacter}
         onClose={() => setSelectedCharacter(null)}
       />
+
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Add to Encounter</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {pickerTabs.map((tab) => (
+              <button
+                key={tab.id}
+                className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-secondary transition-colors border border-border/50"
+                onClick={() => {
+                  if (pendingCombatant) {
+                    useEncounterTabsStore.getState().addCombatantToTab(tab.id, pendingCombatant)
+                    toast(`${pendingCombatant.displayName} added to ${tab.name}`, {
+                      action: { label: 'Go to Combat', onClick: () => navigate('/combat') },
+                    })
+                  }
+                  setPickerOpen(false)
+                  setPendingCombatant(null)
+                  setPickerTabs([])
+                }}
+              >
+                {tab.name}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
