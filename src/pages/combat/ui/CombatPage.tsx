@@ -287,7 +287,12 @@ export function CombatPage() {
     if (!over) return
 
     const overId = String(over.id)
-    const dragData = active.data.current as { type?: string; row?: import('@/shared/api').CreatureRow; tier?: WeakEliteTier } | undefined
+    const dragData = active.data.current as {
+      type?: string
+      row?: import('@/shared/api').CreatureRow
+      hazardRow?: import('@/shared/api').HazardRow
+      tier?: WeakEliteTier
+    } | undefined
 
     // Route 0: Bestiary creature add
     if (dragData?.type === 'bestiary-add' && dragData.row) {
@@ -302,6 +307,24 @@ export function CombatPage() {
       c.iwrWeaknesses = iwr.weaknesses
       c.iwrResistances = iwr.resistances
       useCombatantStore.getState().addCombatant(c)
+      return
+    }
+
+    // Route 0.5: Hazard add from HazardSearchPanel drag
+    if (dragData?.type === 'hazard-add' && dragData.hazardRow) {
+      const hr = dragData.hazardRow
+      useCombatantStore.getState().addCombatant({
+        id: crypto.randomUUID(),
+        creatureRef: `hazard-${hr.id}`,
+        displayName: hr.name,
+        initiative: 0,
+        hp: hr.hp ?? 0,
+        maxHp: hr.hp ?? 0,
+        tempHp: 0,
+        isNPC: false,
+        isHazard: true,
+        initiativeBonus: hr.stealth_dc ?? 0,
+      })
       return
     }
 
