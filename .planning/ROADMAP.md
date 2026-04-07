@@ -17,6 +17,7 @@
 - ✅ **v0.9.0-pre-alpha — Items Catalog Overhaul** — Phases 34-35 (complete 2026-04-03)
 - ✅ **v0.9.6-pre-alpha — МАТЕМАТИКА** — Phases 36-41 (complete 2026-04-05)
 - ✅ **v1.0.0 — PC Import (Pathbuilder 2e)** — Phases 42-46 (complete 2026-04-07)
+- ○ **v1.1.0 — PathMaid Day-One Patch** — Phases 47-53 (in progress)
 
 ## Phases
 
@@ -772,6 +773,130 @@ Plans:
 Full details archived in `.planning/milestones/v1.0.0-ROADMAP.md`
 
 </details>
+
+<details>
+<summary>○ v1.1.0 — PathMaid Day-One Patch — Phases 47-53 (IN PROGRESS)</summary>
+
+**Milestone Goal:** Full rebrand to PathMaid, UI/UX polish on encounters, mascot integration, bug fixes (0-initiative, dice stacking), XP budget correctness audit, and deep code quality pass before public release.
+
+- [ ] **Phase 47: Rebrand** — Rename Pathbuddy → PathMaid in all configs and UI strings (BRAND-01, BRAND-02)
+  - App window title shows "PathMaid"
+  - tauri.conf.json product-name and identifier updated
+  - package.json name updated
+  - No visible "Pathbuddy" string in any UI element
+
+- [ ] **Phase 48: Description Sanitization** — Remove unresolved Foundry @-tokens from displayed text (SANITIZE-01, SANITIZE-02)
+  - `@item.rank`, `@item.level` tokens no longer appear in spell/ability descriptions
+  - `@UUID`, `@Check`, `@Template`, `@Damage` fallback to readable text or empty string
+  - All sanitizer call sites updated; no raw token markup visible in UI
+
+- [ ] **Phase 49: Encounters UX Overhaul** — Better creation flow, extended filters, level-sorted lists (ENC-01, ENC-02, ENC-03)
+  - "New Encounter" button visible and functional on Encounters page
+  - Creature search filters: family, traits, source book (in addition to existing level/rarity)
+  - Creature search results sorted by level ascending
+  - Existing filter/add flow preserved and improved
+
+- [ ] **Phase 50: Mascot Integration** — Goblin maid in empty states with CSS animations (MASCOT-01, MASCOT-02)
+  - Mascot displayed when combat tracker has no combatants
+  - Mascot displayed when encounters list is empty
+  - CSS keyframe animation: gentle sway + horizontal mirror flip + slight rotation
+
+- [ ] **Phase 51: XP Budget Audit** — Correct group level calculation and threat rating thresholds (XP-01, XP-02)
+  - Group level formula verified against PF2e CRB rules for all party compositions
+  - XP budget thresholds (trivial/low/moderate/severe/extreme) correct for calculated group level
+  - Edge cases: mixed levels, solo PC, oversized party — all produce expected results
+
+- [ ] **Phase 52: Bug Fixes** — 0-initiative on load, dice toast stacking (BUG-01, BUG-02)
+  - Loading encounter after restart: error popup appears, prompts user to re-roll initiative
+  - No silent 0-initiative values — all combatants get valid initiative before combat starts
+  - Dice roll toasts render as stacked column (most recent on top)
+  - Each toast auto-dismisses after 4 seconds; multiple rolls visible simultaneously
+
+- [ ] **Phase 53: Code Audit** — Dead code removal, React perf, FSD, TypeScript, duplication (AUDIT-01..05)
+  - Dead code, unused files, commented-out blocks removed
+  - React re-render hotspots memoized with memo / useMemo / useCallback
+  - FSD layer import violations fixed (no cross-layer forbidden imports)
+  - TypeScript `any` and unsafe casts minimized; types tightened
+  - Duplicate logic consolidated into shared utilities/hooks
+
+</details>
+
+### Phase 47: Rebrand
+**Goal**: No visible "Pathbuddy" string anywhere in the app — window title, configs, and all UI strings updated to "PathMaid"
+**Depends on**: Phase 46
+**Requirements**: BRAND-01, BRAND-02
+**Success Criteria** (what must be TRUE):
+  1. App window title shows "PathMaid"
+  2. tauri.conf.json product-name and identifier updated to PathMaid
+  3. package.json name updated
+  4. No visible "Pathbuddy" string in any UI element
+**Plans**: TBD
+
+### Phase 48: Description Sanitization
+**Goal**: No unresolved Foundry @-tokens visible in any displayed text — all token types fall back to readable text or are removed
+**Depends on**: Phase 47
+**Requirements**: SANITIZE-01, SANITIZE-02
+**Success Criteria** (what must be TRUE):
+  1. `@item.rank`, `@item.level` tokens no longer appear in spell/ability descriptions
+  2. `@UUID`, `@Check`, `@Template`, `@Damage` fallback to readable text or empty string
+  3. All sanitizer call sites updated; no raw token markup visible in UI
+**Plans**: TBD
+
+### Phase 49: Encounters UX Overhaul
+**Goal**: Encounters page has a visible "New Encounter" button, extended creature search filters (family, traits, source book), and results sorted by level ascending
+**Depends on**: Phase 47
+**Requirements**: ENC-01, ENC-02, ENC-03
+**Success Criteria** (what must be TRUE):
+  1. "New Encounter" button visible and functional on Encounters page
+  2. Creature search filters: family, traits, source book (in addition to existing level/rarity)
+  3. Creature search results sorted by level ascending
+  4. Existing filter/add flow preserved and improved
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 50: Mascot Integration
+**Goal**: Goblin maid mascot appears in empty states (no combatants, no encounters) with a gentle CSS keyframe animation
+**Depends on**: Phase 47
+**Requirements**: MASCOT-01, MASCOT-02
+**Success Criteria** (what must be TRUE):
+  1. Mascot displayed when combat tracker has no combatants
+  2. Mascot displayed when encounters list is empty
+  3. CSS keyframe animation: gentle sway + horizontal mirror flip + slight rotation
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 51: XP Budget Audit
+**Goal**: Group level calculation and threat rating thresholds verified correct for all party compositions per PF2e CRB rules
+**Depends on**: Phase 47
+**Requirements**: XP-01, XP-02
+**Success Criteria** (what must be TRUE):
+  1. Group level formula verified against PF2e CRB rules for all party compositions
+  2. XP budget thresholds (trivial/low/moderate/severe/extreme) correct for calculated group level
+  3. Edge cases: mixed levels, solo PC, oversized party — all produce expected results
+**Plans**: TBD
+
+### Phase 52: Bug Fixes
+**Goal**: 0-initiative on encounter load fixed with user prompt to re-roll; dice roll toasts stack correctly and auto-dismiss
+**Depends on**: Phase 47
+**Requirements**: BUG-01, BUG-02
+**Success Criteria** (what must be TRUE):
+  1. Loading encounter after restart: error popup appears, prompts user to re-roll initiative
+  2. No silent 0-initiative values — all combatants get valid initiative before combat starts
+  3. Dice roll toasts render as stacked column (most recent on top)
+  4. Each toast auto-dismisses after 4 seconds; multiple rolls visible simultaneously
+**Plans**: TBD
+
+### Phase 53: Code Audit
+**Goal**: Codebase cleaned — dead code removed, React re-render hotspots memoized, FSD violations fixed, TypeScript tightened, duplicate logic consolidated
+**Depends on**: Phase 52
+**Requirements**: AUDIT-01, AUDIT-02, AUDIT-03, AUDIT-04, AUDIT-05
+**Success Criteria** (what must be TRUE):
+  1. Dead code, unused files, commented-out blocks removed
+  2. React re-render hotspots memoized with memo / useMemo / useCallback
+  3. FSD layer import violations fixed (no cross-layer forbidden imports)
+  4. TypeScript `any` and unsafe casts minimized; types tightened
+  5. Duplicate logic consolidated into shared utilities/hooks
+**Plans**: TBD
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
