@@ -851,10 +851,10 @@ Full details archived in `.planning/milestones/v1.0.0-ROADMAP.md`
   2. Creature search filters: family, traits, source book (in addition to existing level/rarity)
   3. Creature search results sorted by level ascending
   4. Existing filter/add flow preserved and improved
-**Plans:** 3 plans
-- [ ] 49-01-PLAN.md — DB schema + Rust + TS sync pipeline for creature_type column (ENC-02 foundation)
+**Plans:** 2/3 plans complete
+- [x] 49-01-PLAN.md — DB schema + Rust + TS sync pipeline for creature_type column (ENC-02 foundation)
 - [ ] 49-02-PLAN.md — Labeled "New Encounter" button + updated empty-state copy (ENC-01)
-- [ ] 49-03-PLAN.md — creatures.ts multi-filter API + CreatureSearchSidebar filter panel + level-ASC ordering (ENC-02, ENC-03)
+- [x] 49-03-PLAN.md — creatures.ts multi-filter API + CreatureSearchSidebar filter panel + level-ASC ordering (ENC-02, ENC-03)
 **UI hint**: yes
 
 ### Phase 50: Mascot Integration
