@@ -1,34 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.0
-milestone_name: milestone
+milestone: v1.0.0
+milestone_name: — PC Import (Pathbuilder 2e)
 status: executing
-stopped_at: Phase 48 context gathered
-last_updated: "2026-04-08T07:58:24.319Z"
-last_activity: 2026-04-08
+stopped_at: Phase 43 UI-SPEC approved
+last_updated: "2026-04-06T15:09:13.413Z"
+last_activity: 2026-04-06
 progress:
-  total_phases: 50
-  completed_phases: 23
-  total_plans: 75
-  completed_plans: 56
-  percent: 75
+  total_phases: 45
+  completed_phases: 22
+  total_plans: 73
+  completed_plans: 54
+  percent: 74
 ---
 
-# STATE.md - PathMaid — Pathfinder 2e DM Assistant
+# STATE.md - Pathfinder 2e DM Assistant
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-07)
+See: `.planning/PROJECT.md` (updated 2026-04-05)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 49 — encounters-ux-overhaul
+**Current focus:** Phase 43 — characters-page
 
 ## Current Position
 
-Phase: 54
+Phase: 999.1
 Plan: Not started
-Status: Executing Phase 49
-Last activity: 2026-04-08
+Status: Executing Phase 43
+Last activity: 2026-04-06
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -36,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 57
 - Average duration: —
 - Total execution time: —
 
@@ -44,21 +44,8 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 47 | 1 | - | - |
-| 48 | 1 | - | - |
-| 49 | 3 | - | - |
-
-## Phases
-
-| Phase | Name | Requirements | Status |
-|-------|------|--------------|--------|
-| 47 | Rebrand | BRAND-01, BRAND-02 | ○ Pending |
-| 48 | Description Sanitization | SANITIZE-01, SANITIZE-02 | ○ Pending |
-| 49 | Encounters UX Overhaul | ENC-01, ENC-02, ENC-03 | ○ Pending |
-| 50 | Mascot Integration | MASCOT-01, MASCOT-02 | ○ Pending |
-| 51 | XP Budget Audit | XP-01, XP-02 | ○ Pending |
-| 52 | Bug Fixes | BUG-01, BUG-02 | ○ Pending |
-| 53 | Code Audit | AUDIT-01..05 | ○ Pending |
+| 42 | 2 | - | - |
+| 43 | 1 | - | - |
 
 ## Accumulated Context
 
@@ -149,8 +136,6 @@ Key decisions carrying forward from prior milestones:
 - v0.8.5 started 2026-04-02, completed 2026-04-02: Actions Reference
 - Phase 35 added 2026-04-04: UX Polish + Starfinder Purge + Encounter Tabs
 - Phase 40 added 2026-04-04: Dice Rolls Extended (skills/DC/spells/items clickable + history context + drawer right)
-- Phase 46 added 2026-04-07: PC Combat Polish — PC tab, character card in right panel, initiative fix, combat/encounter filters, hazard initiative roll
-- Phase 54 added 2026-04-08: Linux and Android CI/CD builds (Arch, Ubuntu, Debian, Android test)
 
 ### Pending Todos
 
@@ -169,6 +154,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T17:33:15.928Z
-Stopped at: Phase 48 context gathered
+Last session: 2026-04-06T14:52:22.171Z
+Stopped at: Phase 43 UI-SPEC approved
 Next step: /gsd-discuss-phase 42

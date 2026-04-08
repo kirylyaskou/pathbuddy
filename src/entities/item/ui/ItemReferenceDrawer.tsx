@@ -3,10 +3,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetFooter }
 import { Button } from '@/shared/ui/button'
 import { getItemById } from '@/shared/api'
 import type { ItemRow } from '@/shared/api'
-import { formatPrice } from '../lib/format'
-import { ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '../model/types'
+import { formatPrice, ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '@/entities/item'
 import { cn } from '@/shared/lib/utils'
-import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
+import { stripHtml } from '@/shared/lib/html'
 import { ClickableFormula } from '@/shared/ui/clickable-formula'
 import { SpellInlineCard } from '@/entities/spell'
 
@@ -148,7 +147,7 @@ export function ItemReferenceDrawer({ itemId, onClose, extraActions }: ItemRefer
               {/* Description */}
               {item.description && (
                 <p className="text-[13px] text-foreground/80 leading-relaxed">
-                  {sanitizeFoundryText(item.description)}
+                  {stripHtml(item.description)}
                 </p>
               )}
 

@@ -42,3 +42,20 @@ export function createCombatantFromCreature(
     isNPC: true,
   }
 }
+
+export function createPCCombatant(
+  name: string,
+  initiative: number,
+  maxHp: number
+): Combatant {
+  return {
+    id: crypto.randomUUID(),
+    creatureRef: '',
+    displayName: name,
+    initiative,
+    hp: maxHp,
+    maxHp,
+    tempHp: 0,
+    isNPC: false,
+  }
+}

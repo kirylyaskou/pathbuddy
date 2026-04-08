@@ -45,8 +45,6 @@ export function resolveFoundryTokens(text: string): string {
   text = text.replace(/\[\[\/br\s+([^#\s\]]+)[^\]]*\]\]/g, '$1')
   // {Nfeet} → "N feet"
   text = text.replace(/\{(\d+)feet?\}/gi, '$1 feet')
-  // @item.rank, @item.level, and other @item.* inline references — strip entirely
-  text = text.replace(/@item\.\w+/g, '')
   // Strip remaining unresolved @ tokens
   text = text.replace(/@\w+\[[^\]]*\](?:\{[^}]*\})?/g, '')
   return text

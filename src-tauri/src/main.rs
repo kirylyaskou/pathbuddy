@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    pathmaid_lib::run()
+    pathbuddy_lib::run()
 }

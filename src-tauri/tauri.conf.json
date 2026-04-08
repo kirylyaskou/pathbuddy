@@ -1,7 +1,7 @@
 {
-  "productName": "PathMaid",
+  "productName": "PathBuddy",
   "version": "0.9.6",
-  "identifier": "com.pathmaid.app",
+  "identifier": "com.pathbuddy.app",
   "build": {
     "beforeDevCommand": "npm run dev:vite",
     "devUrl": "http://localhost:5173",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "PathMaid",
+        "title": "PathBuddy",
         "width": 1280,
         "height": 800,
         "resizable": true,

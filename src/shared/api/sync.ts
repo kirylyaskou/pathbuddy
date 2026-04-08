@@ -20,7 +20,6 @@ interface RawEntity {
   source_pack: string | null
   raw_json: string
   source_name: string | null
-  creature_type: string | null
 }
 
 interface SyncProgress {
@@ -803,7 +802,7 @@ async function batchInsertEntities(
   for (let i = 0; i < total; i += BATCH_SIZE) {
     const batch = entities.slice(i, i + BATCH_SIZE)
     const placeholders = batch
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .join(', ')
     const values = batch.flatMap((e) => [
       e.id,
@@ -822,11 +821,10 @@ async function batchInsertEntities(
       e.source_pack,
       e.raw_json,
       e.source_name,
-      e.creature_type,
     ])
 
     await db.execute(
-      `INSERT OR REPLACE INTO entities (id, name, type, level, hp, ac, fort, ref, will, perception, traits, rarity, size, source_pack, raw_json, source_name, creature_type) VALUES ${placeholders}`,
+      `INSERT OR REPLACE INTO entities (id, name, type, level, hp, ac, fort, ref, will, perception, traits, rarity, size, source_pack, raw_json, source_name) VALUES ${placeholders}`,
       values
     )
 

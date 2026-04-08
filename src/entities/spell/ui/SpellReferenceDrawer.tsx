@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { getSpellById } from '@/shared/api'
 import type { SpellRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
-import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
+import { stripHtml } from '@/shared/lib/html'
 import { TRADITION_COLORS, actionCostLabel, rankLabel, parseDamageDisplay, parseAreaDisplay } from '../lib/helpers'
 
 interface SpellReferenceDrawerProps {
@@ -109,7 +109,7 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
               {/* Description */}
               {spell.description && (
                 <p className="text-[13px] text-foreground/80 leading-relaxed">
-                  {sanitizeFoundryText(spell.description)}
+                  {stripHtml(spell.description)}
                 </p>
               )}
 
