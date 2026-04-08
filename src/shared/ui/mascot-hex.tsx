@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { cn } from '@/shared/lib/utils'
 
 interface MascotHexProps {
@@ -10,9 +11,22 @@ const OUTER_CLIP =
 const INNER_CLIP =
   'polygon(50% 3%, 97% 26.5%, 97% 73.5%, 50% 97%, 3% 73.5%, 3% 26.5%)'
 
+function randomGif(exclude?: number): number {
+  let next = Math.floor(Math.random() * 6) + 1
+  if (exclude !== undefined && next >= exclude) next++
+  return next
+}
+
 export function MascotHex({ size, className }: MascotHexProps) {
-  const gifIndex = Math.floor(Math.random() * 7) + 1
+  const [gifIndex, setGifIndex] = useState(() => randomGif())
   const height = size * 1.1547
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setGifIndex(prev => randomGif(prev))
+    }, 10000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <div
@@ -36,7 +50,7 @@ export function MascotHex({ size, className }: MascotHexProps) {
         <img
           src={`/mascot/maid_${gifIndex}.gif`}
           alt="PathMaid mascot"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
         />
       </div>
     </div>
