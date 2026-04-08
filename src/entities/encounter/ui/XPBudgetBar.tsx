@@ -1,4 +1,4 @@
-import { generateEncounterBudgets } from '@engine'
+import { generateEncounterBudgets, calculateEncounterRating } from '@engine'
 import type { ThreatRating } from '@engine'
 import { cn } from "@/shared/lib/utils"
 
@@ -26,11 +26,7 @@ const threatTextColors: Record<ThreatRating, string> = {
 
 export function XPBudgetBar({ currentXP, partySize, className }: XPBudgetBarProps) {
   const thresholds = generateEncounterBudgets(partySize)
-  const threatLevel: ThreatRating = currentXP >= thresholds.extreme ? 'extreme'
-    : currentXP >= thresholds.severe ? 'severe'
-    : currentXP >= thresholds.moderate ? 'moderate'
-    : currentXP >= thresholds.low ? 'low'
-    : 'trivial'
+  const threatLevel = calculateEncounterRating(currentXP, partySize)
   const maxXP = thresholds.extreme * 1.5 // extend bar beyond extreme for visual
 
   // Calculate segment widths as percentages

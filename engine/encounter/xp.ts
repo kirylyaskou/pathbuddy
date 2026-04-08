@@ -25,7 +25,7 @@ const SIMPLE_HAZARD_XP: Record<number, number> = {
 /**
  * Returns the XP value for a single creature relative to the party level.
  *
- * - Negative creature levels are treated as level 0.
+ * - Negative creature levels produce a negative delta (range is [-4, +4] from table).
  * - Delta below table minimum returns { xp: 0 } (trivially weak).
  * - Delta above table maximum returns { xp: null, outOfRange: true }.
  */
@@ -33,7 +33,7 @@ export function calculateCreatureXP(
   creatureLevel: number,
   partyLevel: number,
 ): XpResult {
-  const level = Math.max(creatureLevel, 0)
+  const level = creatureLevel
   const delta = level - partyLevel
 
   if (delta < -4) return { xp: 0 }
