@@ -851,9 +851,9 @@ Full details archived in `.planning/milestones/v1.0.0-ROADMAP.md`
   2. Creature search filters: family, traits, source book (in addition to existing level/rarity)
   3. Creature search results sorted by level ascending
   4. Existing filter/add flow preserved and improved
-**Plans:** 2/3 plans complete
+**Plans:** 3/3 plans complete
 - [x] 49-01-PLAN.md — DB schema + Rust + TS sync pipeline for creature_type column (ENC-02 foundation)
-- [ ] 49-02-PLAN.md — Labeled "New Encounter" button + updated empty-state copy (ENC-01)
+- [x] 49-02-PLAN.md — Labeled "New Encounter" button + updated empty-state copy (ENC-01)
 - [x] 49-03-PLAN.md — creatures.ts multi-filter API + CreatureSearchSidebar filter panel + level-ASC ordering (ENC-02, ENC-03)
 **UI hint**: yes
 
@@ -900,6 +900,16 @@ Full details archived in `.planning/milestones/v1.0.0-ROADMAP.md`
   4. TypeScript `any` and unsafe casts minimized; types tightened
   5. Duplicate logic consolidated into shared utilities/hooks
 **Plans**: TBD
+
+### Phase 54: Linux and Android CI/CD builds (Arch, Ubuntu, Debian, Android test)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 53
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 54 to break down)
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*

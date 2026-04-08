@@ -4,14 +4,14 @@ milestone: v0.3.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 48 context gathered
-last_updated: "2026-04-07T19:56:44.692Z"
-last_activity: 2026-04-07
+last_updated: "2026-04-08T07:58:24.319Z"
+last_activity: 2026-04-08
 progress:
-  total_phases: 49
-  completed_phases: 22
+  total_phases: 50
+  completed_phases: 23
   total_plans: 75
-  completed_plans: 55
-  percent: 73
+  completed_plans: 56
+  percent: 75
 ---
 
 # STATE.md - PathMaid — Pathfinder 2e DM Assistant
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-07)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 49 — Encounters UX Overhaul
+**Current focus:** Phase 49 — encounters-ux-overhaul
 
 ## Current Position
 
-Phase: 999.1
+Phase: 54
 Plan: Not started
 Status: Executing Phase 49
-Last activity: 2026-04-07
+Last activity: 2026-04-08
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -36,7 +36,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 7
 - Average duration: —
 - Total execution time: —
 
@@ -46,7 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 |-------|-------|-------|----------|
 | 47 | 1 | - | - |
 | 48 | 1 | - | - |
-| 49 | 2 | - | - |
+| 49 | 3 | - | - |
 
 ## Phases
 
@@ -150,6 +150,7 @@ Key decisions carrying forward from prior milestones:
 - Phase 35 added 2026-04-04: UX Polish + Starfinder Purge + Encounter Tabs
 - Phase 40 added 2026-04-04: Dice Rolls Extended (skills/DC/spells/items clickable + history context + drawer right)
 - Phase 46 added 2026-04-07: PC Combat Polish — PC tab, character card in right panel, initiative fix, combat/encounter filters, hazard initiative roll
+- Phase 54 added 2026-04-08: Linux and Android CI/CD builds (Arch, Ubuntu, Debian, Android test)
 
 ### Pending Todos
 
