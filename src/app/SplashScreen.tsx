@@ -105,7 +105,7 @@ export function SplashScreen({ onReady }: SplashScreenProps) {
     >
       <div className="flex flex-col items-center gap-6 p-8">
         <h1 className="text-[28px] font-semibold leading-[1.1] text-pf-gold">
-          PathBuddy
+          PathMaid
         </h1>
 
         {status === 'error' ? (

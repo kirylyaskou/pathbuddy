@@ -45,7 +45,7 @@ export function AppSidebar({ onSearchOpen }: AppSidebarProps) {
           </div>
           {!collapsed && (
             <span className="font-bold text-sidebar-foreground tracking-tight text-sm">
-              PathBuddy
+              PathMaid
             </span>
           )}
         </div>

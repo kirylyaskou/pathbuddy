@@ -1,5 +1,5 @@
 {
-  "productName": "PathBuddy",
+  "productName": "PathMaid",
   "version": "0.9.6",
   "identifier": "com.pathbuddy.app",
   "build": {
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "PathBuddy",
+        "title": "PathMaid",
         "width": 1280,
         "height": 800,
         "resizable": true,
