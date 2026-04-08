@@ -106,11 +106,11 @@ export function SettingsPage() {
     <>
       {syncing && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background/95 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black"
           aria-live="polite"
           role="status"
         >
-          <MascotHex size={160} />
+          <MascotHex height={260} />
           <h2 className="text-xl font-semibold text-foreground">
             Подготавливаем бардак
           </h2>
