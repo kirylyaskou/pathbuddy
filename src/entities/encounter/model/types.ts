@@ -13,8 +13,9 @@ export interface EncounterCombatant {
   weakEliteTier: 'normal' | 'weak' | 'elite'
   creatureLevel: number
   sortOrder: number
-  isHazard?: boolean       // true for hazard rows
+  isHazard?: boolean        // true for hazard rows
   hazardRef?: string | null // hazard.id reference
+  hazardType?: 'simple' | 'complex' // resolved from JOIN with hazards table
 }
 
 // Encounter — a saved encounter entity (SQLite-derived).

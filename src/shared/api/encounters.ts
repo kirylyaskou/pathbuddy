@@ -27,6 +27,7 @@ export interface EncounterCombatantRow {
   sortOrder: number
   isHazard: boolean        // true for hazard rows
   hazardRef: string | null // hazard.id for hazard rows, null for creatures
+  hazardType?: 'simple' | 'complex' // from JOIN with hazards table; undefined for non-hazards
 }
 
 export interface EncounterConditionRow {
@@ -119,9 +120,13 @@ export async function loadEncounterCombatants(encounterId: string): Promise<Enco
     id: string; encounter_id: string; creature_ref: string | null; display_name: string;
     initiative: number; hp: number; max_hp: number; temp_hp: number; is_npc: number;
     weak_elite_tier: string; creature_level: number; sort_order: number;
-    is_hazard: number; hazard_ref: string | null
+    is_hazard: number; hazard_ref: string | null; hazard_type: string | null
   }>>(
-    `SELECT * FROM encounter_combatants WHERE encounter_id = ? ORDER BY sort_order`,
+    `SELECT ec.*, h.hazard_type
+     FROM encounter_combatants ec
+     LEFT JOIN hazards h ON ec.hazard_ref = h.id
+     WHERE ec.encounter_id = ?
+     ORDER BY ec.sort_order`,
     [encounterId]
   )
   return rows.map((r) => ({
@@ -139,6 +144,7 @@ export async function loadEncounterCombatants(encounterId: string): Promise<Enco
     sortOrder: r.sort_order,
     isHazard: r.is_hazard === 1,
     hazardRef: r.hazard_ref ?? null,
+    hazardType: r.hazard_type ? (r.hazard_type as 'simple' | 'complex') : undefined,
   }))
 }
 
