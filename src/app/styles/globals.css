@@ -316,6 +316,16 @@
 .d20 .face:nth-child(19) { transform: rotateY(108deg)  translateZ(20.1px) translateY(72.756px) rotate(180deg) rotateX(53deg); }
 .d20 .face:nth-child(20) { transform: rotateY(180deg)  translateZ(20.1px) translateY(72.756px) rotate(180deg) rotateX(53deg); }
 
+/* Mascot sway — Phase 50 MascotHex component */
+@keyframes mascot-sway {
+  0%   { translate: -3px 0; rotate: -2deg; }
+  100% { translate:  3px 0; rotate:  2deg; }
+}
+
+.animate-mascot-sway {
+  animation: mascot-sway 4s ease-in-out infinite alternate;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: oklch(0.30 0.04 55) transparent;
