@@ -53,9 +53,9 @@ Feature-complete PF2e DM tool — accurate game logic engine powering a fast, we
 
 - [ ] BRAND-01: Rename Pathbuddy → PathMaid (all configs + UI strings)
 - [ ] SANITIZE-01: Remove/resolve unresolved Foundry @-tokens in descriptions
-- [ ] ENC-01: Encounters creation flow (buttons, not "+")
-- [ ] ENC-02: Extended creature filters (family, traits, source)
-- [ ] ENC-03: Creature lists sorted by level
+- [x] ENC-01: Encounters creation flow (buttons, not "+") — Validated in Phase 49
+- [x] ENC-02: Extended creature filters (family, traits, source) — Validated in Phase 49
+- [x] ENC-03: Creature lists sorted by level — Validated in Phase 49
 - [ ] MASCOT-01: Goblin maid mascot in empty states + CSS animations
 - [ ] XP-01: XP budget / group level calculator audit and fixes
 - [ ] BUG-01: Fix 0-initiative on encounter load after restart
@@ -137,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-07 after v1.1.0 milestone start — PathMaid Day-One Patch*
+*Last updated: 2026-04-08 after Phase 49 complete — Encounters UX Overhaul (ENC-01, ENC-02, ENC-03)*
