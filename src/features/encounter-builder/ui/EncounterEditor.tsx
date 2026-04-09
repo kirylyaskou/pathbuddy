@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, AlertTriangle, Skull } from 'lucide-react'
+import { X, AlertTriangle, Skull, Pencil, ArrowUpDown, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDroppable } from '@dnd-kit/core'
 import { Button } from '@/shared/ui/button'
@@ -17,7 +17,7 @@ import {
 } from '@/shared/ui/alert-dialog'
 import { cn } from '@/shared/lib/utils'
 import { useEncounterStore } from '@/entities/encounter'
-import { saveEncounterCombatants, resetEncounterCombat } from '@/shared/api'
+import { saveEncounterCombatants, resetEncounterCombat, updateEncounterName } from '@/shared/api'
 import type { EncounterCombatantRow } from '@/shared/api'
 import { loadEncounterIntoCombat, teardownEncounterAutoSave, flushEncounterSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
@@ -38,6 +38,8 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   const [showLoadConfirm, setShowLoadConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState(encounter?.name ?? '')
 
   const { setNodeRef: dropRef, isOver } = useDroppable({ id: 'encounter-drop-zone' })
 
@@ -99,6 +101,32 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
 
   const combatants = encounter.combatants
 
+  async function handleSaveName() {
+    setEditingName(false)
+    if (!nameValue.trim() || nameValue === encounter?.name) return
+    await updateEncounterName(encounterId, nameValue.trim())
+    upsertEncounter({ ...encounter!, name: nameValue.trim() })
+  }
+
+  async function handleSortByLevel() {
+    const sorted = [...combatants].sort((a, b) => b.creatureLevel - a.creatureLevel)
+    const rows = sorted.map((c, i) => ({
+      id: c.id, encounterId: c.encounterId, creatureRef: c.creatureRef,
+      displayName: c.displayName, initiative: c.initiative, hp: c.hp,
+      maxHp: c.maxHp, tempHp: c.tempHp, isNPC: c.isNPC,
+      weakEliteTier: c.weakEliteTier, creatureLevel: c.creatureLevel,
+      sortOrder: i, isHazard: c.isHazard ?? false, hazardRef: c.hazardRef ?? null,
+      hazardType: c.hazardType,
+    }))
+    await saveEncounterCombatants(encounterId, rows)
+    setEncounterCombatants(encounterId, sorted.map((c, i) => ({ ...c, sortOrder: i })))
+  }
+
+  async function handleClearAll() {
+    await saveEncounterCombatants(encounterId, [])
+    setEncounterCombatants(encounterId, [])
+  }
+
   async function handleRemove(instanceId: string) {
     const remaining = combatants.filter((c) => c.id !== instanceId)
     const rows: EncounterCombatantRow[] = remaining.map((c, i) => ({
@@ -126,27 +154,44 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
     <div ref={dropRef} className={cn('flex flex-col h-full', isOver && 'border-dashed border border-primary/40 bg-primary/5')}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-border/50 shrink-0">
-        <p className="text-base font-semibold truncate">{encounter.name}</p>
+        {editingName ? (
+          <input
+            autoFocus
+            className="text-base font-semibold bg-transparent border-b border-primary outline-none px-0 w-full"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleSaveName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveName()
+              if (e.key === 'Escape') { setEditingName(false); setNameValue(encounter?.name ?? '') }
+            }}
+          />
+        ) : (
+          <button
+            className="text-base font-semibold hover:text-primary transition-colors flex items-center gap-1 truncate"
+            onClick={() => setEditingName(true)}
+          >
+            {encounter.name}
+            <Pencil className="w-3 h-3 opacity-50 shrink-0" />
+          </button>
+        )}
       </div>
 
       {/* Action buttons */}
-      <div className="px-4 py-2 border-b border-border/50 flex items-center gap-2 shrink-0">
-        <Button
-          variant="default"
-          size="sm"
-          className="h-8 text-sm"
-          onClick={handleLoadClick}
-          disabled={loading}
-        >
+      <div className="px-4 py-2 border-b border-border/50 flex items-center gap-2 shrink-0 flex-wrap">
+        <Button variant="default" size="sm" className="h-8 text-sm" onClick={handleLoadClick} disabled={loading}>
           Load into Combat
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 text-sm text-destructive hover:text-destructive"
-          onClick={() => setShowResetConfirm(true)}
-        >
+        <Button variant="outline" size="sm" className="h-8 text-sm text-destructive hover:text-destructive" onClick={() => setShowResetConfirm(true)}>
           Reset
+        </Button>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs ml-auto" onClick={handleSortByLevel}>
+          <ArrowUpDown className="w-3 h-3" />
+          Sort by Level
+        </Button>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-destructive/70 hover:text-destructive" onClick={handleClearAll}>
+          <Trash2 className="w-3 h-3" />
+          Clear
         </Button>
       </div>
 

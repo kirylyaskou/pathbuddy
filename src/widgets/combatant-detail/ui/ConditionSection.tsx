@@ -80,6 +80,7 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
     useShallow((s) => s.activeConditions.filter((c) => c.combatantId === combatantId))
   )
   const [detailRow, setDetailRow] = useState<ConditionRow | 'not-found' | null>(null)
+  const [openConditionSlug, setOpenConditionSlug] = useState<string | null>(null)
 
   const handleRemove = useCallback(
     (slug: string) => {
@@ -87,8 +88,12 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
       if (removed.length > 0) {
         toast(`Removed ${slug} — also removed: ${removed.join(', ')}`)
       }
+      if (openConditionSlug === slug || removed.includes(openConditionSlug ?? '')) {
+        setDetailRow(null)
+        setOpenConditionSlug(null)
+      }
     },
-    [combatantId]
+    [combatantId, openConditionSlug]
   )
 
   const handleToggleLock = useCallback(
@@ -99,6 +104,7 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
   )
 
   const handleInfo = useCallback(async (slug: string) => {
+    setOpenConditionSlug(slug)
     // Strip persistent-* prefix to look up base condition
     const baseSlug = slug.startsWith('persistent-') ? slug.replace('persistent-', '') : slug
     try {

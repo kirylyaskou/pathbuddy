@@ -33,15 +33,16 @@ export function CreatureCard({ creature, compact, onAdd, onClick, className }: C
                 <h4 className="font-medium text-sm truncate">{creature.name}</h4>
                 {onAdd && (
                   <Button
-                    size="icon"
+                    size="sm"
                     variant="ghost"
-                    className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 hover:text-primary"
+                    className="h-6 px-2 gap-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 hover:text-primary shrink-0"
                     onClick={(e) => {
                       e.stopPropagation()
                       onAdd()
                     }}
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" />
+                    Add
                   </Button>
                 )}
               </div>

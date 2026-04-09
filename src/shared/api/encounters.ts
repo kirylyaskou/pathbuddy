@@ -94,6 +94,11 @@ export async function deleteEncounter(id: string): Promise<void> {
   await db.execute(`DELETE FROM encounters WHERE id = ?`, [id])
 }
 
+export async function updateEncounterName(id: string, name: string): Promise<void> {
+  const db = await getDb()
+  await db.execute(`UPDATE encounters SET name = ? WHERE id = ?`, [name, id])
+}
+
 export async function saveEncounterCombatants(
   encounterId: string,
   combatants: EncounterCombatantRow[]

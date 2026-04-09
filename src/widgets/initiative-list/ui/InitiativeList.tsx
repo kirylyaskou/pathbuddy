@@ -4,6 +4,7 @@ import { useCombatantStore } from '@/entities/combatant'
 import { useConditionStore } from '@/entities/condition'
 import { useCombatTrackerStore, clearCombatantManager, rollInitiative } from '@/features/combat-tracker'
 import { useShallow } from 'zustand/react/shallow'
+import { StatBlockModal } from '@/entities/creature'
 import { InitiativeRow } from './InitiativeRow'
 
 interface InitiativeListProps {
@@ -19,6 +20,7 @@ export function InitiativeList({ selectedId, onSelect }: InitiativeListProps) {
   )
   const { removeCombatant, setInitiative } = useCombatantStore()
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [modalCreatureId, setModalCreatureId] = useState<string | null>(null)
   const allZeroInit = combatants.length > 0 && combatants.every((c) => c.initiative === 0)
   const showBanner = allZeroInit && !bannerDismissed
 
@@ -72,6 +74,7 @@ export function InitiativeList({ selectedId, onSelect }: InitiativeListProps) {
               isSelected={combatant.id === selectedId}
               onSelect={() => onSelect(combatant.id)}
               onRemove={() => handleRemove(combatant.id)}
+              onCreatureClick={(ref) => setModalCreatureId(ref)}
             />
           ))}
         </SortableContext>
@@ -81,6 +84,11 @@ export function InitiativeList({ selectedId, onSelect }: InitiativeListProps) {
           </p>
         )}
       </div>
+      <StatBlockModal
+        creatureId={modalCreatureId}
+        open={modalCreatureId !== null}
+        onOpenChange={(o) => { if (!o) setModalCreatureId(null) }}
+      />
     </div>
   )
 }

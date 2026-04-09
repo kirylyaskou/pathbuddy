@@ -13,6 +13,7 @@ interface InitiativeRowProps {
   isSelected: boolean
   onSelect: () => void
   onRemove: () => void
+  onCreatureClick?: (creatureRef: string) => void
 }
 
 export function InitiativeRow({
@@ -22,6 +23,7 @@ export function InitiativeRow({
   isSelected,
   onSelect,
   onRemove,
+  onCreatureClick,
 }: InitiativeRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: combatant.id, data: { combatant } })
@@ -72,7 +74,16 @@ export function InitiativeRow({
               ⚡{stunnedCondition.value}
             </span>
           )}
-          <span className="text-sm font-medium truncate">{combatant.displayName}</span>
+          {combatant.creatureRef && onCreatureClick ? (
+            <button
+              className="text-sm font-medium truncate text-left hover:text-primary transition-colors"
+              onClick={(e) => { e.stopPropagation(); onCreatureClick(combatant.creatureRef!) }}
+            >
+              {combatant.displayName}
+            </button>
+          ) : (
+            <span className="text-sm font-medium truncate">{combatant.displayName}</span>
+          )}
         </div>
         <div className="mt-0.5 h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <div
