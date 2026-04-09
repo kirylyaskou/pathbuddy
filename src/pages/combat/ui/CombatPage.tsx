@@ -299,7 +299,7 @@ export function CombatPage() {
       const hpDelta = getHpAdjustment(tier, creature.level)
       const adjustedHp = Math.max(1, creature.hp + hpDelta)
       const iwr = extractIwr(row)
-      const c = createCombatantFromCreature(creature.id, creature.name, creature.perception, adjustedHp, useCombatantStore.getState().combatants)
+      const c = createCombatantFromCreature(creature.id, creature.name, creature.perception, adjustedHp, useCombatantStore.getState().combatants, creature.level)
       c.maxHp = adjustedHp
       c.iwrImmunities = iwr.immunities
       c.iwrWeaknesses = iwr.weaknesses

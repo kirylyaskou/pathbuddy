@@ -6,8 +6,40 @@ import { ConditionManager, VALUED_CONDITIONS } from '@engine'
 import type { ConditionSlug } from '@engine'
 import { useConditionStore } from '@/entities/condition'
 import type { ActiveCondition } from '@/entities/condition'
+import { useCombatantStore } from '@/entities/combatant'
 
 const managers = new Map<string, ConditionManager>()
+
+/**
+ * Recompute drained maxHp reduction after drained value changes.
+ * PF2e Drained: reduces maxHp by (level × drained value). Restores when removed.
+ * Uses combatant.baseMaxHp as invariant so the reduction is always reversible.
+ */
+function recomputeDrainedHp(combatantId: string): void {
+  const cm = managers.get(combatantId)
+  if (!cm) return
+  const drainedValue = cm.get('drained') ?? 0
+
+  const state = useCombatantStore.getState()
+  const combatant = state.combatants.find((c) => c.id === combatantId)
+  if (!combatant) return
+
+  const level = combatant.level ?? 0
+  // Lazily initialize baseMaxHp to current maxHp the first time drained is applied.
+  const baseMaxHp = combatant.baseMaxHp ?? combatant.maxHp
+  if (combatant.baseMaxHp === undefined) {
+    // Persist baseMaxHp on first drained application via direct mutation through setMaxHp.
+    // Since setMaxHp doesn't touch baseMaxHp, push it via setCombatants.
+    useCombatantStore.setState((s) => {
+      const c = s.combatants.find((c) => c.id === combatantId)
+      if (c) c.baseMaxHp = baseMaxHp
+    })
+  }
+
+  const reduction = level * drainedValue
+  const newMaxHp = Math.max(1, baseMaxHp - reduction)
+  state.setMaxHp(combatantId, newMaxHp)
+}
 
 function getOrCreate(combatantId: string): ConditionManager {
   let cm = managers.get(combatantId)
@@ -48,6 +80,7 @@ export function applyCondition(
   const after = cm.getAll().map((c) => c.slug)
   const granted = after.filter((s) => !before.has(s) && s !== slug)
   syncToStore(combatantId)
+  if (slug === 'drained') recomputeDrainedHp(combatantId)
   return granted as ConditionSlug[]
 }
 
@@ -62,6 +95,7 @@ export function removeCondition(
   const after = new Set(cm.getAll().map((c) => c.slug))
   const removed = [...before].filter((s) => !after.has(s) && s !== slug)
   syncToStore(combatantId)
+  if (slug === 'drained') recomputeDrainedHp(combatantId)
   return removed as ConditionSlug[]
 }
 
@@ -96,6 +130,7 @@ export function setConditionValue(
   if (!cm) return
   cm.setValue(slug, value)
   syncToStore(combatantId)
+  if (slug === 'drained') recomputeDrainedHp(combatantId)
 }
 
 export function setConditionLocked(

@@ -53,8 +53,9 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   const allStatSlugs = useMemo(
     () => [
       'ac', 'fortitude', 'reflex', 'will', 'perception',
-      'strike-attack',  // virtual: receives 'all'-selector conditions (frightened, sickened)
-      'spell-dc',       // virtual: receives 'all'-selector conditions for core DC display
+      'strike-attack',        // virtual: ranged + 'all'-selector conditions (frightened, sickened)
+      'melee-strike-attack',  // virtual: melee strikes — also receives enfeebled (str-based)
+      'spell-dc',             // virtual: 'all'-selector conditions for core DC display
       ...creature.skills.map((s) => s.name.toLowerCase()),
     ],
     [creature.skills],
@@ -221,12 +222,15 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
             <div className="px-4 py-3 space-y-3">
               {creature.strikes.map((strike, i) => {
                 const isAgile = strike.traits.includes('agile')
-                const strikeNet = modStats.get('strike-attack')?.netModifier ?? 0
+                const isRanged = strike.traits.includes('ranged') || strike.traits.some((t) => /^range\s/i.test(t))
+                // Melee strikes pick up str-based condition penalties (enfeebled) via virtual slug.
+                const strikeSlug = isRanged ? 'strike-attack' : 'melee-strike-attack'
+                const strikeNet = modStats.get(strikeSlug)?.netModifier ?? 0
                 const modifiedMod = strike.modifier + strikeNet
                 const map1 = modifiedMod - (isAgile ? 4 : 5)
                 const map2 = modifiedMod - (isAgile ? 8 : 10)
                 const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
-                const strikeModResult = modStats.get('strike-attack')
+                const strikeModResult = modStats.get(strikeSlug)
                 const strikeBtnColor = strikeNet < 0
                   ? 'text-pf-blood decoration-pf-blood/50'
                   : strikeNet > 0

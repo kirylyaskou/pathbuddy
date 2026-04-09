@@ -74,7 +74,10 @@ export const CONDITION_EFFECTS: Partial<Record<ConditionSlug, readonly Condition
     { type: 'modifier', selector: 'dex-based', modifierType: 'status', valuePerLevel: -1 },
   ],
   enfeebled: [
-    { type: 'modifier', selector: ['str-based', 'str-damage'], modifierType: 'status', valuePerLevel: -1 },
+    // Str-based: athletics + melee strikes (virtual slug melee-strike-attack).
+    // str-damage handled by damage system; melee-strike-attack resolved via default
+    // exact-match branch in selector-resolver.
+    { type: 'modifier', selector: ['str-based', 'str-damage', 'melee-strike-attack'], modifierType: 'status', valuePerLevel: -1 },
   ],
   stupefied: [
     { type: 'modifier', selector: ['cha-based', 'int-based', 'wis-based'], modifierType: 'status', valuePerLevel: -1 },

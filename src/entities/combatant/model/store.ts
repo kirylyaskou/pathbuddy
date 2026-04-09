@@ -8,6 +8,7 @@ export interface CombatantState {
   removeCombatant: (id: string) => void
   updateHp: (id: string, delta: number) => void
   updateTempHp: (id: string, tempHp: number) => void
+  setMaxHp: (id: string, newMaxHp: number) => void
   setInitiative: (id: string, initiative: number) => void
   reorderInitiative: (orderedIds: string[]) => void
   setCombatants: (combatants: Combatant[]) => void
@@ -34,6 +35,15 @@ export const useCombatantStore = create<CombatantState>()(
       set((state) => {
         const c = state.combatants.find((c) => c.id === id)
         if (c) c.tempHp = Math.max(0, tempHp)
+      }),
+    setMaxHp: (id, newMaxHp) =>
+      set((state) => {
+        const c = state.combatants.find((c) => c.id === id)
+        if (!c) return
+        const clamped = Math.max(1, newMaxHp)
+        c.maxHp = clamped
+        // Clamp current HP so it never exceeds the (possibly reduced) maximum.
+        if (c.hp > clamped) c.hp = clamped
       }),
     setInitiative: (id, initiative) =>
       set((state) => {

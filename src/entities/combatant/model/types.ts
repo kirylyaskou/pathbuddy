@@ -9,6 +9,11 @@ export interface Combatant {
   maxHp: number
   tempHp: number
   isNPC: boolean
+  // Creature level, needed for drained-hp reduction (level × drained value).
+  level?: number
+  // Base maxHp before drained reduction — set lazily the first time drained is applied
+  // so the reduction can be restored when drained is removed or reduced.
+  baseMaxHp?: number
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]

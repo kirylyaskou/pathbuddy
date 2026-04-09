@@ -72,7 +72,8 @@ export function BestiarySearchPanel() {
         creature.name,
         creature.perception,
         adjustedHp,
-        combatants
+        combatants,
+        creature.level,
       )
       combatant.maxHp = adjustedHp
       combatant.iwrImmunities = iwr.immunities

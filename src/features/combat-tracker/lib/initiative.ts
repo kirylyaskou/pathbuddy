@@ -29,7 +29,8 @@ export function createCombatantFromCreature(
   creatureName: string,
   perception: number,
   hp: number,
-  existingCombatants: Combatant[]
+  existingCombatants: Combatant[],
+  level?: number,
 ): Combatant {
   return {
     id: crypto.randomUUID(),
@@ -40,6 +41,7 @@ export function createCombatantFromCreature(
     maxHp: hp,
     tempHp: 0,
     isNPC: true,
+    ...(level !== undefined ? { level } : {}),
   }
 }
 
