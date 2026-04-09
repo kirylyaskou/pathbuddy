@@ -14,6 +14,13 @@ export interface Combatant {
   // Base maxHp before drained reduction — set lazily the first time drained is applied
   // so the reduction can be restored when drained is removed or reduced.
   baseMaxHp?: number
+  // Session-only AC for Quick Add creatures (not stored in DB, not tied to creatureRef).
+  ac?: number
+  // Shield Raised toggle — adds +2 AC visually when true (session-only).
+  shieldRaised?: boolean
+  // Multiple Attack Penalty index for the current turn (0 = first attack, 1/2 = subsequent).
+  // Resets to 0 when this combatant's turn ends.
+  mapIndex?: number
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]

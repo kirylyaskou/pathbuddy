@@ -14,6 +14,7 @@ export {
 export { advanceTurn, reverseTurn, canReverseTurn, clearTurnSnapshot } from './lib/turn-manager'
 export { setupAutoSave, teardownAutoSave, loadActiveCombat } from './lib/combat-persistence'
 export { AddPCDialog } from './ui/AddPCDialog'
+export { QuickAddCombatantForm } from './ui/QuickAddCombatantForm'
 export { CombatControls } from './ui/CombatControls'
 export { TurnControls } from './ui/TurnControls'
 export { rollInitiative, autoName, createCombatantFromCreature, createPCCombatant } from './lib/initiative'

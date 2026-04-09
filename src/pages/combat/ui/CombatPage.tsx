@@ -8,7 +8,7 @@ import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
-import { CombatControls, AddPCDialog, createCombatantFromCreature } from '@/features/combat-tracker'
+import { CombatControls, AddPCDialog, QuickAddCombatantForm, createCombatantFromCreature } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
 import {
@@ -127,7 +127,8 @@ function CombatColumn({ tab, isActive, onActivate, onSelect, className }: Combat
           <div className="flex-1">
             <CombatControls />
           </div>
-          <div className="flex items-center px-2 border-b border-border/50">
+          <div className="flex items-center gap-2 px-2 border-b border-border/50">
+            <QuickAddCombatantForm mode="creature" />
             <AddPCDialog />
           </div>
         </div>
