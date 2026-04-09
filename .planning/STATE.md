@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0.0
-milestone_name: — PC Import (Pathbuilder 2e)
+milestone: v1.1.0
+milestone_name: — PathMaid Day-One Patch
 status: executing
-stopped_at: Phase 43 UI-SPEC approved
-last_updated: "2026-04-06T15:09:13.413Z"
-last_activity: 2026-04-06
+stopped_at: Phase 51 context gathered
+last_updated: "2026-04-09T00:56:02.186Z"
+last_activity: 2026-04-09
 progress:
-  total_phases: 45
-  completed_phases: 22
-  total_plans: 73
-  completed_plans: 54
-  percent: 74
+  total_phases: 54
+  completed_phases: 30
+  total_plans: 93
+  completed_plans: 74
+  percent: 80
 ---
 
 # STATE.md - Pathfinder 2e DM Assistant
@@ -21,22 +21,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-05)
 
 **Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 43 — characters-page
+**Current focus:** Phase 51 — xp-audit
 
 ## Current Position
 
-Phase: 999.1
+Phase: 54
 Plan: Not started
-Status: Executing Phase 43
-Last activity: 2026-04-06
+Status: Executing Phase 51
+Last activity: 2026-04-09
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 75% (phases 47-49 complete, 50 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 57
+- Total plans completed: 62
 - Average duration: —
 - Total execution time: —
 
@@ -46,6 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 |-------|-------|-------|----------|
 | 42 | 2 | - | - |
 | 43 | 1 | - | - |
+| 51 | 3 | - | - |
 
 ## Accumulated Context
 
@@ -147,6 +148,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 260405-52e | damage-type-multi-trait-chip-selector | 2026-04-05 | eb20c204 | [260405-52e](./quick/260405-52e-damage-type-multi-trait-chip-selector/) |
 | 260405-64b | condition picker modal — full names, no truncation | 2026-04-05 | 96ed79ce | [260405-64b](./quick/260405-64b-redesign-the-condition-picker-in-combat-/) |
+| 260408-wlt | сделай bg-background чёрным для SplashScreen | 2026-04-08 | b206dcd5 | [260408-wlt](./quick/260408-wlt-bg-background-splashscreen/) |
 
 ### Blockers/Concerns
 
@@ -154,6 +156,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-06T14:52:22.171Z
-Stopped at: Phase 43 UI-SPEC approved
+Last session: 2026-04-08T23:22:29.176Z
+Stopped at: Phase 51 context gathered
 Next step: /gsd-discuss-phase 42

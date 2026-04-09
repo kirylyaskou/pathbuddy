@@ -28,7 +28,7 @@ export function BlueprintSelectorDialog({ open, onOpenChange }: BlueprintSelecto
         id: crypto.randomUUID(),
         creatureRef: ec.creatureRef,
         displayName: ec.displayName,
-        initiative: 0,
+        initiative: ec.initiative,
         hp: ec.maxHp,
         maxHp: ec.maxHp,
         tempHp: 0,
