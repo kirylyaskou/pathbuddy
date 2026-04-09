@@ -76,8 +76,13 @@ export function InitiativeRow({
           )}
           {combatant.creatureRef && onCreatureClick ? (
             <button
-              className="text-sm font-medium truncate text-left hover:text-primary transition-colors"
-              onClick={(e) => { e.stopPropagation(); onCreatureClick(combatant.creatureRef!) }}
+              type="button"
+              className="text-sm font-medium truncate text-left hover:text-primary transition-colors min-w-0 flex-1"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onCreatureClick(combatant.creatureRef!)
+              }}
             >
               {combatant.displayName}
             </button>

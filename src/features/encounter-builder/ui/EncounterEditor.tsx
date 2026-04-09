@@ -253,7 +253,11 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setStatBlockCreatureId(c.creatureRef)}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setStatBlockCreatureId(c.creatureRef)
+                    }}
                     className="flex-1 text-sm font-medium truncate text-left hover:text-pf-gold transition-colors"
                     title="View stat block"
                   >
