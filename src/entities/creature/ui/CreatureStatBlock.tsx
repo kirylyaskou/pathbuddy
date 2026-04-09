@@ -792,26 +792,38 @@ function actionCostLabel(cost: string): string {
 const stripHtmlInline = stripHtml
 
 function SpellCard({ foundryId, name, source, combatId }: { foundryId: string | null; name: string; source?: string; combatId?: string }) {
-  const [open, setOpen] = useState(false)
+  // FEAT-13 D-29: spell cards expand by default in the spellcasting panel.
+  const [open, setOpen] = useState(true)
   const [spell, setSpell] = useState<SpellRow | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleToggle() {
-    if (!open && !spell) {
-      setLoading(true)
-      try {
-        let data: SpellRow | null = null
-        if (foundryId) {
-          data = await getSpellById(foundryId)
-        }
-        if (!data) {
-          data = await getSpellByName(name)
-        }
-        setSpell(data)
-      } finally {
-        setLoading(false)
+  const loadSpell = useCallback(async () => {
+    if (spell || loading) return
+    setLoading(true)
+    try {
+      let data: SpellRow | null = null
+      if (foundryId) {
+        data = await getSpellById(foundryId)
       }
+      if (!data) {
+        data = await getSpellByName(name)
+      }
+      setSpell(data)
+    } finally {
+      setLoading(false)
     }
+  }, [foundryId, name, spell, loading])
+
+  // Auto-load on mount so the default-open card actually has content.
+  useEffect(() => {
+    if (open && !spell && !loading) {
+      loadSpell()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleToggle() {
+    if (!open) await loadSpell()
     setOpen((v) => !v)
   }
 
@@ -1315,6 +1327,22 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
     return RANK_WARNINGS[rank] ?? RANK_WARNINGS[10]!
   }
 
+  // FEAT-13: per-block slot-level filter. null = all ranks; number = only that rank.
+  // Defaults to the minimum available rank so the panel does not open as one long wall of spells.
+  const [selectedSlotLevel, setSelectedSlotLevel] = useState<number | null>(null)
+  const minAvailableRank = useMemo(
+    () => (effectiveRanks.length > 0 ? Math.min(...effectiveRanks) : null),
+    [effectiveRanks],
+  )
+  const effectiveSelectedSlotLevel = selectedSlotLevel ?? minAvailableRank
+  const filteredRanks = useMemo(
+    () =>
+      effectiveSelectedSlotLevel === null
+        ? effectiveRanks
+        : effectiveRanks.filter((r) => r === effectiveSelectedSlotLevel),
+    [effectiveRanks, effectiveSelectedSlotLevel],
+  )
+
   return (
     <Collapsible defaultOpen>
       <div className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40">
@@ -1412,8 +1440,44 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
               )
             })()}
           </div>
-          {/* Spells by rank */}
-          {effectiveRanks.map((rank) => {
+          {/* FEAT-13: slot-level filter pills — tap a rank to focus, All to show everything */}
+          {effectiveRanks.length > 1 && (
+            <div className="flex flex-wrap gap-1 pb-1">
+              <button
+                type="button"
+                onClick={() => setSelectedSlotLevel(null)}
+                className={cn(
+                  'px-1.5 py-0.5 text-[10px] rounded uppercase tracking-wider transition-colors border',
+                  selectedSlotLevel === null && minAvailableRank === null
+                    ? 'bg-primary/20 text-primary border-primary/30'
+                    : selectedSlotLevel === null
+                      ? 'bg-muted/30 text-muted-foreground border-border/30 hover:bg-muted/50'
+                      : 'bg-muted/30 text-muted-foreground border-border/30 hover:bg-muted/50',
+                )}
+              >
+                All
+              </button>
+              {effectiveRanks.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setSelectedSlotLevel(r)}
+                  className={cn(
+                    'px-1.5 py-0.5 text-[10px] rounded uppercase tracking-wider transition-colors border',
+                    effectiveSelectedSlotLevel === r && selectedSlotLevel !== null
+                      ? 'bg-primary/20 text-primary border-primary/30 font-semibold'
+                      : effectiveSelectedSlotLevel === r
+                        ? 'bg-primary/10 text-primary border-primary/20'
+                        : 'bg-muted/30 text-muted-foreground border-border/30 hover:bg-muted/50',
+                  )}
+                >
+                  {rankLabel(r)}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Spells by rank (filtered) */}
+          {filteredRanks.map((rank) => {
             const byRank = section.spellsByRank.find((br) => br.rank === rank)
             const baseSlots = byRank?.slots ?? 0
             const delta = slotDeltas[rank] ?? 0
