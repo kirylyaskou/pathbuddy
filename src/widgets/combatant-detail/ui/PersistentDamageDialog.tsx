@@ -55,7 +55,8 @@ type RollResult = {
 function applyResult(
   combatantId: string,
   pc: { slug: string; formula: string; damageType: string },
-  d20: number
+  d20: number,
+  flatCheckDC: number,
 ): RollResult {
   // PF2e rule: take damage first, THEN flat check to end condition
   const damage = rollFormula(pc.formula)
@@ -68,8 +69,8 @@ function applyResult(
     useCombatantStore.getState().updateHp(combatantId, -damage)
   }
 
-  // Flat check DC 15 to remove condition
-  const ended = d20 >= 15
+  // Configurable flat-check DC (default 15 per PF2e rules).
+  const ended = d20 >= flatCheckDC
   if (ended) {
     useConditionStore.getState().removeCondition(combatantId, pc.slug)
   }
@@ -88,16 +89,29 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
   const [results, setResults] = useState<RollResult[]>([])
   // manual step: index of the condition currently being rolled
   const [manualStep, setManualStep] = useState(0)
+  // FEAT-08 D-23: configurable flat-check DC (default 15 per PF2e rules)
+  const [flatCheckDC, setFlatCheckDC] = useState(15)
 
   if (!pending) return null
 
   const allResolved = results.length === pending.conditions.length
   const currentCondition = pending.conditions[manualStep]
 
+  // FEAT-08: Roll Save — rolls a single flat check for the current condition
+  // using the configurable DC. Shared by the Auto and Manual flows below.
+  const handleRollSave = () => {
+    const d20 = Math.ceil(Math.random() * 20)
+    const target = currentCondition ?? pending.conditions[0]
+    if (!target) return
+    const result = applyResult(pending.combatantId, target, d20, flatCheckDC)
+    setResults((prev) => [...prev, result])
+    setManualStep((s) => s + 1)
+  }
+
   const handleRollAll = () => {
     const newResults = pending.conditions.map((pc) => {
       const d20 = Math.ceil(Math.random() * 20) // separate roll per condition
-      return applyResult(pending.combatantId, pc, d20)
+      return applyResult(pending.combatantId, pc, d20, flatCheckDC)
     })
     setResults(newResults)
   }
@@ -105,7 +119,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
   const handleManualApply = () => {
     const d20 = parseInt(manualRoll, 10)
     if (isNaN(d20) || d20 < 1 || d20 > 20) return
-    const result = applyResult(pending.combatantId, currentCondition, d20)
+    const result = applyResult(pending.combatantId, currentCondition, d20, flatCheckDC)
     setResults((prev) => [...prev, result])
     setManualRoll('')
     setManualStep((s) => s + 1)
@@ -116,11 +130,13 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
     setManualRoll('')
     setRollMode('auto')
     setManualStep(0)
+    setFlatCheckDC(15)
     onClose()
   }
 
+  // FEAT-08 D-22: modal=true so clicking the backdrop closes the dialog.
   return (
-    <Dialog modal={false} open={!!pending} onOpenChange={(o) => { if (!o) handleClose() }}>
+    <Dialog open={!!pending} onOpenChange={(o) => { if (!o) handleClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -153,9 +169,17 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
             })}
           </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            Flat-check DC: <span className="font-mono font-bold text-foreground">15</span>
-            <span className="ml-1 text-xs">(one roll per condition)</span>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span>Flat-check DC:</span>
+            <Input
+              type="number"
+              value={flatCheckDC}
+              onChange={(e) => setFlatCheckDC(Math.max(1, Math.min(40, parseInt(e.target.value, 10) || 15)))}
+              className="h-7 w-14 text-center text-sm font-mono font-bold"
+              min={1}
+              max={40}
+            />
+            <span className="text-xs">(one roll per condition)</span>
           </div>
 
           {!allResolved && (
@@ -183,7 +207,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
 
               {rollMode === 'auto' && (
                 <Button className="w-full" onClick={handleRollAll}>
-                  Roll All Flat Checks ({pending.conditions.length - results.length} remaining)
+                  Roll Flat Check (All) — {pending.conditions.length - results.length} remaining
                 </Button>
               )}
 
@@ -209,6 +233,9 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                       Apply
                     </Button>
                   </div>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={handleRollSave}>
+                    Roll Save (auto d20)
+                  </Button>
                 </div>
               )}
             </>
@@ -228,7 +255,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                       : `${r.damageDealt} ${r.damageType} damage`}
                   </p>
                   <p className={r.ended ? 'text-emerald-400 font-medium' : 'text-amber-400'}>
-                    {r.ended ? `d20 ${r.roll} ≥ 15 — condition removed` : `d20 ${r.roll} < 15 — continues`}
+                    {r.ended ? `d20 ${r.roll} ≥ ${flatCheckDC} — condition removed` : `d20 ${r.roll} < ${flatCheckDC} — continues`}
                   </p>
                 </div>
               ))}
