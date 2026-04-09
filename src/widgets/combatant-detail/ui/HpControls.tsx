@@ -11,13 +11,20 @@ import {
   createResistance,
   MATERIAL_EFFECTS,
   IMMUNITY_TYPES,
+  type ConditionSlug,
   type DamageType,
   type MaterialEffect,
   type ImmunityType,
   type WeaknessType,
   type ResistanceType,
 } from '@engine'
+import { useConditionStore } from '@/entities/condition'
+import { removeCondition } from '@/features/combat-tracker'
 import { DyingCascadeDialog } from './DyingCascadeDialog'
+
+// CRB pg.460: when a downed creature is healed back to positive HP, its death-related
+// and combat conditions clear. Only Wounded and Prone persist.
+const PRESERVE_ON_HEAL_FROM_DOWN: ConditionSlug[] = ['wounded', 'prone']
 
 interface HpControlsProps {
   combatant: Combatant
@@ -188,8 +195,25 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
         if (!hasEntries) setHpInput(0)
       } else {
         if (hpInput <= 0) return
-        if (action === 'heal') updateHp(combatant.id, hpInput)
-        else updateTempHp(combatant.id, Math.max(combatant.tempHp, hpInput))
+        if (action === 'heal') {
+          const wasDown = combatant.hp <= 0
+          updateHp(combatant.id, hpInput)
+          // If healing brings a downed creature back to positive HP, clear
+          // all conditions except Wounded and Prone (CRB pg.460).
+          if (wasDown && combatant.hp + hpInput > 0) {
+            const active = useConditionStore
+              .getState()
+              .activeConditions
+              .filter((c) => c.combatantId === combatant.id)
+            for (const cond of active) {
+              if (!PRESERVE_ON_HEAL_FROM_DOWN.includes(cond.slug as ConditionSlug)) {
+                removeCondition(combatant.id, cond.slug as ConditionSlug)
+              }
+            }
+          }
+        } else {
+          updateTempHp(combatant.id, Math.max(combatant.tempHp, hpInput))
+        }
         setHpInput(0)
       }
     },
