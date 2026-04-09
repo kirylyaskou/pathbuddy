@@ -11,7 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
-import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search, Zap, Flame, Leaf, Feather } from "lucide-react"
+import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search, Zap, Flame, Leaf, Feather, Swords, Shield as ShieldIcon, Sparkles } from "lucide-react"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
@@ -61,6 +61,66 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
     [creature.skills],
   )
   const modStats = useModifiedStats(encounterContext?.combatantId, allStatSlugs)
+
+  // FEAT-04: detect troops/swarms from traits — they use a specialized layout
+  // (no Strikes, collective damage in Actions, troop HP segments rendered inline).
+  const traitsLower = useMemo(
+    () => creature.traits.map((t) => t.toLowerCase()),
+    [creature.traits],
+  )
+  const isTroop = traitsLower.includes('troop')
+  const isSwarm = traitsLower.includes('swarm')
+  const isSpecialFormation = isTroop || isSwarm
+
+  // FEAT-03a: hide Strikes section when the creature has none (troops/swarms also skip)
+  const hasStrikes = creature.strikes.length > 0 && !isSpecialFormation
+
+  // FEAT-04: extract "Troop Defenses" ability for inline HP segment display
+  const troopDefenses = useMemo(() => {
+    if (!isTroop) return null
+    return (
+      creature.abilities.find((a) => a.name.toLowerCase().includes('troop defenses')) ?? null
+    )
+  }, [isTroop, creature.abilities])
+
+  // FEAT-03b: classify abilities into Offensive / Defensive / Reactions / Other.
+  // No Foundry 'category' field exists on the current data model — use trait/name heuristics.
+  const classifiedAbilities = useMemo(() => {
+    const offensive: typeof creature.abilities = []
+    const defensive: typeof creature.abilities = []
+    const reactions: typeof creature.abilities = []
+    const other: typeof creature.abilities = []
+    const OFFENSIVE_NAME = /strike|attack|bite|claw|breath|slam|gore|tail|tongue|spit|charge|rage|pounce|swallow|constrict|grab\b|trample|maul/i
+    const DEFENSIVE_NAME = /shield|block|parry|evasion|deflect|resist|ward|defense|defen[sc]e|regenerat|fortify|hardness|absorb/i
+    for (const a of creature.abilities) {
+      if (a.actionCost === 'reaction') {
+        reactions.push(a)
+        continue
+      }
+      const traits = a.traits ?? []
+      if (traits.includes('attack') || traits.includes('offensive') || OFFENSIVE_NAME.test(a.name)) {
+        offensive.push(a)
+        continue
+      }
+      if (traits.includes('defensive') || DEFENSIVE_NAME.test(a.name)) {
+        defensive.push(a)
+        continue
+      }
+      other.push(a)
+    }
+    return { offensive, defensive, reactions, other }
+  }, [creature.abilities])
+
+  const [actionTab, setActionTab] = useState<'offensive' | 'defensive' | 'other'>('offensive')
+
+  // Auto-select the first non-empty tab so the initial view shows content.
+  useEffect(() => {
+    if (actionTab === 'offensive' && classifiedAbilities.offensive.length === 0) {
+      if (classifiedAbilities.defensive.length > 0) setActionTab('defensive')
+      else if (classifiedAbilities.other.length > 0) setActionTab('other')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classifiedAbilities.offensive.length, classifiedAbilities.defensive.length, classifiedAbilities.other.length])
 
   return (
     <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
@@ -210,9 +270,33 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
           </div>
         </div>
 
-        <Separator />
+        {/* FEAT-04: Troop/Swarm formation badge + troop HP segments */}
+        {isSpecialFormation && (
+          <>
+            <Separator />
+            <div className="px-4 py-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-[10px] rounded bg-primary/15 text-primary border border-primary/30 uppercase tracking-wider font-semibold">
+                  {isTroop ? 'Troop Formation' : 'Swarm Formation'}
+                </span>
+                {isSwarm && (
+                  <span className="text-xs text-muted-foreground">Collective damage applies</span>
+                )}
+              </div>
+              {isTroop && troopDefenses && (
+                <div className="p-2 rounded bg-muted/30 text-xs leading-relaxed">
+                  <span className="font-semibold">Troop Defenses: </span>
+                  <span className="text-foreground/80">{stripHtml(troopDefenses.description)}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
-        {/* Strikes */}
+        {hasStrikes && <Separator />}
+
+        {/* Strikes — hidden when creature has no melee/ranged attacks or is a troop/swarm */}
+        {hasStrikes && (
         <Collapsible defaultOpen>
           <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40 hover:from-primary/15 hover:to-transparent transition-colors">
             <span className="font-semibold text-sm text-foreground">Strikes</span>
@@ -343,10 +427,11 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
             </div>
           </CollapsibleContent>
         </Collapsible>
+        )}
 
         <Separator />
 
-        {/* Abilities */}
+        {/* Abilities — FEAT-03b: Offensive/Defensive/Other tabs + Reactions sub-section */}
         {creature.abilities.length > 0 && (
           <>
             <Collapsible defaultOpen>
@@ -356,29 +441,97 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="px-4 py-3 space-y-3">
-                  {creature.abilities.map((ability, i) => (
-                    <div key={i} className="p-3 rounded bg-pf-parchment border-l-2 border-primary/30">
-                      <div className="flex items-center gap-2">
-                        {ability.actionCost !== undefined && ability.actionCost !== 0 && (
-                          <ActionIcon cost={ability.actionCost} className="text-lg text-primary" />
+                  {/* Tab selector */}
+                  <div className="flex flex-wrap gap-1">
+                    {([
+                      { id: 'offensive', label: 'Offensive', icon: Swords, count: classifiedAbilities.offensive.length },
+                      { id: 'defensive', label: 'Defensive', icon: ShieldIcon, count: classifiedAbilities.defensive.length },
+                      { id: 'other', label: 'Other', icon: Sparkles, count: classifiedAbilities.other.length },
+                    ] as const).map(({ id, label, icon: Icon, count }) => (
+                      <button
+                        key={id}
+                        onClick={() => setActionTab(id)}
+                        disabled={count === 0}
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors',
+                          actionTab === id
+                            ? 'bg-primary/20 text-primary border border-primary/30'
+                            : 'hover:bg-muted/50 border border-transparent',
+                          count === 0 && 'opacity-40 cursor-not-allowed',
                         )}
-                        <span className="font-semibold text-sm">{ability.name}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-foreground/80 leading-relaxed">{highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}</p>
-                      {ability.traits && ability.traits.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {ability.traits.map((trait) => (
-                            <span
-                              key={trait}
-                              className="px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider"
-                            >
-                              {trait}
-                            </span>
-                          ))}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {label}
+                        <span className="text-muted-foreground">({count})</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Active tab content — responsive auto-fill grid (FEAT-05) */}
+                  <div
+                    className="grid gap-2"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                  >
+                    {classifiedAbilities[actionTab].map((ability, i) => (
+                      <div key={`${actionTab}-${i}`} className="p-3 rounded bg-pf-parchment border-l-2 border-primary/30">
+                        <div className="flex items-center gap-2">
+                          {ability.actionCost !== undefined && ability.actionCost !== 0 && (
+                            <ActionIcon cost={ability.actionCost} className="text-lg text-primary" />
+                          )}
+                          <span className="font-semibold text-sm">{ability.name}</span>
                         </div>
-                      )}
+                        <p className="mt-1 text-sm text-foreground/80 leading-relaxed">{highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}</p>
+                        {ability.traits && ability.traits.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {ability.traits.map((trait) => (
+                              <span
+                                key={trait}
+                                className="px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider"
+                              >
+                                {trait}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {classifiedAbilities[actionTab].length === 0 && (
+                      <p className="text-xs text-muted-foreground italic col-span-full">No {actionTab} abilities.</p>
+                    )}
+                  </div>
+
+                  {/* Reactions sub-section (D-16: Offensive → Defensive → Reactions → Spells) */}
+                  {classifiedAbilities.reactions.length > 0 && (
+                    <div className="pt-2 border-t border-border/30">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Reactions</p>
+                      <div
+                        className="grid gap-2"
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                      >
+                        {classifiedAbilities.reactions.map((ability, i) => (
+                          <div key={`react-${i}`} className="p-3 rounded bg-pf-parchment border-l-2 border-pf-blood/40">
+                            <div className="flex items-center gap-2">
+                              <ActionIcon cost="reaction" className="text-lg text-pf-blood" />
+                              <span className="font-semibold text-sm">{ability.name}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-foreground/80 leading-relaxed">{highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}</p>
+                            {ability.traits && ability.traits.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {ability.traits.map((trait) => (
+                                  <span
+                                    key={trait}
+                                    className="px-1.5 py-0.5 text-[10px] rounded bg-pf-blood/10 text-pf-blood border border-pf-blood/20 uppercase tracking-wider"
+                                  >
+                                    {trait}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>
