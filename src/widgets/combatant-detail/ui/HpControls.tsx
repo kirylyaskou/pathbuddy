@@ -374,7 +374,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
               onWheel={handleWheel}
               onMouseEnter={(e) => { e.currentTarget.focus(); e.currentTarget.select() }}
               placeholder="0"
-              className="w-10 h-8 text-center text-sm font-mono font-bold bg-secondary/30 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-10 h-8 text-center text-sm font-mono font-bold bg-secondary/30 border border-border/50 rounded-md focus:outline-none focus:ring-1 focus:ring-ring [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               min={0}
             />
             <button

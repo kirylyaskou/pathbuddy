@@ -1881,7 +1881,7 @@ function EquipmentBlock({
                 placeholder="Add item…"
                 value={addQuery}
                 onChange={(e) => setAddQuery(e.target.value)}
-                className="w-full text-xs px-2 py-1 rounded border border-border/50 bg-secondary/40 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                className="w-full text-xs px-2 h-8 rounded-md border border-border/50 bg-secondary/40 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
               {addResults.length > 0 && (
                 <div className="absolute z-10 left-0 right-0 top-full mt-0.5 rounded border border-border bg-popover shadow-md max-h-40 overflow-y-auto">
