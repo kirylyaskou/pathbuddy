@@ -35,7 +35,10 @@ export function CreatureCard({ creature, compact, onAdd, onClick, className }: C
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 gap-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20 hover:text-primary shrink-0"
+                    // BUG-03 (52-08): previously opacity-0 group-hover:opacity-100,
+                    // making the Add button invisible at rest. Always visible now,
+                    // with a subtle background to cue affordance.
+                    className="h-6 px-2 gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary shrink-0"
                     onClick={(e) => {
                       e.stopPropagation()
                       onAdd()

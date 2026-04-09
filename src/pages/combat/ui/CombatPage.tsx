@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Shield } from 'lucide-react'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/shared/ui/resizable'
 import { Button } from '@/shared/ui/button'
@@ -220,6 +220,12 @@ export function CombatPage() {
   const [pcBuildLoading, setPcBuildLoading] = useState(false)
   const pcBuildCache = useRef<Map<string, PathbuilderBuild>>(new Map())
 
+  // BUG-02 (52-08 follow-up): require 8px of movement before dnd-kit starts a
+  // drag, so clicks on the "+ Add" button inside <DraggableBestiaryRow> are
+  // not swallowed as drag-starts. Previously the first creature add appeared
+  // to "do nothing" because dnd-kit ate the click as a zero-distance drag.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+
   const pendingPersistentDamage = useCombatTrackerStore((s) => s.pendingPersistentDamage)
   const setPendingPersistentDamage = useCombatTrackerStore((s) => s.setPendingPersistentDamage)
   const { combatId, isEncounterBacked } = useCombatTrackerStore(
@@ -422,7 +428,7 @@ export function CombatPage() {
           <BlueprintSelectorDialog open={showSelector} onOpenChange={setShowSelector} />
         </div>
       ) : (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <EncounterTabBar />
           <ResizablePanelGroup direction="horizontal" className="flex-1">
 
