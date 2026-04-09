@@ -6,7 +6,6 @@ dist
 .planning/
 plans/
 package-lock.json
-pnpm-lock.yaml
 
 # Tauri build artifacts
 src-tauri/target/

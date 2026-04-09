@@ -1,12 +1,12 @@
 [package]
-name = "pathbuddy"
+name = "pathmaid"
 version = "0.3.0"
 description = "Pathfinder 2e DM Assistant"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "pathbuddy_lib"
+name = "pathmaid_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -472,6 +472,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
         combatantId={combatant.id}
         combatantName={combatant.displayName}
         abilities={abilities}
+        mode="knockout"
       />
 
       {/* IWR preview */}

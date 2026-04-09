@@ -7,6 +7,11 @@ export interface PendingPersistentDamage {
   conditions: { slug: string; formula: string; damageType: string }[]
 }
 
+export interface PendingRecoveryCheck {
+  combatantId: string
+  combatantName: string
+}
+
 export interface CombatTrackerState {
   combatId: string | null
   activeCombatantId: string | null
@@ -15,6 +20,7 @@ export interface CombatTrackerState {
   isRunning: boolean
   isEncounterBacked: boolean
   pendingPersistentDamage: PendingPersistentDamage | null
+  pendingRecoveryCheck: PendingRecoveryCheck | null
   startCombat: (combatId: string) => void
   endCombat: () => void
   startEncounterCombat: (
@@ -28,6 +34,7 @@ export interface CombatTrackerState {
   setTurn: (turn: number) => void
   setCombatId: (id: string | null) => void
   setPendingPersistentDamage: (p: PendingPersistentDamage | null) => void
+  setPendingRecoveryCheck: (p: PendingRecoveryCheck | null) => void
   restoreState: (s: {
     combatId: string | null
     activeCombatantId: string | null
@@ -47,6 +54,7 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
     isRunning: false,
     isEncounterBacked: false,
     pendingPersistentDamage: null,
+    pendingRecoveryCheck: null,
     startCombat: (combatId) =>
       set((state) => {
         state.combatId = combatId
@@ -92,6 +100,10 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
       set((state) => {
         state.pendingPersistentDamage = p
       }),
+    setPendingRecoveryCheck: (p) =>
+      set((state) => {
+        state.pendingRecoveryCheck = p
+      }),
     restoreState: (s) =>
       set((state) => {
         state.combatId = s.combatId
@@ -101,6 +113,7 @@ export const useCombatTrackerStore = create<CombatTrackerState>()(
         state.isRunning = s.isRunning
         state.isEncounterBacked = s.isEncounterBacked
         state.pendingPersistentDamage = null
+        state.pendingRecoveryCheck = null
       }),
   }))
 )

@@ -8,6 +8,7 @@ import { InitiativeList } from '@/widgets/initiative-list'
 import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
+import { DyingCascadeDialog } from '@/widgets/combatant-detail/ui/DyingCascadeDialog'
 import { CombatControls, AddPCDialog, QuickAddCombatantForm, createCombatantFromCreature } from '@/features/combat-tracker'
 import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
@@ -228,6 +229,8 @@ export function CombatPage() {
 
   const pendingPersistentDamage = useCombatTrackerStore((s) => s.pendingPersistentDamage)
   const setPendingPersistentDamage = useCombatTrackerStore((s) => s.setPendingPersistentDamage)
+  const pendingRecoveryCheck = useCombatTrackerStore((s) => s.pendingRecoveryCheck)
+  const setPendingRecoveryCheck = useCombatTrackerStore((s) => s.setPendingRecoveryCheck)
   const { combatId, isEncounterBacked } = useCombatTrackerStore(
     useShallow((s) => ({ combatId: s.combatId, isEncounterBacked: s.isEncounterBacked }))
   )
@@ -417,6 +420,12 @@ export function CombatPage() {
       <PersistentDamageDialog
         pending={pendingPersistentDamage}
         onClose={() => setPendingPersistentDamage(null)}
+      />
+      <DyingCascadeDialog
+        open={!!pendingRecoveryCheck}
+        onClose={() => setPendingRecoveryCheck(null)}
+        combatantId={pendingRecoveryCheck?.combatantId ?? ''}
+        combatantName={pendingRecoveryCheck?.combatantName ?? ''}
       />
       {openTabs.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">

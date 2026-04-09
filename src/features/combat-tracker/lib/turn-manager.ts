@@ -89,6 +89,17 @@ export function advanceTurn(): void {
   tracker.setActiveCombatant(nextCombatant.id)
   tracker.setRound(newRound)
   tracker.setTurn(newTurn)
+
+  // PF2e: recovery check happens at START of the dying creature's turn (not when downed).
+  const nextConditions = useConditionStore.getState().activeConditions
+    .filter((c) => c.combatantId === nextCombatant.id)
+  const dyingValue = nextConditions.find((c) => c.slug === 'dying')?.value ?? 0
+  if (dyingValue > 0) {
+    tracker.setPendingRecoveryCheck({
+      combatantId: nextCombatant.id,
+      combatantName: nextCombatant.displayName,
+    })
+  }
 }
 
 export function reverseTurn(): void {

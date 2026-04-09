@@ -25,6 +25,10 @@ interface DyingCascadeDialogProps {
   combatantId: string
   combatantName: string
   abilities?: { name: string; description: string }[]
+  /** 'knockout': shown when HP drops to 0 — apply dying + crit option, no recovery check.
+   *  'recovery': shown at start of creature's turn — recovery check only, no crit setup.
+   *  Defaults to 'recovery'. */
+  mode?: 'knockout' | 'recovery'
 }
 
 const DEATH_PREVENTION_KEYWORDS = ['Ferocity', 'Rejuvenation', 'Negative Healing', 'Undead']
@@ -35,6 +39,7 @@ export function DyingCascadeDialog({
   combatantId,
   combatantName,
   abilities,
+  mode = 'recovery',
 }: DyingCascadeDialogProps) {
   const [rollMode, setRollMode] = useState<'auto' | 'manual'>('auto')
   const [manualRoll, setManualRoll] = useState('')
@@ -245,18 +250,22 @@ export function DyingCascadeDialog({
               </div>
             )}
 
-            <Button className="w-full" onClick={handleRecoveryCheck}>
-              Roll Recovery Check
-            </Button>
+            {mode === 'recovery' && (
+              <Button className="w-full" onClick={handleRecoveryCheck}>
+                Roll Recovery Check
+              </Button>
+            )}
 
-            <Button
-              className="w-full"
-              variant="destructive"
-              size="sm"
-              onClick={handleCritKnockout}
-            >
-              Knocked Out (Crit) +2
-            </Button>
+            {mode === 'knockout' && (
+              <Button
+                className="w-full"
+                variant="destructive"
+                size="sm"
+                onClick={handleCritKnockout}
+              >
+                Knocked Out (Crit) +2
+              </Button>
+            )}
 
             <Button
               className="w-full"

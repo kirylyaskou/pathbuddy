@@ -199,7 +199,7 @@ pub async fn sync_foundry_data(
     );
 
     let client = reqwest::Client::builder()
-        .user_agent("pathbuddy/0.3.0")
+        .user_agent("pathmaid/0.3.0")
         .build()
         .map_err(|e| e.to_string())?;
 
