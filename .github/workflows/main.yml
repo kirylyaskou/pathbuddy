@@ -96,7 +96,7 @@ jobs:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
       - name: Build Android APK
-        run: pnpm tauri android build -- --apk
+        run: pnpm tauri android build
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
