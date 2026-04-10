@@ -22,6 +22,7 @@ import type { EncounterCombatantRow } from '@/shared/api'
 import { loadEncounterIntoCombat, teardownEncounterAutoSave, flushEncounterSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
 import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
+import { useEncounterTabsStore, snapshotFromGlobalStores } from '@/features/combat-tracker'
 import { StatBlockModal } from '@/entities/creature'
 import { PATHS } from '@/shared/routes'
 import { calculateCreatureXP, getHazardXp } from '@engine'
@@ -51,14 +52,31 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   async function doLoadIntoCombat() {
     setLoading(true)
     try {
-      // Save current encounter state before switching
+      // Save current active tab before loading the new encounter
       const tracker = useCombatTrackerStore.getState()
       if (tracker.isRunning && tracker.isEncounterBacked) {
         await flushEncounterSave()
       }
       teardownAutoSave()
       teardownEncounterAutoSave()
-      await loadEncounterIntoCombat(encounterId)
+
+      // Save current active tab snapshot so it survives the store mutation below
+      useEncounterTabsStore.getState().updateActiveSnapshot()
+
+      const ok = await loadEncounterIntoCombat(encounterId)
+      if (!ok) return
+
+      // Open a NEW tab for the loaded encounter — do not overwrite the active tab.
+      // Use openTabFromSnapshot: the old tab's snapshot was already saved above via
+      // updateActiveSnapshot(), and global stores now contain the new encounter's data,
+      // so we must NOT call updateActiveSnapshot() again (it would corrupt the old tab).
+      const snapshot = snapshotFromGlobalStores()
+      useEncounterTabsStore.getState().openTabFromSnapshot({
+        encounterId,
+        name: encounter?.name ?? 'Encounter',
+        snapshot,
+      })
+
       navigate(PATHS.COMBAT)
     } finally {
       setLoading(false)
@@ -66,12 +84,12 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
   }
 
   function handleLoadClick() {
-    const { isRunning, isEncounterBacked } = useCombatTrackerStore.getState()
-    if (isRunning && !isEncounterBacked) {
-      // Ad-hoc combat will be lost — confirm
+    const { isRunning } = useCombatTrackerStore.getState()
+    if (isRunning) {
+      // Any active combat (ad-hoc or encounter-backed): confirm before loading
+      // because the user may not realise a new tab is about to be opened
       setShowLoadConfirm(true)
     } else {
-      // No combat or encounter-backed (state auto-saved) — switch directly
       doLoadIntoCombat()
     }
   }
@@ -286,18 +304,17 @@ export function EncounterEditor({ encounterId, partyLevel }: Props) {
       <AlertDialog open={showLoadConfirm} onOpenChange={setShowLoadConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard Current Combat?</AlertDialogTitle>
+            <AlertDialogTitle>Open in New Tab?</AlertDialogTitle>
             <AlertDialogDescription>
-              An active combat is in progress. Loading this encounter will end it.
+              A combat is already in progress. The encounter will open as a new tab alongside the current fight.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Current</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => { setShowLoadConfirm(false); doLoadIntoCombat() }}
             >
-              Discard & Load
+              Open New Tab
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

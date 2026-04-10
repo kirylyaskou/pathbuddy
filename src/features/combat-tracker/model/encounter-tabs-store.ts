@@ -27,6 +27,13 @@ export interface EncounterTabsState {
   splitMode: boolean
 
   openTab: (tab: { encounterId: string | null; name: string; snapshot: TabSnapshot }) => string
+  /**
+   * Add a new tab with a pre-built snapshot and activate it WITHOUT calling
+   * updateActiveSnapshot() for the previously active tab. Use this when the
+   * caller has already persisted the old tab's snapshot and the global stores
+   * now contain the new tab's data (e.g. after loadEncounterIntoCombat).
+   */
+  openTabFromSnapshot: (tab: { encounterId: string | null; name: string; snapshot: TabSnapshot }) => string
   closeTab: (tabId: string) => void
   setActiveTab: (tabId: string) => void
   updateActiveSnapshot: () => void
@@ -86,6 +93,19 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
         state.openTabs.push({ id, ...tabInput })
       })
       get().setActiveTab(id)
+      return id
+    },
+
+    openTabFromSnapshot: (tabInput) => {
+      const id = crypto.randomUUID()
+      // Save current tab's snapshot using the provided snapshot data (caller already
+      // updated it before mutating global stores), then switch to the new tab.
+      // We do NOT call updateActiveSnapshot() here because global stores already
+      // contain the new tab's data — calling it would corrupt the old tab's snapshot.
+      set((state) => {
+        state.openTabs.push({ id, ...tabInput })
+        state.activeTabId = id
+      })
       return id
     },
 
