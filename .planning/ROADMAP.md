@@ -17,7 +17,7 @@
 - 🚧 **v0.9.0-pre-alpha — Items Catalog Overhaul** — Phases 34-35 (complete 2026-04-03)
 - 🚧 **v0.9.6-pre-alpha — МАТЕМАТИКА** — Phases 36-41 (complete 2026-04-05)
 - ✅ **v1.0.0 — PC Import (Pathbuilder 2e)** — Phases 42-46 (complete 2026-04-07)
-- 🚧 **v1.1.0 — PathMaid Day-One Patch** — Phases 47-54 (in progress)
+- ✅ **v1.1.0 — PathMaid Day-One Patch** — Phases 47-54 (complete 2026-04-10)
 
 ## Phases
 
@@ -817,106 +817,23 @@ Plans:
   5. Hazard rows in combat tracker have a roll-initiative button
 **Plans:** 4/4 plans complete
 
-### 🚧 v1.1.0 — PathMaid Day-One Patch
+<details>
+<summary>✅ v1.1.0 — PathMaid Day-One Patch (Phases 47-54) — SHIPPED 2026-04-10</summary>
 
 **Milestone Goal:** Full rebrand to PathMaid, remove raw Foundry @-tokens, polish encounters UX, add goblin maid mascot, audit XP engine correctness, fix critical bugs, and run a full code quality audit before public release.
 
-- [x] **Phase 47: Rebrand** — Rename Pathbuddy → PathMaid across tauri.conf.json, package.json, DB filename, app identifier, and all UI strings (completed 2026-04-07)
-- [x] **Phase 48: Description Sanitization** — Remove all unresolved Foundry @-tokens from every UI surface showing entity descriptions (completed 2026-04-07)
-- [x] **Phase 49: Encounters UX Overhaul** — "New Encounter" button, extended creature filters (family/traits/source), level-sorted creature lists (completed 2026-04-08)
-- [ ] **Phase 50: Mascot Integration** — Goblin maid GIF on SplashScreen, Foundry sync overlay, and Dashboard empty state with CSS sway animation
-- [x] **Phase 51: XP Audit** — Audit XP budget and group level calculator for PF2e rules correctness (completed 2026-04-09)
-- [x] **Phase 52: Bug Fixes** — Fix 0-initiative on encounter load after restart; dice toasts stack in column with auto-dismiss (completed 2026-04-09)
-- [ ] **Phase 53: Code Audit** — Dead code removal, React perf patterns, FSD violation fixes, TypeScript strictness
-- [ ] **Phase 54: Linux/Android CI/CD Builds** — GitHub Actions pipelines for Linux and Android targets
+- [x] **Phase 47: Rebrand** — Rename Pathbuddy → PathMaid (completed 2026-04-07)
+- [x] **Phase 48: Description Sanitization** — Remove all Foundry @-tokens from descriptions (completed 2026-04-07)
+- [x] **Phase 49: Encounters UX Overhaul** — New Encounter button, extended filters, level-sorted lists (completed 2026-04-08)
+- [x] **Phase 50: Mascot Integration** — Goblin maid GIF on SplashScreen, sync overlay, Dashboard empty state (completed 2026-04-09)
+- [x] **Phase 51: XP Audit** — XP budget and group level calculator corrected to PF2e CRB rules (completed 2026-04-09)
+- [x] **Phase 52: Bug Fixes** — 15+ fixes including initiative restore, dice toasts, stat block modal, MAP, wounded rules (completed 2026-04-09)
+- [x] **Phase 53: Code Audit** — 19 dead components removed, FSD fixed, tsc = 0 (completed 2026-04-10)
+- [x] **Phase 54: Linux/Android CI/CD** — CI lint+tsc + Release with Android APK (completed 2026-04-10)
 
-### Phase 47: Rebrand
-**Goal**: Every reference to "Pathbuddy" is replaced with "PathMaid" in all configs, identifiers, and UI strings — app identity is consistent
-**Depends on**: Phase 46
-**Requirements**: BRAND-01
-**Success Criteria** (what must be TRUE):
-  1. `tauri.conf.json` productName and identifier use "PathMaid" / "com.pathmaid.app"
-  2. `package.json` name is "pathmaid"
-  3. SQLite database file is `pathmaid.db`
-  4. Window title and all visible UI text reads "PathMaid", no "Pathbuddy" visible
-**Plans:** 1/1 plans complete
+Full details: `.planning/milestones/v1.1.0-ROADMAP.md`
 
-### Phase 48: Description Sanitization
-**Goal**: No raw Foundry @-tokens appear in any entity description across the entire UI
-**Depends on**: Phase 47
-**Requirements**: SANITIZE-01
-**Success Criteria** (what must be TRUE):
-  1. `sanitizeFoundryText()` is called at every description render site (stat blocks, item drawer, spell list, action cards)
-  2. @item.rank, @item.level, and any other unresolved tokens produce no visible output
-  3. No `@[A-Z]` pattern visible in any rendered description in the app
-**Plans:** 1/1 plans complete
-
-### Phase 49: Encounters UX Overhaul
-**Goal**: Encounters creation flow uses explicit buttons, creature search has extended filters, creature lists are sorted by level
-**Depends on**: Phase 48
-**Requirements**: ENC-01, ENC-02, ENC-03
-**Success Criteria** (what must be TRUE):
-  1. "New Encounter" button creates encounter — no ambiguous "+" icon
-  2. Creature search panel has family, traits, and source filter options
-  3. Creature lists in encounter builder display sorted by level (ascending)
-  4. All existing encounter functionality (drag-drop, XP budget, combat) unaffected
-**Plans:** 3/3 plans complete
-
-### Phase 50: Mascot Integration
-**Goal**: Goblin maid GIF animation plays in three locations with CSS sway animation
-**Depends on**: Phase 49
-**Requirements**: MASCOT-01
-**Success Criteria** (what must be TRUE):
-  1. SplashScreen shows goblin maid GIF instead of D20Die — random variant from pool on each load
-  2. Foundry sync overlay (Settings page, both sync modes) shows goblin maid GIF with "Подготавливаем бардак" heading
-  3. Dashboard EncountersCard empty state shows goblin maid GIF (small, 80px)
-  4. CSS sway animation (translate + rotate, 4s infinite alternate) applied to mascot component
-**Plans:** TBD
-**UI hint**: yes
-
-### Phase 51: XP Audit
-**Goal**: XP budget calculator and group level inputs produce correct PF2e values for all encounter threat levels
-**Depends on**: Phase 50
-**Requirements**: XP-01
-**Success Criteria** (what must be TRUE):
-  1. XP budget thresholds (Trivial/Low/Moderate/Severe/Extreme) match PF2e CRB table for group levels 1-20
-  2. Group level calculation from party member levels is correct per PF2e rules
-  3. Creature XP contribution by level difference matches PF2e CRB table
-  4. Threat rating display updates correctly when creatures are added/removed from encounter
-**Plans:** 3/3 plans complete
-
-### Phase 52: Bug Fixes
-**Goal**: 0-initiative bug on encounter load is fixed; dice roll toasts display correctly stacked with auto-dismiss
-**Depends on**: Phase 51
-**Requirements**: BUG-01, DICE-01
-**Success Criteria** (what must be TRUE):
-  1. Loading a saved encounter after app restart shows correct initiative values — no zeros
-  2. If initiative data is missing, a re-roll prompt appears (not silent 0s)
-  3. Multiple dice roll toasts stack vertically in a column without overlapping
-  4. Each toast auto-dismisses after a configurable timeout (default ~4s)
-**Plans:** 7/7 plans complete
-
-### Phase 53: Code Audit
-**Goal**: Codebase is clean — dead code removed, React performance anti-patterns fixed, FSD violations resolved, TypeScript strict where feasible
-**Depends on**: Phase 52
-**Requirements**: AUDIT-01
-**Success Criteria** (what must be TRUE):
-  1. No unused imports, components, stores, or utility functions remain
-  2. No `.map()` inside `useShallow` Zustand selectors (known perf bug pattern)
-  3. No FSD layer violations (e.g. entities importing from features, pages importing shared directly without going through widgets)
-  4. TypeScript strictNullChecks passes without suppressions on new code
-**Plans:** TBD
-
-### Phase 54: Linux/Android CI/CD Builds
-**Goal**: GitHub Actions pipelines produce Linux and Android builds automatically on push to master
-**Depends on**: Phase 53
-**Requirements**: CICD-01
-**Success Criteria** (what must be TRUE):
-  1. `.github/workflows/` contains Linux build workflow — produces `.AppImage` or `.deb` artifact
-  2. Android build workflow produces signed `.apk` or `.aab` artifact
-  3. Builds trigger on push to master and on tags
-  4. Build artifacts are uploaded to GitHub Releases on tag push
-**Plans:** TBD
+</details>
 
 ## Progress
 
@@ -930,19 +847,25 @@ Plans:
 | 45. Combat Integration | 3/3 | Complete | 2026-04-07 |
 | 46. PC Combat Polish | 4/4 | Complete | 2026-04-07 |
 
-### v1.1.0 — PathMaid Day-One Patch
+### v1.1.0 — PathMaid Day-One Patch (SHIPPED 2026-04-10)
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
+| Phase | Plans | Status | Completed |
+|-------|-------|--------|-----------|
 | 47. Rebrand | 1/1 | Complete | 2026-04-07 |
 | 48. Description Sanitization | 1/1 | Complete | 2026-04-07 |
 | 49. Encounters UX Overhaul | 3/3 | Complete | 2026-04-08 |
-| 50. Mascot Integration | 2/? | In Progress | — |
-| 51. XP Audit | 3/3 | Complete    | 2026-04-09 |
-| 52. Bug Fixes | 7/7 | Complete    | 2026-04-09 |
-| 53. Code Audit | 0/? | Planned | — |
-| 54. Linux/Android CI/CD | 0/? | Planned | — |
+| 50. Mascot Integration | 2/2 | Complete | 2026-04-09 |
+| 51. XP Audit | 3/3 | Complete | 2026-04-09 |
+| 52. Bug Fixes | 8/8 | Complete | 2026-04-09 |
+| 53. Code Audit | 2/2 | Complete | 2026-04-10 |
+| 54. Linux/Android CI/CD | 2/2 | Complete | 2026-04-10 |
+
+### v1.2.0 — Next Milestone
+
+_(Not yet defined — run `/gsd-new-milestone` to start)_
+
+- [ ] **Phase 55: CreatureStatBlock Refactor** — Split 1964-line CreatureStatBlock.tsx into separate files
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-09 — v1.1.0 PathMaid Day-One Patch milestone added (phases 47-54)*
+*Last updated: 2026-04-10 — v1.1.0 PathMaid Day-One Patch shipped (phases 47-54)*

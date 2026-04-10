@@ -24,24 +24,24 @@
 
 ### Mascot (MASCOT)
 
-- [ ] **MASCOT-01**: Goblin maid GIF animation plays on SplashScreen (replaces D20Die), Foundry sync overlay, and Dashboard EncountersCard empty state — with CSS sway animation — Phase 50
+- [x] **MASCOT-01**: Goblin maid GIF animation plays on SplashScreen (replaces D20Die), Foundry sync overlay, and Dashboard EncountersCard empty state — with CSS sway animation — Phase 50
 
 ### XP Engine (XP)
 
-- [ ] **XP-01**: XP budget and group level calculator are audited and produce correct values per PF2e CRB rules for all encounter threat levels — Phase 51
+- [x] **XP-01**: XP budget and group level calculator are audited and produce correct values per PF2e CRB rules for all encounter threat levels — Phase 51
 
 ### Bug Fixes (BUG)
 
-- [ ] **BUG-01**: 0-initiative bug on encounter load after app restart is fixed — encounters load with correct initiative values — Phase 52
-- [ ] **DICE-01**: Dice roll toasts stack vertically in a column and auto-dismiss after timeout — no overlapping toasts — Phase 52
+- [x] **BUG-01**: 0-initiative bug on encounter load after app restart is fixed — encounters load with correct initiative values — Phase 52
+- [x] **DICE-01**: Dice roll toasts stack vertically in a column and auto-dismiss after timeout — no overlapping toasts — Phase 52
 
 ### Code Quality (AUDIT)
 
-- [ ] **AUDIT-01**: Full code audit complete — dead code removed, React performance issues addressed, FSD violations fixed, TypeScript strictness improved — Phase 53
+- [x] **AUDIT-01**: Full code audit complete — dead code removed, React performance issues addressed, FSD violations fixed, TypeScript strictness improved — Phase 53
 
 ### Platform Builds (CICD)
 
-- [ ] **CICD-01**: Linux and Android CI/CD builds work via GitHub Actions — Phase 54
+- [x] **CICD-01**: Linux and Android CI/CD builds work via GitHub Actions — Phase 54
 
 ## Future Requirements
 
@@ -72,12 +72,12 @@
 | ENC-01 | Phase 49 | Complete |
 | ENC-02 | Phase 49 | Complete |
 | ENC-03 | Phase 49 | Complete |
-| MASCOT-01 | Phase 50 | In Progress |
-| XP-01 | Phase 51 | Pending |
-| BUG-01 | Phase 52 | Pending |
-| DICE-01 | Phase 52 | Pending |
-| AUDIT-01 | Phase 53 | Pending |
-| CICD-01 | Phase 54 | Pending |
+| MASCOT-01 | Phase 50 | Complete |
+| XP-01 | Phase 51 | Complete |
+| BUG-01 | Phase 52 | Complete |
+| DICE-01 | Phase 52 | Complete |
+| AUDIT-01 | Phase 53 | Complete |
+| CICD-01 | Phase 54 | Complete |
 
 **Coverage:**
 - v1 requirements: 11 total

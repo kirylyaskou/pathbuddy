@@ -102,8 +102,20 @@ export function removeCondition(
 ): ConditionSlug[] {
   const cm = managers.get(combatantId)
   if (!cm) return []
+
+  // CRB pg.460: when dying is removed (stabilize / heal), prone persists.
+  // The grant chain dying->unconscious->prone would cascade-remove prone,
+  // so we snapshot whether prone exists and re-apply it after removal.
+  const hadProne = slug === 'dying' && cm.has('prone')
+
   const before = new Set(cm.getAll().map((c) => c.slug))
   cm.remove(slug)
+
+  // Restore prone if it was present before dying removal (CRB pg.460).
+  if (hadProne && !cm.has('prone')) {
+    cm.add('prone', 1)
+  }
+
   const after = new Set(cm.getAll().map((c) => c.slug))
   const removed = [...before].filter((s) => !after.has(s) && s !== slug)
   syncToStore(combatantId)
