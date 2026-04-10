@@ -19,8 +19,9 @@ import {
   type WeaknessType,
   type ResistanceType,
 } from '@engine'
-import { removeCondition } from '@/features/combat-tracker'
-import { DyingCascadeDialog } from './DyingCascadeDialog'
+import { applyCondition, removeCondition } from '@/features/combat-tracker'
+import { useConditionStore } from '@/entities/condition'
+import { getDyingValueOnKnockout } from '@engine'
 
 // CRB pg.460: when a downed creature is healed back to positive HP, only the
 // Dying condition is lost. All other conditions (Wounded, Prone, Frightened, etc.) persist.
@@ -30,7 +31,6 @@ interface HpControlsProps {
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]
-  abilities?: { name: string; description: string }[]
   /** True when the creature's equipment list contains a shield. Hides Raise Shield otherwise. */
   hasShield?: boolean
 }
@@ -97,14 +97,13 @@ const CHIP_COLOR: Record<string, string> = {
   magic: 'bg-emerald-800/80 text-emerald-200',
 }
 
-export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, abilities, hasShield = false }: HpControlsProps) {
+export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, hasShield = false }: HpControlsProps) {
   const [hpInput, setHpInput] = useState(0)
   // Each damage type has its own amount
   const [damageEntries, setDamageEntries] = useState<DamageEntry[]>([])
   // Material traits shared across all damage instances
   const [materials, setMaterials] = useState<string[]>([])
   const [traitSelectorOpen, setTraitSelectorOpen] = useState(false)
-  const [dyingDialogOpen, setDyingDialogOpen] = useState(false)
   const updateHp = useCombatantStore((s) => s.updateHp)
   const updateTempHp = useCombatantStore((s) => s.updateTempHp)
   const updateCombatant = useCombatantStore((s) => s.updateCombatant)
@@ -191,7 +190,12 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
         const hpBefore = combatant.hp
         if (remaining > 0) updateHp(combatant.id, -remaining)
         const newHp = Math.max(0, hpBefore - remaining)
-        if (newHp === 0 && hpBefore > 0) setDyingDialogOpen(true)
+        // CRB: on HP → 0 auto-apply dying (1 + wounded). No dialog — recovery check at start of turn.
+        if (newHp === 0 && hpBefore > 0) {
+          const wounded = useConditionStore.getState().activeConditions
+            .find((c) => c.combatantId === combatant.id && c.slug === 'wounded')?.value ?? 0
+          applyCondition(combatant.id, 'dying' as ConditionSlug, getDyingValueOnKnockout(wounded))
+        }
         setDamageEntries([])
         setMaterials([])
         if (!hasEntries) setHpInput(0)
@@ -456,15 +460,6 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
           </div>
         </DialogContent>
       </Dialog>
-
-      <DyingCascadeDialog
-        open={dyingDialogOpen}
-        onClose={() => setDyingDialogOpen(false)}
-        combatantId={combatant.id}
-        combatantName={combatant.displayName}
-        abilities={abilities}
-        mode="knockout"
-      />
 
       {/* IWR preview */}
       {iwrPreviews && iwrPreviews.length > 0 && (
