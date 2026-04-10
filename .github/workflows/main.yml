@@ -94,11 +94,13 @@ jobs:
         run: pnpm tauri android init
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          OPENSSL_VENDORED: "1"
 
       - name: Build Android APK
         run: pnpm tauri android build
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          OPENSSL_VENDORED: "1"
 
       - name: Locate APK artifacts
         run: find src-tauri/gen/android -name "*.apk" -type f
