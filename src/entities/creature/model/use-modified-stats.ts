@@ -11,8 +11,7 @@ import {
   StatisticModifier,
   CONDITION_EFFECTS,
 } from '@engine'
-import type { ConditionInput, StatModifierResult } from '@engine'
-import type { ConditionModifierEffect } from '@engine'
+import type { ConditionInput, StatModifierResult, ConditionModifierEffect } from '@engine'
 
 // Re-export so Plan 02 only needs one import for both
 export type { StatModifierResult }
@@ -73,7 +72,6 @@ export function useModifiedStats(
     }
 
     return result
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [combatantId, conditions, slugsKey])
 }
 

@@ -13,10 +13,9 @@ import {
   getWoundedValueAfterStabilize,
   getDyingValueOnKnockout,
 } from '@engine'
-import type { RecoveryCheckResult } from '@engine'
+import type { RecoveryCheckResult, ConditionSlug } from '@engine'
 import { useConditionStore } from '@/entities/condition'
 import { applyCondition, removeCondition, setConditionValue } from '@/features/combat-tracker'
-import type { ConditionSlug } from '@engine'
 import { useShallow } from 'zustand/react/shallow'
 
 interface DyingCascadeDialogProps {
@@ -77,7 +76,7 @@ export function DyingCascadeDialog({
       )
     }
     initializedForRef.current = combatantId
-  }, [open, combatantId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, combatantId])
 
   // Reset state when dialog closes
   useEffect(() => {

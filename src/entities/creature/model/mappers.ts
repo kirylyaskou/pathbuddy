@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Rarity } from '@engine'
 import type { CreatureRow } from '@/shared/api'
 import { mapSize } from '@/shared/lib/size-map'

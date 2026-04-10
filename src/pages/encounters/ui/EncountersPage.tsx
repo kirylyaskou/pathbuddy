@@ -5,8 +5,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/shared/ui/resizable'
-import { XPBudgetBar } from '@/entities/encounter'
-import { useEncounterStore } from '@/entities/encounter'
+import { XPBudgetBar, useEncounterStore } from '@/entities/encounter'
 import {
   useEncounterBuilderStore,
   PartyConfigBar,

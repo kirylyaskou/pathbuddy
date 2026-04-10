@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { rollDice } from '@engine'
+import { rollDice, detectCasterProgression, getMaxRecommendedRank } from '@engine'
 import { useRollStore } from '@/shared/model/roll-store'
 import { ClickableFormula } from '@/shared/ui/clickable-formula'
 import { cn } from "@/shared/lib/utils"
@@ -17,11 +17,9 @@ import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
 import { AbilityCard } from "@/shared/ui/ability-card"
 import type { CreatureStatBlockData } from '../model/types'
-import type { SpellcastingSection } from '@/entities/spell'
-import type { SpellRow } from '@/entities/spell'
+import type { SpellcastingSection, SpellRow } from '@/entities/spell'
 import { getSpellById, getSpellByName, searchSpells, saveSpellSlotUsage, loadSpellSlots, loadSpellOverrides, upsertSpellOverride, deleteSpellOverride, loadItemOverrides, upsertItemOverride, deleteItemOverride, searchItems, saveSlotOverride, loadSlotOverrides } from '@/shared/api'
 import type { SpellOverrideRow, CreatureItemRow, EncounterItemRow, ItemRow } from '@/shared/api'
-import { detectCasterProgression, getMaxRecommendedRank } from '@engine'
 import { ITEM_TYPE_COLORS, ItemReferenceDrawer } from '@/entities/item'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
@@ -144,7 +142,6 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
       if (classifiedAbilities.defensive.length > 0) setActionTab('defensive')
       else if (classifiedAbilities.other.length > 0) setActionTab('other')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classifiedAbilities.offensive.length, classifiedAbilities.defensive.length, classifiedAbilities.other.length])
 
   return (
@@ -870,7 +867,6 @@ function SpellCard({ foundryId, name, source, combatId }: { foundryId: string | 
     if (open && !spell && !loading) {
       loadSpell()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleToggle() {

@@ -311,7 +311,6 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
           mod: modWithProf(profs[key] ?? 0, abilities[SKILL_ABILITY[key]]),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [build]
   )
   const lores = useMemo(
@@ -321,7 +320,6 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
         prof,
         mod: modWithProf(prof, abilities.int),
       })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [build]
   )
 
