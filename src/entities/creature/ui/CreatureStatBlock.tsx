@@ -34,6 +34,8 @@ import { useCombatantStore } from '@/entities/combatant'
 export interface EncounterContext {
   encounterId: string
   combatantId: string
+  /** AC bonus from the combatant's equipped shield (0 if none). Used to show raised-shield AC. */
+  shieldAcBonus?: number
   /** Called after any encounter-inventory mutation so parent can reload hasShield etc. */
   onInventoryChanged?: () => void
 }
@@ -173,7 +175,12 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
         <div className="pb-4 bg-card [@container-type:inline-size]">
           <div className="flex flex-nowrap overflow-hidden">
             <StatItem label="HP" value={creature.hp} highlight />
-            <StatItem label="AC" value={creature.ac} colorClass="text-pf-gold" modResult={modStats.get('ac')} />
+            <StatItem
+              label={mapCombatant?.shieldRaised ? 'AC*' : 'AC'}
+              value={creature.ac + (mapCombatant?.shieldRaised ? (encounterContext?.shieldAcBonus ?? 0) : 0)}
+              colorClass="text-pf-gold"
+              modResult={modStats.get('ac')}
+            />
             <StatItem label="Fort" value={creature.fort} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('fortitude')} onRoll={(f) => handleRoll(f, 'Fortitude save')} />
             <StatItem label="Ref" value={creature.ref} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('reflex')} onRoll={(f) => handleRoll(f, 'Reflex save')} />
             <StatItem label="Will" value={creature.will} modifier colorClass="text-pf-threat-low" showDc modResult={modStats.get('will')} onRoll={(f) => handleRoll(f, 'Will save')} />

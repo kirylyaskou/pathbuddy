@@ -7,11 +7,11 @@ import { ConditionSection } from './ConditionSection'
 
 interface CombatantDetailProps {
   combatantId: string
-  /** True when the active creature's equipment contains a shield. Forwarded to HpControls. */
   hasShield?: boolean
+  shieldAcBonus?: number
 }
 
-export function CombatantDetail({ combatantId, hasShield = false }: CombatantDetailProps) {
+export function CombatantDetail({ combatantId, hasShield = false, shieldAcBonus = 2 }: CombatantDetailProps) {
   const combatant = useCombatantStore(
     useShallow((s) => s.combatants.find((c) => c.id === combatantId))
   )
@@ -53,6 +53,7 @@ export function CombatantDetail({ combatantId, hasShield = false }: CombatantDet
         iwrWeaknesses={combatant.iwrWeaknesses}
         iwrResistances={combatant.iwrResistances}
         hasShield={hasShield}
+        shieldAcBonus={shieldAcBonus}
       />
 
       <Separator />

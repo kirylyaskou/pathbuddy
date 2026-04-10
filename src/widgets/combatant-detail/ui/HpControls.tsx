@@ -31,8 +31,9 @@ interface HpControlsProps {
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number }[]
   iwrResistances?: { type: string; value: number }[]
-  /** True when the creature's equipment list contains a shield. Hides Raise Shield otherwise. */
   hasShield?: boolean
+  /** AC bonus from the equipped shield (varies per shield type). */
+  shieldAcBonus?: number
 }
 
 interface DamageEntry {
@@ -97,7 +98,7 @@ const CHIP_COLOR: Record<string, string> = {
   magic: 'bg-emerald-800/80 text-emerald-200',
 }
 
-export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, hasShield = false }: HpControlsProps) {
+export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, hasShield = false, shieldAcBonus = 2 }: HpControlsProps) {
   const [hpInput, setHpInput] = useState(0)
   // Each damage type has its own amount
   const [damageEntries, setDamageEntries] = useState<DamageEntry[]>([])
@@ -249,7 +250,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
             <button
               type="button"
               onClick={() => updateCombatant(combatant.id, { shieldRaised: !combatant.shieldRaised })}
-              title="Toggle Raise Shield (+2 AC)"
+              title={`Toggle Raise Shield (+${shieldAcBonus} AC)`}
               className={cn(
                 'flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors',
                 combatant.shieldRaised
@@ -258,7 +259,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
               )}
             >
               <Shield className="w-3 h-3" />
-              {combatant.shieldRaised ? 'Shield Raised (+2 AC)' : 'Raise Shield'}
+              {combatant.shieldRaised ? `Shield Raised (+${shieldAcBonus} AC)` : 'Raise Shield'}
             </button>
           )}
         </div>

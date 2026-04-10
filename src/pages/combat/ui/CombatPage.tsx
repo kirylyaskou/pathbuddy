@@ -422,14 +422,13 @@ export function CombatPage() {
     loadItemOverrides(combatId, selectedId).then(setSelectedEncounterItems).catch(() => setSelectedEncounterItems([]))
   }, [combatId, selectedId, lastNpcStatBlock, inventoryVersion])
 
-  // FEAT-09: Raise Shield button renders when the creature carries a shield —
-  // checked in both static bestiary equipment and encounter-inventory overrides.
-  const isShieldItem = (name: string, type: string) =>
-    type === 'shield' || name.toLowerCase().includes('shield')
-  const hasShield = Boolean(
-    lastNpcStatBlock?.equipment?.some((it) => isShieldItem(it.item_name ?? '', it.item_type)) ||
-    selectedEncounterItems.some((it) => !it.isRemoved && isShieldItem(it.itemName, it.itemType))
-  )
+  // FEAT-09: Raise Shield button renders when the creature carries a shield.
+  // shieldAcBonus reads actual ac_bonus from shield item (not hardcoded +2).
+  const isShieldItem = (type: string) => type === 'shield'
+  const shieldFromBestiary = lastNpcStatBlock?.equipment?.find((it) => isShieldItem(it.item_type))
+  const shieldFromInventory = selectedEncounterItems.find((it) => !it.isRemoved && isShieldItem(it.itemType))
+  const hasShield = Boolean(shieldFromBestiary || shieldFromInventory)
+  const shieldAcBonus = shieldFromBestiary?.ac_bonus ?? shieldFromInventory?.acBonus ?? 2
 
   return (
     <div className="flex flex-col h-full">
@@ -514,7 +513,7 @@ export function CombatPage() {
                       <div className="flex flex-col h-full">
                         {selectedId ? (
                           <div className="flex-1 min-h-0">
-                            <CombatantDetail combatantId={selectedId} hasShield={hasShield} />
+                            <CombatantDetail combatantId={selectedId} hasShield={hasShield} shieldAcBonus={shieldAcBonus} />
                           </div>
                         ) : (
                           <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -547,7 +546,7 @@ export function CombatPage() {
                     className="rounded-none border-x-0 border-t-0"
                     encounterContext={
                       isEncounterBacked && combatId && selectedId
-                        ? { encounterId: combatId, combatantId: selectedId, onInventoryChanged: () => setInventoryVersion((v) => v + 1) }
+                        ? { encounterId: combatId, combatantId: selectedId, shieldAcBonus, onInventoryChanged: () => setInventoryVersion((v) => v + 1) }
                         : undefined
                     }
                   />
