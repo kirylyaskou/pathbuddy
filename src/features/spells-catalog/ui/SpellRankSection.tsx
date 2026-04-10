@@ -14,7 +14,7 @@ interface SpellRankSectionProps {
   onSpellClick: (spellId: string) => void
 }
 
-export function SpellRankSection({ rank, spells, defaultOpen = false, isFocusTab, onSpellClick }: SpellRankSectionProps) {
+export function SpellRankSection({ rank, spells, defaultOpen = true, isFocusTab, onSpellClick }: SpellRankSectionProps) {
   const [open, setOpen] = useState(defaultOpen)
   const count = spells.length
   const label = rankLabel(rank)

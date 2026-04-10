@@ -168,7 +168,7 @@ function SpellList({ spellsByRank, isFocusTab, loading, onSpellClick, selectedRa
           key={r}
           rank={r}
           spells={spellsByRank.get(r) ?? []}
-          defaultOpen={r === 0 || r === 1}
+          defaultOpen={true}
           isFocusTab={isFocusTab}
           onSpellClick={onSpellClick}
         />
