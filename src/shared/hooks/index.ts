@@ -1,2 +1,1 @@
-export { useIsMobile } from './use-mobile'
-export { useToast, toast } from './use-toast'
+// shared hooks barrel — currently empty after D-01 cleanup
