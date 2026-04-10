@@ -101,7 +101,7 @@ jobs:
       - name: Build Android APK
         run: |
           export PATH="$GITHUB_WORKSPACE/node_modules/.bin:$PATH"
-          pnpm tauri android build
+          pnpm tauri android build --debug
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           OPENSSL_VENDORED: "1"
@@ -113,14 +113,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PathMaid-android-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          path: src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
           if-no-files-found: error
 
       - name: Upload APK to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          files: src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
           draft: true
           tag_name: ${{ github.ref_name }}
           update_only: true
