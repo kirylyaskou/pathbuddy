@@ -134,9 +134,10 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
     onClose()
   }
 
-  // FEAT-08 D-22: modal=true so clicking the backdrop closes the dialog.
+  // Block backdrop-click dismiss until all conditions have been rolled.
+  // DM can still explicitly skip via the "Skip (DM Fiat)" button.
   return (
-    <Dialog open={!!pending} onOpenChange={(o) => { if (!o) handleClose() }}>
+    <Dialog open={!!pending} onOpenChange={(o) => { if (!o && allResolved) handleClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -239,6 +240,12 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                 </div>
               )}
             </>
+          )}
+
+          {!allResolved && (
+            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={handleClose}>
+              Skip (DM Fiat)
+            </Button>
           )}
 
           {allResolved && (

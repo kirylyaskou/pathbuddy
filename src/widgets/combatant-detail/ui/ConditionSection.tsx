@@ -3,6 +3,8 @@ import { X } from 'lucide-react'
 import { useConditionStore, ConditionBadge } from '@/entities/condition'
 import { ConditionCombobox } from '@/features/combat-tracker/ui/ConditionCombobox'
 import { removeCondition, setConditionLocked } from '@/features/combat-tracker'
+import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
+import { useCombatantStore } from '@/entities/combatant'
 import { getConditionBySlug } from '@/shared/api'
 import type { ConditionRow } from '@/shared/api'
 import type { ConditionSlug } from '@engine'
@@ -104,6 +106,26 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
   )
 
   const handleInfo = useCallback(async (slug: string) => {
+    // Persistent damage badges re-open the flat-check dialog on info click.
+    if (slug.startsWith('persistent-')) {
+      const allConditions = useConditionStore.getState().activeConditions
+      const persistentConds = allConditions.filter(
+        (c) => c.combatantId === combatantId && c.slug.startsWith('persistent-')
+      )
+      if (persistentConds.length > 0) {
+        const combatant = useCombatantStore.getState().combatants.find((c) => c.id === combatantId)
+        useCombatTrackerStore.getState().setPendingPersistentDamage({
+          combatantId,
+          combatantName: combatant?.displayName ?? 'Combatant',
+          conditions: persistentConds.map((pc) => ({
+            slug: pc.slug,
+            formula: pc.formula || '?',
+            damageType: pc.slug.replace('persistent-', ''),
+          })),
+        })
+      }
+      return
+    }
     setOpenConditionSlug(slug)
     // Strip persistent-* prefix to look up base condition
     const baseSlug = slug.startsWith('persistent-') ? slug.replace('persistent-', '') : slug
@@ -113,7 +135,7 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
     } catch {
       setDetailRow('not-found')
     }
-  }, [])
+  }, [combatantId])
 
   return (
     <div className="space-y-2">
