@@ -178,8 +178,8 @@ export function ActionsPage() {
         </p>
       </div>
 
-      {/* Action list */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+      {/* Action grid */}
+      <div className="flex-1 overflow-y-auto p-2 grid grid-cols-2 xl:grid-cols-3 gap-1.5 auto-rows-min">
         {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
             <Zap className="w-8 h-8 mb-2 opacity-40" />
