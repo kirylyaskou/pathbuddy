@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, X, User, Skull } from 'lucide-react'
+import { GripVertical, X, User, Skull, Info } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import type { Combatant } from '@/entities/combatant'
@@ -74,21 +74,7 @@ export function InitiativeRow({
               ⚡{stunnedCondition.value}
             </span>
           )}
-          {combatant.creatureRef && onCreatureClick ? (
-            <button
-              type="button"
-              className="text-sm font-medium truncate text-left hover:text-primary transition-colors min-w-0 flex-1"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation()
-                onCreatureClick(combatant.creatureRef!)
-              }}
-            >
-              {combatant.displayName}
-            </button>
-          ) : (
-            <span className="text-sm font-medium truncate">{combatant.displayName}</span>
-          )}
+          <span className="text-sm font-medium truncate">{combatant.displayName}</span>
         </div>
         <div className="mt-0.5 h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <div
@@ -123,6 +109,20 @@ export function InitiativeRow({
       <span className="text-xs font-mono text-muted-foreground shrink-0">
         {combatant.hp}/{combatant.maxHp}
       </span>
+
+      {combatant.creatureRef && onCreatureClick && (
+        <button
+          type="button"
+          className="w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-primary cursor-pointer transition-colors shrink-0"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            onCreatureClick(combatant.creatureRef!)
+          }}
+        >
+          <Info className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       <Button
         size="icon"
