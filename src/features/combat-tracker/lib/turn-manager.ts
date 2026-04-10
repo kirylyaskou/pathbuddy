@@ -64,6 +64,7 @@ export function advanceTurn(): void {
       tracker.setPendingPersistentDamage({
         combatantId: endingCombatantId!,
         combatantName: name,
+        dealDamage: true,
         conditions: persistentConditions.map((pc) => ({
           slug: pc.slug,
           formula: pc.formula || '?',

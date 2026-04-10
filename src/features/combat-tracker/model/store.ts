@@ -5,6 +5,8 @@ export interface PendingPersistentDamage {
   combatantId: string
   combatantName: string
   conditions: { slug: string; formula: string; damageType: string }[]
+  /** true = opened at end of turn (deal damage + flat check); false = manual re-trigger (flat check only) */
+  dealDamage?: boolean
 }
 
 export interface PendingRecoveryCheck {

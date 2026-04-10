@@ -151,10 +151,9 @@ export function ConditionSection({ combatantId }: ConditionSectionProps) {
             <ConditionBadge
               key={c.slug}
               condition={c}
-              onRemove={() => handleRemove(c.slug)}
+              onRemove={c.slug.startsWith('persistent-') ? () => openPersistentDialog(c.slug) : () => handleRemove(c.slug)}
               onToggleLock={() => handleToggleLock(c.slug, !!c.isLocked)}
               onInfo={() => handleInfo(c.slug)}
-              {...(c.slug.startsWith('persistent-') ? { onClick: () => openPersistentDialog(c.slug) } : {})}
             />
           ))}
         </div>

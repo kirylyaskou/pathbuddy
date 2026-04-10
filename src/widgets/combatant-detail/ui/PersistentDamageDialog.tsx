@@ -83,6 +83,19 @@ interface PersistentDamageDialogProps {
   onClose: () => void
 }
 
+function applyFlatCheckOnly(
+  combatantId: string,
+  pc: { slug: string; formula: string; damageType: string },
+  d20: number,
+  flatCheckDC: number,
+): RollResult {
+  const ended = d20 >= flatCheckDC
+  if (ended) {
+    useConditionStore.getState().removeCondition(combatantId, pc.slug)
+  }
+  return { damageType: pc.damageType, slug: pc.slug, formula: pc.formula, roll: d20, damageDealt: 0, ended }
+}
+
 export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDialogProps) {
   const [rollMode, setRollMode] = useState<'auto' | 'manual'>('auto')
   const [manualRoll, setManualRoll] = useState('')
@@ -97,21 +110,23 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
   const allResolved = results.length === pending.conditions.length
   const currentCondition = pending.conditions[manualStep]
 
+  const rollFn = pending.dealDamage ? applyResult : applyFlatCheckOnly
+
   // FEAT-08: Roll Save — rolls a single flat check for the current condition
   // using the configurable DC. Shared by the Auto and Manual flows below.
   const handleRollSave = () => {
     const d20 = Math.ceil(Math.random() * 20)
     const target = currentCondition ?? pending.conditions[0]
     if (!target) return
-    const result = applyResult(pending.combatantId, target, d20, flatCheckDC)
+    const result = rollFn(pending.combatantId, target, d20, flatCheckDC)
     setResults((prev) => [...prev, result])
     setManualStep((s) => s + 1)
   }
 
   const handleRollAll = () => {
     const newResults = pending.conditions.map((pc) => {
-      const d20 = Math.ceil(Math.random() * 20) // separate roll per condition
-      return applyResult(pending.combatantId, pc, d20, flatCheckDC)
+      const d20 = Math.ceil(Math.random() * 20)
+      return rollFn(pending.combatantId, pc, d20, flatCheckDC)
     })
     setResults(newResults)
   }
@@ -119,7 +134,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
   const handleManualApply = () => {
     const d20 = parseInt(manualRoll, 10)
     if (isNaN(d20) || d20 < 1 || d20 > 20) return
-    const result = applyResult(pending.combatantId, currentCondition, d20, flatCheckDC)
+    const result = rollFn(pending.combatantId, currentCondition, d20, flatCheckDC)
     setResults((prev) => [...prev, result])
     setManualRoll('')
     setManualStep((s) => s + 1)
@@ -142,7 +157,7 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-400" />
-            Persistent Damage — {pending.combatantName}
+            {pending.dealDamage ? 'Persistent Damage' : 'Flat Check'} — {pending.combatantName}
           </DialogTitle>
         </DialogHeader>
 
@@ -256,11 +271,13 @@ export function PersistentDamageDialog({ pending, onClose }: PersistentDamageDia
                     <span className="capitalize font-medium">{r.damageType}</span>
                     <span className="font-mono text-xs text-muted-foreground">d20 = <span className="font-bold text-foreground">{r.roll}</span></span>
                   </div>
-                  <p className={r.dyingIncreased ? 'text-destructive font-medium' : 'text-muted-foreground'}>
-                    {r.dyingIncreased
-                      ? `${r.damageDealt} damage — Dying +1 (0 HP)`
-                      : `${r.damageDealt} ${r.damageType} damage`}
-                  </p>
+                  {pending.dealDamage && (
+                    <p className={r.dyingIncreased ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                      {r.dyingIncreased
+                        ? `${r.damageDealt} damage — Dying +1 (0 HP)`
+                        : `${r.damageDealt} ${r.damageType} damage`}
+                    </p>
+                  )}
                   <p className={r.ended ? 'text-emerald-400 font-medium' : 'text-amber-400'}>
                     {r.ended ? `d20 ${r.roll} ≥ ${flatCheckDC} — condition removed` : `d20 ${r.roll} < ${flatCheckDC} — continues`}
                   </p>
