@@ -130,26 +130,21 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   useEffect(() => {
     if (!isEncounterBacked || !combatId) { setEncounterShieldBonus(null); return }
     loadItemOverrides(combatId, combatant.id).then((items) => {
-      // Find all non-removed shields and pick the best (highest ac_bonus) one
-      const shields = items.filter(
+      const shield = items.find(
         (it) => !it.isRemoved && (it.itemType === 'shield' || it.itemName.toLowerCase().includes('shield'))
       )
-      if (shields.length === 0) { setEncounterShieldBonus(null); return }
-      const best = shields.reduce((a, b) => (b.acBonus ?? 0) > (a.acBonus ?? 0) ? b : a)
-      setEncounterShieldBonus(best.acBonus ?? 0)
+      setEncounterShieldBonus(shield != null ? (shield.acBonus ?? 0) : null)
     }).catch(() => setEncounterShieldBonus(null))
   }, [combatId, combatant.id, isEncounterBacked])
 
   const { hasShield, shieldAcBonus } = useMemo(() => {
-    if (encounterShieldBonus !== null) return { hasShield: true, shieldAcBonus: encounterShieldBonus }
+    if (encounterShieldBonus != null) return { hasShield: true, shieldAcBonus: encounterShieldBonus }
     if (!creature?.equipment) return { hasShield: false, shieldAcBonus: 0 }
-    // Find all shields and pick the best (highest ac_bonus) one
-    const shields = creature.equipment.filter(
+    const shield = creature.equipment.find(
       (it) => it.item_type === 'shield' || (it.item_name ?? '').toLowerCase().includes('shield'),
     )
-    if (shields.length === 0) return { hasShield: false, shieldAcBonus: 0 }
-    const best = shields.reduce((a, b) => (b.ac_bonus ?? 0) > (a.ac_bonus ?? 0) ? b : a)
-    return { hasShield: true, shieldAcBonus: best.ac_bonus ?? 0 }
+    if (!shield) return { hasShield: false, shieldAcBonus: 0 }
+    return { hasShield: true, shieldAcBonus: shield.ac_bonus ?? 0 }
   }, [creature?.equipment, encounterShieldBonus])
 
   // PF2e death check: dying >= (4 - doomed) = DEAD. Dead creatures cannot be healed.
