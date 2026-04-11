@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { detectCasterProgression, getMaxRecommendedRank } from '@engine'
 import { useRoll } from '@/shared/hooks/use-roll'
 import { formatModifier } from '@/shared/lib/format'
 import { damageTypeColor } from '@/shared/lib/damage-colors'
@@ -14,23 +13,34 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/ui/collapsible"
-import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search, Zap, Flame, Leaf, Feather, Swords, Shield as ShieldIcon, Sparkles } from "lucide-react"
+import { ChevronDown, ChevronRight, X, Backpack, Plus, Minus, HelpCircle, Search, Swords, Shield as ShieldIcon, Sparkles } from "lucide-react"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import { ActionIcon } from "@/shared/ui/action-icon"
 import { AbilityCard } from "@/shared/ui/ability-card"
 import type { CreatureStatBlockData } from '../model/types'
 import type { SpellcastingSection, SpellRow } from '@/entities/spell'
-import { getSpellById, getSpellByName, searchSpells, saveSpellSlotUsage, loadSpellSlots, loadSpellOverrides, upsertSpellOverride, deleteSpellOverride, loadItemOverrides, upsertItemOverride, deleteItemOverride, searchItems, saveSlotOverride, loadSlotOverrides } from '@/shared/api'
-import type { SpellOverrideRow, CreatureItemRow, EncounterItemRow, ItemRow } from '@/shared/api'
+import { getSpellById, getSpellByName, searchSpells } from '@/shared/api'
+import type { CreatureItemRow } from '@/shared/api'
 import { ITEM_TYPE_COLORS, ItemReferenceDrawer } from '@/entities/item'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
-import { resolveFoundryTokens } from '@/shared/lib/foundry-tokens'
 import { stripHtml } from '@/shared/lib/html'
-import { useModifiedStats, useSpellModifiers } from '@/entities/creature/model/use-modified-stats'
+import { useModifiedStats } from '@/entities/creature/model/use-modified-stats'
 import type { StatModifierResult } from '@/entities/creature/model/use-modified-stats'
 import { useCombatantStore } from '@/entities/combatant'
+import { classifyAbilities } from '../model/classify-abilities'
+import { useSpellcasting } from '../model/use-spellcasting'
+import { useEquipment } from '../model/use-equipment'
+import { stripFoundryTags, highlightGameText } from '../lib/foundry-text'
+import {
+  traditionColor,
+  rankLabel,
+  actionCostLabel,
+  TRADITION_SLOT_CONFIG,
+  RANK_WARNINGS,
+  resolveFoundryTokensForSpell,
+} from '../lib/spellcasting-helpers'
 
 export interface EncounterContext {
   encounterId: string
@@ -104,39 +114,13 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
 
   // FEAT-03b: classify abilities into Offensive / Defensive / Reactions / Other.
   // No Foundry 'category' field exists on the current data model — use trait/name heuristics.
-  const classifiedAbilities = useMemo(() => {
-    const offensive: typeof creature.abilities = []
-    const defensive: typeof creature.abilities = []
-    const reactions: typeof creature.abilities = []
-    const other: typeof creature.abilities = []
-    const OFFENSIVE_NAME = /strike|attack|bite|claw|breath|slam|gore|tail|tongue|spit|charge|rage|pounce|swallow|constrict|grab\b|trample|maul/i
-    const DEFENSIVE_NAME = /shield|block|parry|evasion|deflect|resist|ward|defense|defen[sc]e|regenerat|fortify|hardness|absorb/i
-    // For troop/swarm creatures, exclude abilities already rendered in the formation section.
-    const troopDefensesName = troopDefenses?.name?.toLowerCase() ?? ''
-    for (const a of creature.abilities) {
-      if (isSpecialFormation) {
-        const nameLower = a.name.toLowerCase()
-        // Skip abilities shown in the troop formation section (Troop Defenses, Troop/Swarm Formation).
-        if (troopDefensesName && nameLower === troopDefensesName) continue
-        if (/^(troop|swarm)\s+formation$/i.test(a.name)) continue
-      }
-      if (a.actionCost === 'reaction') {
-        reactions.push(a)
-        continue
-      }
-      const traits = a.traits ?? []
-      if (traits.includes('attack') || traits.includes('offensive') || OFFENSIVE_NAME.test(a.name)) {
-        offensive.push(a)
-        continue
-      }
-      if (traits.includes('defensive') || DEFENSIVE_NAME.test(a.name)) {
-        defensive.push(a)
-        continue
-      }
-      other.push(a)
-    }
-    return { offensive, defensive, reactions, other }
-  }, [creature.abilities])
+  const classifiedAbilities = useMemo(
+    () => classifyAbilities(creature.abilities, {
+      isSpecialFormation,
+      troopDefensesName: troopDefenses?.name?.toLowerCase() ?? '',
+    }),
+    [creature.abilities, isSpecialFormation, troopDefenses],
+  )
 
   const [actionTab, setActionTab] = useState<'offensive' | 'defensive' | 'other'>('offensive')
 
@@ -627,92 +611,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
 }
 
 
-// Strip Foundry VTT inline roll tags: [[/gmr 2d6 #rounds]]{2d6 rounds} → "2d6 rounds"
-// If no display text, strip the tag entirely.
-const FOUNDRY_TAG_RE = /\[\[.*?\]\](?:\{([^}]*)\})?/g
-function stripFoundryTags(text: string): string {
-  return text.replace(FOUNDRY_TAG_RE, (_, display) => display ?? "")
-}
-
-// Inline highlighting for DC values and damage dice in ability text
-// Group 2 = dice formula, Group 3 = damage type (stripped of brackets)
-const GAME_TEXT_RE = /(DC\s+\d+)|(\d+d\d+(?:\s*[+\-]\s*\d+)?)(?:\[(\w+)\])?/gi
-
-function highlightGameText(raw: string, onRoll?: (formula: string) => void): ReactNode {
-  const text = stripFoundryTags(raw)
-  const parts: ReactNode[] = []
-  let lastIndex = 0
-  let key = 0
-
-  for (const match of text.matchAll(GAME_TEXT_RE)) {
-    const idx = match.index!
-    if (idx > lastIndex) parts.push(text.slice(lastIndex, idx))
-
-    if (match[1]) {
-      // DC value
-      parts.push(
-        <span key={key++} className="text-pf-gold font-semibold font-mono">{match[1]}</span>
-      )
-    } else if (match[2]) {
-      // Dice formula — clickable if onRoll provided
-      const formula = match[2]
-      if (onRoll) {
-        parts.push(
-          <button
-            key={key++}
-            onClick={(e) => { e.stopPropagation(); onRoll(formula) }}
-            title={`Roll ${formula}`}
-            className="text-pf-blood font-bold font-mono cursor-pointer underline decoration-dotted underline-offset-2 decoration-pf-blood/50 hover:text-pf-gold transition-colors duration-100"
-          >
-            {formula}
-          </button>
-        )
-      } else {
-        parts.push(
-          <span key={key++} className="text-pf-blood font-mono">{formula}</span>
-        )
-      }
-      // Damage type (if present, stripped of brackets)
-      if (match[3]) {
-        parts.push(
-          <span key={key++} className={cn("font-mono", damageTypeColor(match[3]))}> {match[3]}</span>
-        )
-      }
-    }
-    lastIndex = idx + match[0].length
-  }
-
-  if (lastIndex === 0) return text
-  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
-  return <>{parts}</>
-}
-
-// ── Spellcasting ──────────────────────────────────────────────────────────────
-
-function traditionColor(tradition: string): string {
-  const map: Record<string, string> = {
-    arcane: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    divine: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-    occult: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    primal: 'bg-green-500/20 text-green-300 border-green-500/30',
-  }
-  return map[tradition.toLowerCase()] ?? 'bg-secondary text-secondary-foreground border-border'
-}
-
-function rankLabel(rank: number): string {
-  return rank === 0 ? 'Cantrips' : `Rank ${rank}`
-}
-
-function actionCostLabel(cost: string): string {
-  if (cost === 'free') return '◇'
-  if (cost === 'reaction') return '↺'
-  const n = parseInt(cost)
-  if (n === 1) return '◆'
-  if (n === 2) return '◆◆'
-  if (n === 3) return '◆◆◆'
-  return cost
-}
-
+// (traditionColor, rankLabel, actionCostLabel moved to entities/creature/lib/spellcasting-helpers.ts)
 const stripHtmlInline = stripHtml
 
 function SpellCard({ foundryId, name, source, combatId }: { foundryId: string | null; name: string; source?: string; combatId?: string }) {
@@ -839,40 +738,11 @@ function SpellCard({ foundryId, name, source, combatId }: { foundryId: string | 
 
 // ── Slot pips ─────────────────────────────────────────────────────────────────
 
-const TRADITION_SLOT_CONFIG: Record<string, {
-  icon: typeof Zap
-  available: string
-  spent: string
-}> = {
-  arcane: {
-    icon: Zap,
-    available: 'bg-blue-500/80 text-blue-100 border-blue-400/70',
-    spent: 'border-blue-500/30',
-  },
-  occult: {
-    icon: Flame,
-    available: 'bg-purple-500/80 text-purple-100 border-purple-400/70',
-    spent: 'border-purple-500/30',
-  },
-  primal: {
-    icon: Leaf,
-    available: 'bg-green-500/80 text-green-100 border-green-400/70',
-    spent: 'border-green-500/30',
-  },
-  divine: {
-    icon: Feather,
-    available: 'bg-yellow-500/80 text-yellow-100 border-yellow-400/70',
-    spent: 'border-yellow-500/30',
-  },
-}
-
-const DEFAULT_SLOT_CONFIG = TRADITION_SLOT_CONFIG.arcane
-
 function SlotPips({ total, used, baseSlots, tradition, onToggle }: {
   total: number; used: number; baseSlots: number; tradition: string; onToggle: (idx: number) => void
 }) {
   if (total <= 0) return null
-  const cfg = TRADITION_SLOT_CONFIG[tradition] ?? DEFAULT_SLOT_CONFIG
+  const cfg = TRADITION_SLOT_CONFIG[tradition] ?? TRADITION_SLOT_CONFIG.arcane
   const Icon = cfg.icon
   return (
     <div className="flex gap-1 items-center">
@@ -1055,20 +925,6 @@ function SpellSearchDialog({ open, onOpenChange, defaultRank, defaultTradition, 
   )
 }
 
-// ── Meme warnings ────────────────────────────────────────────────────────────
-
-const RANK_WARNINGS: Record<number, string> = {
-  1: "GIT GUD",
-  2: "Mister wizard pants, huh?",
-  3: "Morrigan disapproves.",
-  4: "Fane raises an eyebrow. He has no eyebrows.",
-  5: "Optimism is a moral imperative. But I think you've moved beyond optimism.",
-  6: "Daeran finds this mildly amusing.",
-  7: "Ignorant slaves, how quickly you forget!",
-  8: "The Greybeards shout \"FUS RO NO\".",
-  9: "Areelu Vorlesh takes notes. This is now a thesis on hubris.",
-  10: "Fear not the dark, my friend. And let the feast begin.",
-}
 
 // ── SpellcastingBlock (with encounter-aware slots + overrides) ────────────────
 
@@ -1079,185 +935,17 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
   creatureName?: string
 }) {
   const handleSpellRoll = useRoll(creatureName, encounterContext?.encounterId)
-
-  // Slot state — keyed by rank
-  const [usedSlots, setUsedSlots] = useState<Record<number, number>>({})
-  // Override state
-  const [overrides, setOverrides] = useState<SpellOverrideRow[]>([])
-  // Slot overrides — keyed by rank
-  const [slotDeltas, setSlotDeltas] = useState<Record<number, number>>({})
-  // Spell search dialog state
-  const [spellDialogOpen, setSpellDialogOpen] = useState(false)
-  const [spellDialogRank, setSpellDialogRank] = useState(0)
-
-  const { encounterId, combatantId } = encounterContext ?? {}
-
-  // Phase 39: tradition-based condition modifiers for spell attack/DC
-  const spellMod = useSpellModifiers(combatantId, section.tradition)
-  const modifiedSpellAttack = section.spellAttack + spellMod.netModifier
-  const modifiedSpellDc = section.spellDc + spellMod.netModifier
-  const spellModColor = spellMod.netModifier < 0
-    ? 'text-pf-blood decoration-pf-blood/50'
-    : spellMod.netModifier > 0
-      ? 'text-pf-threat-low decoration-pf-threat-low/50'
-      : ''
-
-  // Caster progression detection
-  const maxSlotRank = useMemo(() => {
-    let max = 0
-    for (const byRank of section.spellsByRank) {
-      if (byRank.rank > 0 && byRank.slots > 0 && byRank.rank > max) max = byRank.rank
-    }
-    return max
-  }, [section.spellsByRank])
-
-  const progression = useMemo(
-    () => detectCasterProgression(creatureLevel, maxSlotRank),
-    [creatureLevel, maxSlotRank]
-  )
-  const recommendedMaxRank = useMemo(
-    () => getMaxRecommendedRank(creatureLevel, progression),
-    [creatureLevel, progression]
-  )
-
-  const loadSlotState = useCallback(async () => {
-    if (!encounterId || !combatantId) return
-    const rows = await loadSpellSlots(encounterId, combatantId)
-    const byRank: Record<number, number> = {}
-    for (const r of rows) {
-      if (r.entryId === section.entryId) byRank[r.rank] = r.usedCount
-    }
-    setUsedSlots(byRank)
-  }, [encounterId, combatantId, section.entryId])
-
-  const loadOverrideState = useCallback(async () => {
-    if (!encounterId || !combatantId) return
-    const rows = await loadSpellOverrides(encounterId, combatantId)
-    setOverrides(rows.filter((r) => r.entryId === section.entryId))
-  }, [encounterId, combatantId, section.entryId])
-
-  const loadSlotOverrideState = useCallback(async () => {
-    if (!encounterId || !combatantId) return
-    const rows = await loadSlotOverrides(encounterId, combatantId)
-    const byRank: Record<number, number> = {}
-    for (const r of rows) {
-      if (r.entryId === section.entryId) byRank[r.rank] = r.slotDelta
-    }
-    setSlotDeltas(byRank)
-  }, [encounterId, combatantId, section.entryId])
-
-  useEffect(() => {
-    loadSlotState()
-    loadOverrideState()
-    loadSlotOverrideState()
-  }, [loadSlotState, loadOverrideState, loadSlotOverrideState])
-
-  async function handleTogglePip(rank: number, idx: number, total: number) {
-    if (!encounterId || !combatantId) return
-    const current = usedSlots[rank] ?? 0
-    const newUsed = idx < current ? idx : Math.min(idx + 1, total)
-    setUsedSlots((prev) => ({ ...prev, [rank]: newUsed }))
-    await saveSpellSlotUsage(encounterId, combatantId, section.entryId, rank, newUsed)
-  }
-
-  async function handleSlotDelta(rank: number, change: 1 | -1) {
-    if (!encounterId || !combatantId) return
-    const currentDelta = slotDeltas[rank] ?? 0
-    const newDelta = currentDelta + change
-    setSlotDeltas((prev) => ({ ...prev, [rank]: newDelta }))
-    await saveSlotOverride(encounterId, combatantId, section.entryId, rank, newDelta)
-
-    // For prepared casters: adding a slot opens spell search
-    if (change === 1 && section.castType === 'prepared') {
-      setSpellDialogRank(rank)
-      setSpellDialogOpen(true)
-    }
-  }
-
-  async function handleAddRank(newRank: number) {
-    if (!encounterId || !combatantId) return
-    setSlotDeltas((prev) => ({ ...prev, [newRank]: 1 }))
-    await saveSlotOverride(encounterId, combatantId, section.entryId, newRank, 1)
-  }
-
-  async function handleAddSpell(name: string, rank: number) {
-    if (!encounterId || !combatantId) return
-    const id = `${combatantId}:${section.entryId}:add:${name}:${rank}`
-    const override: SpellOverrideRow = {
-      id, encounterId, combatantId, entryId: section.entryId,
-      spellName: name, rank, isRemoved: false, sortOrder: Date.now(),
-    }
-    await upsertSpellOverride(override)
-    setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
-  }
-
-  async function handleRemoveSpell(spellName: string, rank: number, isDefault: boolean) {
-    if (!encounterId || !combatantId) return
-    if (isDefault) {
-      const id = `${combatantId}:${section.entryId}:rm:${spellName}:${rank}`
-      const override: SpellOverrideRow = {
-        id, encounterId, combatantId, entryId: section.entryId,
-        spellName, rank, isRemoved: true, sortOrder: 0,
-      }
-      await upsertSpellOverride(override)
-      setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
-    } else {
-      const id = `${combatantId}:${section.entryId}:add:${spellName}:${rank}`
-      await deleteSpellOverride(id)
-      setOverrides((prev) => prev.filter((o) => o.id !== id))
-    }
-  }
-
-  const removedSpells = new Set(overrides.filter((o) => o.isRemoved).map((o) => `${o.rank}:${o.spellName}`))
-  const addedByRank = overrides
-    .filter((o) => !o.isRemoved)
-    .reduce<Record<number, string[]>>((acc, o) => {
-      if (!acc[o.rank]) acc[o.rank] = []
-      acc[o.rank].push(o.spellName)
-      return acc
-    }, {})
-
-  // Build effective ranks list: base + custom-added ranks from overrides
-  const effectiveRanks = useMemo(() => {
-    const baseRanks = section.spellsByRank.map((br) => br.rank)
-    const customRanks = Object.entries(slotDeltas)
-      .filter(([r, d]) => !baseRanks.includes(Number(r)) && d > 0)
-      .map(([r]) => Number(r))
-    const allRanks = [...baseRanks, ...customRanks].sort((a, b) => a - b)
-    return allRanks
-  }, [section.spellsByRank, slotDeltas])
-
-  // Next available rank for "Add rank" button
-  const nextRank = useMemo(() => {
-    if (effectiveRanks.length === 0) return 1
-    const max = Math.max(...effectiveRanks.filter((r) => r > 0))
-    return max + 1
-  }, [effectiveRanks])
-
-  // Tradition filter for AddSpellRow (innate/focus = no tradition filter)
-  const isFocus = section.castType === 'focus'
-  const traditionFilter = (section.castType === 'innate' || isFocus) ? undefined : section.tradition
-
-  function rankWarning(rank: number): string | null {
-    if (rank <= 0 || rank <= recommendedMaxRank) return null
-    return RANK_WARNINGS[rank] ?? RANK_WARNINGS[10]!
-  }
-
-  // FEAT-13: per-block slot-level filter. null = all ranks; number = only that rank.
-  // Defaults to the minimum available rank so the panel does not open as one long wall of spells.
-  const [selectedSlotLevel, setSelectedSlotLevel] = useState<number | null>(null)
-  const minAvailableRank = useMemo(
-    () => (effectiveRanks.length > 0 ? Math.min(...effectiveRanks) : null),
-    [effectiveRanks],
-  )
-  const effectiveSelectedSlotLevel = selectedSlotLevel ?? minAvailableRank
-  const filteredRanks = useMemo(
-    () =>
-      effectiveSelectedSlotLevel === null
-        ? effectiveRanks
-        : effectiveRanks.filter((r) => r === effectiveSelectedSlotLevel),
-    [effectiveRanks, effectiveSelectedSlotLevel],
-  )
+  const {
+    usedSlots,
+    spellDialogOpen, setSpellDialogOpen, spellDialogRank, setSpellDialogRank,
+    selectedSlotLevel, setSelectedSlotLevel,
+    spellMod, modifiedSpellAttack, modifiedSpellDc, spellModColor,
+    progression, recommendedMaxRank,
+    handleTogglePip, handleSlotDelta, handleAddRank, handleAddSpell, handleRemoveSpell,
+    removedSpells, addedByRank, effectiveRanks, nextRank, isFocus, traditionFilter,
+    rankWarning, minAvailableRank, effectiveSelectedSlotLevel, filteredRanks,
+  } = useSpellcasting(section, creatureLevel, encounterContext)
+  const { encounterId } = encounterContext ?? {}
 
   return (
     <Collapsible defaultOpen>
@@ -1500,8 +1188,6 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
   )
 }
 
-const resolveFoundryTokensForSpell = resolveFoundryTokens
-
 interface StatItemProps {
   label: string
   value: number
@@ -1560,90 +1246,14 @@ function EquipmentBlock({
   items: CreatureItemRow[]
   encounterContext?: EncounterContext
 }) {
-  const [overrides, setOverrides] = useState<EncounterItemRow[]>([])
-  const [addQuery, setAddQuery] = useState('')
-  const [addResults, setAddResults] = useState<ItemRow[]>([])
-  const [drawerItemId, setDrawerItemId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!encounterContext) return
-    loadItemOverrides(encounterContext.encounterId, encounterContext.combatantId)
-      .then(setOverrides)
-      .catch(() => { })
-  }, [encounterContext?.encounterId, encounterContext?.combatantId])
-
-  useEffect(() => {
-    if (!encounterContext || !addQuery.trim()) { setAddResults([]); return }
-    const timer = setTimeout(() => {
-      searchItems(addQuery).then((r) => setAddResults(r.slice(0, 8))).catch(() => { })
-    }, 200)
-    return () => clearTimeout(timer)
-  }, [addQuery, encounterContext])
-
-  const handleRemove = useCallback(async (item: CreatureItemRow) => {
-    if (!encounterContext) return
-    const override: EncounterItemRow = {
-      id: `${encounterContext.encounterId}:${encounterContext.combatantId}:${item.id}`,
-      encounterId: encounterContext.encounterId,
-      combatantId: encounterContext.combatantId,
-      itemName: item.item_name,
-      itemFoundryId: item.foundry_item_id,
-      itemType: item.item_type,
-      quantity: item.quantity,
-      damageFormula: item.damage_formula,
-      acBonus: item.ac_bonus,
-      isRemoved: true,
-    }
-    setOverrides((prev) => [...prev.filter((o) => o.id !== override.id), override])
-    await upsertItemOverride(override).catch(() => { })
-    encounterContext.onInventoryChanged?.()
-  }, [encounterContext])
-
-  const handleRestoreBase = useCallback(async (item: CreatureItemRow) => {
-    if (!encounterContext) return
-    const id = `${encounterContext.encounterId}:${encounterContext.combatantId}:${item.id}`
-    setOverrides((prev) => prev.filter((o) => o.id !== id))
-    await deleteItemOverride(id).catch(() => { })
-    encounterContext.onInventoryChanged?.()
-  }, [encounterContext])
-
-  const handleAddItem = useCallback(async (catalogItem: ItemRow) => {
-    if (!encounterContext) return
-    const id = `${encounterContext.encounterId}:${encounterContext.combatantId}:added:${catalogItem.id}`
-    const override: EncounterItemRow = {
-      id,
-      encounterId: encounterContext.encounterId,
-      combatantId: encounterContext.combatantId,
-      itemName: catalogItem.name,
-      itemFoundryId: catalogItem.id,
-      itemType: catalogItem.item_type,
-      quantity: 1,
-      damageFormula: catalogItem.damage_formula,
-      acBonus: catalogItem.ac_bonus,
-      isRemoved: false,
-    }
-    setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
-    setAddQuery('')
-    setAddResults([])
-    await upsertItemOverride(override).catch(() => { })
-    encounterContext.onInventoryChanged?.()
-  }, [encounterContext])
-
-  const handleRemoveAdded = useCallback(async (override: EncounterItemRow) => {
-    setOverrides((prev) => prev.filter((o) => o.id !== override.id))
-    await deleteItemOverride(override.id).catch(() => { })
-    encounterContext?.onInventoryChanged?.()
-  }, [encounterContext])
-
-  const removedIds = new Set(overrides.filter((o) => o.isRemoved).map((o) => o.itemFoundryId ?? o.itemName))
-  const addedItems = overrides.filter((o) => !o.isRemoved)
-
-  const visibleBase = items.filter((item) => {
-    const key = item.foundry_item_id ?? item.item_name
-    return !removedIds.has(key)
-  })
-
-  const totalCount = visibleBase.length + addedItems.length
+  const {
+    overrides,
+    addQuery, setAddQuery,
+    addResults,
+    drawerItemId, setDrawerItemId,
+    handleRemove, handleRestoreBase, handleAddItem, handleRemoveAdded,
+    removedIds, addedItems, visibleBase, totalCount,
+  } = useEquipment(items, encounterContext)
   if (totalCount === 0 && !encounterContext) return null
 
   function ItemRow_({ item, onRemove, onRestore, isRemoved, foundryItemId, onItemClick }: {
