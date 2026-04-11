@@ -6,6 +6,7 @@ import type { ActionRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { parseJsonArray } from '@/shared/lib/json'
+import { logError } from '@/shared/lib/error'
 
 type CategoryFilter = 'all' | 'basic' | 'skill' | 'exploration' | 'downtime'
 
@@ -113,7 +114,7 @@ export function ActionsPage() {
   useEffect(() => {
     getAllActions()
       .then(setAllActions)
-      .catch(() => {})
+      .catch(logError('load-actions'))
       .finally(() => setLoading(false))
   }, [])
 

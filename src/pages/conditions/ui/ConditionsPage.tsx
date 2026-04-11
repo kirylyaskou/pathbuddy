@@ -6,6 +6,7 @@ import type { ConditionRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { parseJsonArray } from '@/shared/lib/json'
+import { logError } from '@/shared/lib/error'
 
 type GroupFilter = 'all' | 'death' | 'abilities' | 'senses' | 'detection' | 'attitudes' | 'other'
 
@@ -118,7 +119,7 @@ export function ConditionsPage() {
   useEffect(() => {
     getAllConditions()
       .then(setAllConditions)
-      .catch(() => {})
+      .catch(logError('load-conditions'))
       .finally(() => setLoading(false))
   }, [])
 

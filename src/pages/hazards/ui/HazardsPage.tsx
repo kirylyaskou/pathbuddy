@@ -7,6 +7,7 @@ import type { HazardRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { parseJsonArray } from '@/shared/lib/json'
+import { logError } from '@/shared/lib/error'
 
 type TypeFilter = 'all' | 'simple' | 'complex'
 
@@ -181,7 +182,7 @@ export function HazardsPage() {
   useEffect(() => {
     getAllHazards()
       .then(setAllHazards)
-      .catch(() => {})
+      .catch(logError('load-hazards'))
       .finally(() => setLoading(false))
   }, [])
 
