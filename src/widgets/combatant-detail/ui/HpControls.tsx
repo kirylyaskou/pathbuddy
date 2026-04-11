@@ -19,18 +19,17 @@ import {
   type ImmunityType,
   type WeaknessType,
   type ResistanceType,
-  rollDice,
   type PathbuilderBuild,
+  proficiencyModifier,
 } from '@engine'
 import { applyCondition, removeCondition, clearCombatantManager, getManagerState } from '@/features/combat-tracker'
 import { getCharacterById } from '@/shared/api'
 import { useConditionStore } from '@/entities/condition'
 import { getDyingValueOnKnockout, getWoundedValueAfterStabilize } from '@engine'
 import { useShallow } from 'zustand/react/shallow'
-import { useRollStore } from '@/shared/model/roll-store'
-import { useRoll } from '@/shared/hooks/use-roll'
-import { formatModifier } from '@/shared/lib/format'
-import { damageTypeChip } from '@/shared/lib/damage-colors'
+import { useRoll } from '@/shared/hooks'
+import { formatModifier, formatRollFormula } from '@/shared/lib/format'
+import { damageTypeChip, DAMAGE_GROUPS, MATERIAL_GROUP } from '@/shared/lib/damage-colors'
 import { useModifiedStats } from '@/entities/creature'
 import type { CreatureStatBlockData } from '@/entities/creature'
 import { toast } from 'sonner'
@@ -53,36 +52,6 @@ interface DamageEntry {
 
 const MATERIAL_TYPE_SET = new Set(MATERIAL_EFFECTS as readonly string[])
 
-const DAMAGE_GROUPS: { label: string; color: string; traits: DamageType[] }[] = [
-  {
-    label: 'Physical',
-    color: 'bg-slate-700 text-slate-200 hover:bg-slate-600 data-[selected=true]:bg-slate-400 data-[selected=true]:text-slate-900',
-    traits: ['bludgeoning', 'piercing', 'slashing', 'bleed'],
-  },
-  {
-    label: 'Energy',
-    color: 'bg-amber-900/60 text-amber-200 hover:bg-amber-800/60 data-[selected=true]:bg-amber-400 data-[selected=true]:text-amber-900',
-    traits: ['acid', 'cold', 'electricity', 'fire', 'sonic', 'force', 'vitality', 'void'],
-  },
-  {
-    label: 'Alignment',
-    color: 'bg-violet-900/60 text-violet-200 hover:bg-violet-800/60 data-[selected=true]:bg-violet-400 data-[selected=true]:text-violet-900',
-    traits: ['holy', 'unholy'],
-  },
-  {
-    label: 'Other',
-    color: 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600 data-[selected=true]:bg-zinc-400 data-[selected=true]:text-zinc-900',
-    traits: ['spirit', 'mental', 'poison', 'untyped'],
-  },
-]
-
-const MATERIAL_GROUP = {
-  label: 'Material traits',
-  color: 'bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/60 data-[selected=true]:bg-emerald-400 data-[selected=true]:text-emerald-900',
-  traits: ['cold-iron', 'silver', 'adamantine', 'mithral', 'magic'],
-}
-
-
 export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResistances, creature }: HpControlsProps) {
   const [hpInput, setHpInput] = useState(0)
   // Each damage type has its own amount
@@ -94,7 +63,6 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   const updateTempHp = useCombatantStore((s) => s.updateTempHp)
   const updateCombatant = useCombatantStore((s) => s.updateCombatant)
   const inputRef = useRef<HTMLInputElement>(null)
-  const addRoll = useRollStore((s) => s.addRoll)
   const doRoll = useRoll(combatant.displayName)
   const statSlugs = useMemo(() => ['fortitude', 'reflex', 'will', 'perception', 'stealth'], [])
   const modifiedStats = useModifiedStats(combatant.id, statSlugs)
@@ -122,7 +90,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   }
 
   function rollStat(mod: number, label: string) {
-    doRoll(`1d20${mod >= 0 ? '+' : ''}${mod}`, label)
+    doRoll(formatRollFormula(mod), label)
   }
 
   const stealthSkill = creature?.skills.find((s) => s.name.toLowerCase() === 'stealth')
@@ -131,9 +99,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   async function handleHide() {
     if (baseStealth === null) return
     const mod = getModified(baseStealth, 'stealth')
-    const formula = `1d20${mod >= 0 ? '+' : ''}${mod}`
-    const roll = rollDice(formula, 'Hide (Stealth)', { source: combatant.displayName })
-    addRoll(roll)
+    const roll = doRoll(formatRollFormula(mod), 'Hide (Stealth)')
 
     const pcs = allCombatants.filter((c) => !c.isNPC && !c.isHazard && c.creatureRef)
     if (pcs.length === 0) return
@@ -144,11 +110,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
         const record = await getCharacterById(pc.creatureRef)
         if (!record) continue
         const build = JSON.parse(record.rawJson) as PathbuilderBuild
-        const abilityMod = Math.floor((build.abilities.wis - 10) / 2)
-        const percMod =
-          build.proficiencies.perception > 0
-            ? abilityMod + build.level + build.proficiencies.perception
-            : abilityMod
+        const percMod = proficiencyModifier(build.proficiencies.perception, build.abilities.wis, build.level)
         pcResults.push({ name: pc.displayName, perceptionDC: 10 + percMod })
       } catch { /* skip */ }
     }
