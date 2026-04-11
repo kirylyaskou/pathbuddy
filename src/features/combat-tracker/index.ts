@@ -21,3 +21,11 @@ export { rollInitiative, autoName, createCombatantFromCreature, createPCCombatan
 export { useEncounterTabsStore, createEmptySnapshot, snapshotFromGlobalStores, restoreSnapshotToGlobalStores } from './model/encounter-tabs-store'
 export type { EncounterTabsState } from './model/encounter-tabs-store'
 export type { EncounterTab, TabSnapshot } from './model/encounter-tabs-store'
+export type { PendingPersistentDamage } from './model/store'
+export { ConditionCombobox } from './ui/ConditionCombobox'
+export {
+  setupEncounterAutoSave,
+  teardownEncounterAutoSave,
+  loadEncounterIntoCombat,
+  flushEncounterSave,
+} from './lib/encounter-persistence'

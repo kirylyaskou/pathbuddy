@@ -9,12 +9,13 @@ import { BestiarySearchPanel } from '@/widgets/bestiary-search'
 import { CombatantDetail } from '@/widgets/combatant-detail'
 import { PersistentDamageDialog } from '@/widgets/combatant-detail/ui/PersistentDamageDialog'
 import { DyingCascadeDialog } from '@/widgets/combatant-detail/ui/DyingCascadeDialog'
-import { CombatControls, AddPCDialog, QuickAddCombatantForm, createCombatantFromCreature, useEncounterTabsStore, snapshotFromGlobalStores } from '@/features/combat-tracker'
+import {
+  CombatControls, AddPCDialog, QuickAddCombatantForm, createCombatantFromCreature,
+  useEncounterTabsStore, snapshotFromGlobalStores, useCombatTrackerStore,
+  TurnControls, setupAutoSave, teardownAutoSave,
+  setupEncounterAutoSave, teardownEncounterAutoSave,
+} from '@/features/combat-tracker'
 import type { EncounterTab } from '@/features/combat-tracker'
-import { TurnControls } from '@/features/combat-tracker/ui/TurnControls'
-import { useCombatTrackerStore } from '@/features/combat-tracker/model/store'
-import { setupAutoSave, teardownAutoSave } from '@/features/combat-tracker/lib/combat-persistence'
-import { setupEncounterAutoSave, teardownEncounterAutoSave } from '@/features/combat-tracker/lib/encounter-persistence'
 import { useCombatantStore } from '@/entities/combatant'
 import { useEncounterStore } from '@/entities/encounter'
 import { CreatureStatBlock, toCreature, extractIwr } from '@/entities/creature'

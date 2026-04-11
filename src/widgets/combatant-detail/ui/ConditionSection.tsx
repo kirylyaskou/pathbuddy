@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { useConditionStore, ConditionBadge } from '@/entities/condition'
-import { ConditionCombobox } from '@/features/combat-tracker/ui/ConditionCombobox'
+import { ConditionCombobox } from '@/features/combat-tracker'
 import { removeCondition, setConditionLocked } from '@/features/combat-tracker'
 import { getConditionBySlug } from '@/shared/api'
 import type { ConditionRow } from '@/shared/api'
