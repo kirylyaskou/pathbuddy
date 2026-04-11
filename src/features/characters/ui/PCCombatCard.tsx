@@ -10,7 +10,9 @@ import { ChevronDown } from 'lucide-react'
 import { LevelBadge } from '@/shared/ui/level-badge'
 import { TraitList } from '@/shared/ui/trait-pill'
 import { cn } from '@/shared/lib/utils'
-import { useRoll } from '@/shared/hooks/use-roll'
+import { useRoll } from '@/shared/hooks'
+import { formatModifier, formatRollFormula } from '@/shared/lib/format'
+import { profRankLabel, PROF_RANK_CLASS } from '@/shared/lib/pf2e-display'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
 import { useModifiedStats, useSpellModifiers } from '@/entities/creature'
 import type { StatModifierResult } from '@/entities/creature'
@@ -22,6 +24,7 @@ import type {
   PathbuilderProficiencies,
   PathbuilderSpellEntry,
 } from '@engine'
+import { abilityModifier, proficiencyModifier, SKILL_ABILITY } from '@engine'
 import type { Combatant } from '@/entities/combatant'
 
 interface PCCombatCardProps {
@@ -31,22 +34,6 @@ interface PCCombatCardProps {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const RANK_CLASS: Record<string, string> = {
-  U: 'bg-muted text-muted-foreground',
-  T: 'bg-pf-threat-low/15 text-pf-threat-low',
-  E: 'bg-pf-skill-expert/15 text-pf-skill-expert',
-  M: 'bg-pf-rarity-rare/15 text-pf-rarity-rare',
-  L: 'bg-pf-gold/15 text-pf-gold',
-}
-
-const SKILL_ABILITY: Record<string, keyof PathbuilderAbilities> = {
-  acrobatics: 'dex', arcana: 'int', athletics: 'str', crafting: 'int',
-  deception: 'cha', diplomacy: 'cha', intimidation: 'cha',
-  medicine: 'wis', nature: 'wis', occultism: 'int', performance: 'cha',
-  religion: 'wis', society: 'int', stealth: 'dex', survival: 'wis',
-  thievery: 'dex',
-}
 
 const ABILITY_DISPLAY: Array<[string, keyof PathbuilderAbilities]> = [
   ['STR', 'str'], ['DEX', 'dex'], ['CON', 'con'],
@@ -135,15 +122,8 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
   const typeLabel = caster.spellcastingType === 'focus' ? 'Focus'
     : caster.spellcastingType.charAt(0).toUpperCase() + caster.spellcastingType.slice(1)
 
-  const abilityMod = (score: number) => Math.floor((score - 10) / 2)
-  const signed = (n: number) => (n >= 0 ? `+${n}` : String(n))
-  const modWithProf = (prof: number, score: number) => {
-    const mod = abilityMod(score)
-    return prof > 0 ? mod + level + prof : mod
-  }
-
   const abilityKey = caster.ability as keyof PathbuilderAbilities
-  const baseSpellAtk = modWithProf(caster.proficiency, abilities[abilityKey])
+  const baseSpellAtk = proficiencyModifier(caster.proficiency, abilities[abilityKey], level)
   const baseSpellDC = 10 + baseSpellAtk
 
   const spellMod = useSpellModifiers(combatantId, tradition)
@@ -160,14 +140,14 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
 
   const atkBtn = (
     <button
-      onClick={() => handleRoll(`1d20+${finalSpellAtk}`, `${tradition} spell attack`)}
-      title={`Roll spell attack 1d20+${finalSpellAtk}`}
+      onClick={() => handleRoll(formatRollFormula(finalSpellAtk), `${tradition} spell attack`)}
+      title={`Roll spell attack ${formatRollFormula(finalSpellAtk)}`}
       className={cn(
         'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
         atkColor,
       )}
     >
-      {signed(finalSpellAtk)}
+      {formatModifier(finalSpellAtk)}
     </button>
   )
 
@@ -195,7 +175,7 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
               </ModifierTooltip>
             </span>
             <span className="text-muted-foreground">Attack{' '}
-              <ModifierTooltip modifiers={spellMod.modifiers} netModifier={spellMod.netModifier} finalDisplay={signed(finalSpellAtk)}>
+              <ModifierTooltip modifiers={spellMod.modifiers} netModifier={spellMod.netModifier} finalDisplay={formatModifier(finalSpellAtk)}>
                 {atkBtn}
               </ModifierTooltip>
             </span>
@@ -231,17 +211,8 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
   const handleRoll = useRoll(build.name, encounterId)
   const { abilities, proficiencies, level } = build
 
-  const abilityMod = (score: number) => Math.floor((score - 10) / 2)
-  const signed = (n: number) => (n >= 0 ? `+${n}` : String(n))
-  const rankLabel = (prof: number): string =>
-    prof >= 8 ? 'L' : prof >= 6 ? 'M' : prof >= 4 ? 'E' : prof >= 2 ? 'T' : 'U'
-  const modWithProf = (prof: number, score: number) => {
-    const mod = abilityMod(score)
-    return prof > 0 ? mod + level + prof : mod
-  }
-
   function rollCheck(mod: number, label: string) {
-    handleRoll(`1d20${mod >= 0 ? '+' : ''}${mod}`, label)
+    handleRoll(formatRollFormula(mod), label)
   }
 
   // Condition modifiers
@@ -249,11 +220,11 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
 
   // Base saves + perception
   const saveData = [
-    { label: 'Fort', key: 'fortitude', base: modWithProf(proficiencies.fortitude, abilities.con), rollLabel: 'Fortitude save' },
-    { label: 'Ref',  key: 'reflex',    base: modWithProf(proficiencies.reflex, abilities.dex),    rollLabel: 'Reflex save' },
-    { label: 'Will', key: 'will',      base: modWithProf(proficiencies.will, abilities.wis),      rollLabel: 'Will save' },
+    { label: 'Fort', key: 'fortitude', base: proficiencyModifier(proficiencies.fortitude, abilities.con, level), rollLabel: 'Fortitude save' },
+    { label: 'Ref',  key: 'reflex',    base: proficiencyModifier(proficiencies.reflex, abilities.dex, level),    rollLabel: 'Reflex save' },
+    { label: 'Will', key: 'will',      base: proficiencyModifier(proficiencies.will, abilities.wis, level),      rollLabel: 'Will save' },
   ]
-  const basePerception = modWithProf(proficiencies.perception, abilities.wis)
+  const basePerception = proficiencyModifier(proficiencies.perception, abilities.wis, level)
   const percResult = modStats.get('perception')
   const finalPerception = basePerception + (percResult?.netModifier ?? 0)
 
@@ -266,7 +237,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
           key,
           name: key.charAt(0).toUpperCase() + key.slice(1),
           prof: profs[key] ?? 0,
-          mod: modWithProf(profs[key] ?? 0, abilities[SKILL_ABILITY[key]]),
+          mod: proficiencyModifier(profs[key] ?? 0, abilities[SKILL_ABILITY[key]], level),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     [build]
@@ -276,7 +247,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
       (build.lores ?? []).map(([name, prof]) => ({
         name,
         prof,
-        mod: modWithProf(prof, abilities.int),
+        mod: proficiencyModifier(prof, abilities.int, level),
       })),
     [build]
   )
@@ -323,7 +294,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
               <StatCell
                 key={s.label}
                 label={s.label}
-                value={signed(finalVal)}
+                value={formatModifier(finalVal)}
                 colorClass="text-pf-threat-low"
                 modResult={modResult}
                 onRoll={() => rollCheck(finalVal, s.rollLabel)}
@@ -332,7 +303,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
           })}
           <StatCell
             label="Perc"
-            value={signed(finalPerception)}
+            value={formatModifier(finalPerception)}
             colorClass="text-pf-gold-dim"
             modResult={percResult}
             onRoll={() => rollCheck(finalPerception, 'Perception check')}
@@ -343,7 +314,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
         <div className="grid grid-cols-6 border-b border-border/40">
           {ABILITY_DISPLAY.map(([label, key]) => (
             <div key={key} className="py-2 text-center">
-              <p className="font-mono font-semibold text-sm">{signed(abilityMod(abilities[key]))}</p>
+              <p className="font-mono font-semibold text-sm">{formatModifier(abilityModifier(abilities[key]))}</p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
             </div>
           ))}
@@ -358,7 +329,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
             <div className="px-4 pb-4 pt-2">
               <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                 {skills.map((skill) => {
-                  const rank = rankLabel(skill.prof)
+                  const rank = profRankLabel(skill.prof)
                   const modResult = modStats.get(skill.key)
                   const net = modResult?.netModifier ?? 0
                   const finalMod = skill.mod + net
@@ -371,13 +342,13 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                   const btn = (
                     <button
                       onClick={() => rollCheck(finalMod, `${skill.name} check`)}
-                      title={`Roll 1d20${signed(finalMod)}`}
+                      title={`Roll ${formatRollFormula(finalMod)}`}
                       className={cn(
                         'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
                         btnColor,
                       )}
                     >
-                      {signed(finalMod)}
+                      {formatModifier(finalMod)}
                     </button>
                   )
 
@@ -385,34 +356,34 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                     <span key={skill.key} className="inline-flex items-center gap-1 text-sm">
                       <span className={cn(
                         'inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-semibold shrink-0',
-                        RANK_CLASS[rank],
+                        PROF_RANK_CLASS[rank],
                       )}>
                         {rank}
                       </span>
                       <span className="text-muted-foreground">{skill.name}</span>{' '}
-                      <ModifierTooltip modifiers={modResult?.modifiers ?? []} netModifier={net} finalDisplay={signed(finalMod)}>
+                      <ModifierTooltip modifiers={modResult?.modifiers ?? []} netModifier={net} finalDisplay={formatModifier(finalMod)}>
                         {btn}
                       </ModifierTooltip>
                     </span>
                   )
                 })}
                 {lores.map((lore) => {
-                  const rank = rankLabel(lore.prof)
+                  const rank = profRankLabel(lore.prof)
                   return (
                     <span key={lore.name} className="inline-flex items-center gap-1 text-sm">
                       <span className={cn(
                         'inline-flex items-center justify-center w-4 h-4 rounded text-[10px] font-semibold shrink-0',
-                        RANK_CLASS[rank],
+                        PROF_RANK_CLASS[rank],
                       )}>
                         {rank}
                       </span>
                       <span className="text-muted-foreground italic">{lore.name} Lore</span>{' '}
                       <button
                         onClick={() => rollCheck(lore.mod, `${lore.name} Lore check`)}
-                        title={`Roll 1d20${signed(lore.mod)}`}
+                        title={`Roll ${formatRollFormula(lore.mod)}`}
                         className="font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 text-primary decoration-primary/50 hover:text-pf-gold transition-colors duration-100"
                       >
-                        {signed(lore.mod)}
+                        {formatModifier(lore.mod)}
                       </button>
                     </span>
                   )
@@ -433,13 +404,13 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                   {weapons.map((w, i) => {
                     const profKey = WEAPON_PROF_MAP[w.prof] ?? 'simple'
                     const weaponProf = (proficiencies as unknown as Record<string, number>)[profKey] ?? 0
-                    const baseAtkMod = modWithProf(weaponProf, abilities.str) + w.pot
+                    const baseAtkMod = proficiencyModifier(weaponProf, abilities.str, level) + w.pot
                     const finalAtkMod = baseAtkMod + strikeNet
                     const map1 = finalAtkMod - 5
                     const map2 = finalAtkMod - 10
                     const dice = STRIKING_DICE[w.str] ?? 1
-                    const strMod = abilityMod(abilities.str)
-                    const dmgBonus = strMod !== 0 ? (strMod > 0 ? `+${strMod}` : String(strMod)) : ''
+                    const strMod = abilityModifier(abilities.str)
+                    const dmgBonus = strMod !== 0 ? formatModifier(strMod) : ''
                     const atkBtnColor = strikeNet < 0
                       ? 'text-pf-blood decoration-pf-blood/50'
                       : strikeNet > 0
@@ -448,14 +419,14 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
 
                     const atkBtn = (
                       <button
-                        onClick={() => handleRoll(`1d20+${finalAtkMod}`, `${w.name} attack`)}
-                        title={`Roll 1d20+${finalAtkMod}`}
+                        onClick={() => handleRoll(formatRollFormula(finalAtkMod), `${w.name} attack`)}
+                        title={`Roll ${formatRollFormula(finalAtkMod)}`}
                         className={cn(
                           'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
                           atkBtnColor,
                         )}
                       >
-                        {signed(finalAtkMod)}
+                        {formatModifier(finalAtkMod)}
                       </button>
                     )
 
@@ -463,7 +434,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                       <div key={i} className="p-3 rounded-md bg-secondary/50">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{w.name}</span>
-                          <ModifierTooltip modifiers={strikeResult?.modifiers ?? []} netModifier={strikeNet} finalDisplay={signed(finalAtkMod)}>
+                          <ModifierTooltip modifiers={strikeResult?.modifiers ?? []} netModifier={strikeNet} finalDisplay={formatModifier(finalAtkMod)}>
                             {atkBtn}
                           </ModifierTooltip>
                         </div>
@@ -481,12 +452,12 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                         <div className="mt-1 text-xs text-muted-foreground font-mono">
                           MAP:{' '}
                           <span className={strikeNet < 0 ? 'text-pf-blood' : strikeNet > 0 ? 'text-pf-threat-low' : 'text-primary'}>
-                            {signed(finalAtkMod)}
+                            {formatModifier(finalAtkMod)}
                           </span>
                           {' / '}
-                          <span>{signed(map1)}</span>
+                          <span>{formatModifier(map1)}</span>
                           {' / '}
-                          <span>{signed(map2)}</span>
+                          <span>{formatModifier(map2)}</span>
                         </div>
                         {w.runes.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
