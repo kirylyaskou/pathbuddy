@@ -8,6 +8,7 @@ import { useCombatTrackerStore } from '../model/store'
 import { hydrateManager, clearAllManagers } from '@/entities/condition'
 import { rollInitiative } from './initiative'
 import type { ConditionSlug } from '@engine'
+import { logErrorWithToast } from '@/shared/lib/error'
 
 let unsubscribers: Array<() => void> = []
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -57,8 +58,10 @@ function debouncedEncounterSave(): void {
         payload.combatants,
         payload.conditions
       )
+      useCombatTrackerStore.getState().setLastSaveError(null)
     } catch (err) {
-      console.error('Encounter auto-save failed:', err)
+      logErrorWithToast('encounter-auto-save')(err)
+      useCombatTrackerStore.getState().setLastSaveError('Auto-save failed')
     }
   }, 300)
 }

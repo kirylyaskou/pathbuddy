@@ -5,6 +5,7 @@ import { useConditionStore } from '@/entities/condition'
 import { useCombatTrackerStore } from '../model/store'
 import { hydrateManager, clearAllManagers } from '@/entities/condition'
 import type { ConditionSlug } from '@engine'
+import { logErrorWithToast } from '@/shared/lib/error'
 
 let unsubscribers: Array<() => void> = []
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -35,8 +36,10 @@ function debouncedSave(): void {
     if (snapshot) {
       try {
         await saveCombatState(snapshot)
+        useCombatTrackerStore.getState().setLastSaveError(null)
       } catch (err) {
-        console.error('Auto-save failed:', err)
+        logErrorWithToast('combat-auto-save')(err)
+        useCombatTrackerStore.getState().setLastSaveError('Auto-save failed')
       }
     }
   }, 300)
