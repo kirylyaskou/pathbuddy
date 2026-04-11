@@ -1,7 +1,10 @@
 import type { ReactNode } from "react"
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { rollDice, detectCasterProgression, getMaxRecommendedRank } from '@engine'
-import { useRollStore } from '@/shared/model/roll-store'
+import { detectCasterProgression, getMaxRecommendedRank } from '@engine'
+import { useRoll } from '@/shared/hooks/use-roll'
+import { formatModifier } from '@/shared/lib/format'
+import { damageTypeColor } from '@/shared/lib/damage-colors'
+import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
 import { ClickableFormula } from '@/shared/ui/clickable-formula'
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
@@ -43,13 +46,7 @@ interface CreatureStatBlockProps {
 }
 
 export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
-  const addRoll = useRollStore((state) => state.addRoll)
-  function handleRoll(formula: string, label?: string) {
-    addRoll(rollDice(formula, label, {
-      source: creature.name,
-      ...(encounterContext ? { combatId: encounterContext.encounterId } : {}),
-    }))
-  }
+  const handleRoll = useRoll(creature.name, encounterContext?.encounterId)
 
   // Phase 39: build stat slug list for condition modifier computation
   const allStatSlugs = useMemo(
@@ -197,29 +194,12 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                 const net = r?.netModifier ?? 0
                 const finalDc = creature.spellDC! + net
                 const col = net < 0 ? 'text-pf-blood' : net > 0 ? 'text-pf-threat-low' : 'text-primary'
-                const el = <p className={cn('font-mono font-bold text-lg', col)}>{finalDc}</p>
                 return (
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-1">Spell DC</p>
-                    {r && r.modifiers.length > 0 ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>{el}</TooltipTrigger>
-                        <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-                          {r.modifiers.map((m) => (
-                            <div key={m.slug} className="flex justify-between gap-4">
-                              <span className="text-muted-foreground">{m.label}</span>
-                              <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                                {m.modifier > 0 ? '+' : ''}{m.modifier}
-                              </span>
-                            </div>
-                          ))}
-                          <div className="border-t border-border mt-1 pt-1 flex justify-between">
-                            <span className="text-muted-foreground">Total</span>
-                            <span className={col}>{finalDc}</span>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : el}
+                    <ModifierTooltip modifiers={r?.modifiers ?? []} netModifier={net} finalDisplay={String(finalDc)}>
+                      <p className={cn('font-mono font-bold text-lg', col)}>{finalDc}</p>
+                    </ModifierTooltip>
                   </div>
                 )
               })()}
@@ -228,29 +208,12 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                 const net = r?.netModifier ?? 0
                 const finalDc = creature.classDC! + net
                 const col = net < 0 ? 'text-pf-blood' : net > 0 ? 'text-pf-threat-low' : 'text-primary'
-                const el = <p className={cn('font-mono font-bold text-lg', col)}>{finalDc}</p>
                 return (
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground mb-1">Class DC</p>
-                    {r && r.modifiers.length > 0 ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>{el}</TooltipTrigger>
-                        <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-                          {r.modifiers.map((m) => (
-                            <div key={m.slug} className="flex justify-between gap-4">
-                              <span className="text-muted-foreground">{m.label}</span>
-                              <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                                {m.modifier > 0 ? '+' : ''}{m.modifier}
-                              </span>
-                            </div>
-                          ))}
-                          <div className="border-t border-border mt-1 pt-1 flex justify-between">
-                            <span className="text-muted-foreground">Total</span>
-                            <span className={col}>{finalDc}</span>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : el}
+                    <ModifierTooltip modifiers={r?.modifiers ?? []} netModifier={net} finalDisplay={String(finalDc)}>
+                      <p className={cn('font-mono font-bold text-lg', col)}>{finalDc}</p>
+                    </ModifierTooltip>
                   </div>
                 )
               })()}
@@ -347,7 +310,6 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                   const modifiedMod = strike.modifier + strikeNet
                   const map1 = modifiedMod - (isAgile ? 4 : 5)
                   const map2 = modifiedMod - (isAgile ? 8 : 10)
-                  const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
                   const strikeModResult = modStats.get(strikeSlug)
                   return (
                     <div key={i} className="p-3 rounded-md bg-secondary/50">
@@ -359,10 +321,10 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                           {[0, 1, 2].map((i) => {
                             const mod = i === 0 ? modifiedMod : i === 1 ? map1 : map2
                             const title = i === 0
-                              ? `1st attack — Roll 1d20${fmt(mod)}`
+                              ? `1st attack — Roll 1d20${formatModifier(mod)}`
                               : i === 1
-                                ? `2nd attack (${isAgile ? '-4' : '-5'} agile/normal) — Roll 1d20${fmt(mod)}`
-                                : `3rd attack (${isAgile ? '-8' : '-10'} agile/normal) — Roll 1d20${fmt(mod)}`
+                                ? `2nd attack (${isAgile ? '-4' : '-5'} agile/normal) — Roll 1d20${formatModifier(mod)}`
+                                : `3rd attack (${isAgile ? '-8' : '-10'} agile/normal) — Roll 1d20${formatModifier(mod)}`
                             const active = Boolean(mapCombatantId) && currentMapIndex === i
                             return (
                               <button
@@ -380,7 +342,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                                     : 'bg-muted/30 border-border/30 text-muted-foreground hover:text-foreground hover:bg-muted/50',
                                 )}
                               >
-                                {fmt(mod)}
+                                {formatModifier(mod)}
                               </button>
                             )
                           })}
@@ -613,27 +575,9 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                   return (
                     <span key={skill.name} className={skill.calculated ? 'opacity-40' : ''}>
                       <span className="text-muted-foreground">{skill.name}</span>{' '}
-                      {skillMod && skillMod.modifiers.length > 0 ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>{btn}</TooltipTrigger>
-                          <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-                            {skillMod.modifiers.map((m) => (
-                              <div key={m.slug} className="flex justify-between gap-4">
-                                <span className="text-muted-foreground">{m.label}</span>
-                                <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                                  {m.modifier > 0 ? '+' : ''}{m.modifier}
-                                </span>
-                              </div>
-                            ))}
-                            <div className="border-t border-border mt-1 pt-1 flex justify-between">
-                              <span className="text-muted-foreground">Total</span>
-                              <span className={net < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                                {finalMod >= 0 ? '+' : ''}{finalMod}
-                              </span>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : btn}
+                      <ModifierTooltip modifiers={skillMod?.modifiers ?? []} netModifier={net} finalDisplay={formatModifier(finalMod)}>
+                        {btn}
+                      </ModifierTooltip>
                     </span>
                   )
                 })}
@@ -682,40 +626,6 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   )
 }
 
-// Damage type color coding for PF2e
-const DAMAGE_TYPE_COLORS: Record<string, string> = {
-  // Physical — dark grey
-  bludgeoning: "text-zinc-400",
-  slashing: "text-zinc-400",
-  piercing: "text-zinc-400",
-  // Energy
-  fire: "text-orange-400",
-  cold: "text-cyan-300",
-  electricity: "text-yellow-300",
-  acid: "text-lime-400",
-  sonic: "text-violet-400",
-  force: "text-blue-400",
-  // Positive/Negative
-  positive: "text-green-400",
-  healing: "text-green-400",
-  negative: "text-pink-400",
-  // Other
-  poison: "text-emerald-400",
-  mental: "text-indigo-400",
-  bleed: "text-red-400",
-  holy: "text-yellow-200",
-  unholy: "text-purple-600",
-  chaotic: "text-orange-500",
-  lawful: "text-slate-400",
-  good: "text-amber-300",
-  evil: "text-purple-800",
-  untyped: "text-zinc-500",
-  spirit: "text-violet-300",
-}
-
-function damageTypeColor(type: string): string {
-  return DAMAGE_TYPE_COLORS[type.toLowerCase()] ?? "text-pf-blood"
-}
 
 // Strip Foundry VTT inline roll tags: [[/gmr 2d6 #rounds]]{2d6 rounds} → "2d6 rounds"
 // If no display text, strip the tag entirely.
@@ -1168,14 +1078,7 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
   encounterContext?: EncounterContext
   creatureName?: string
 }) {
-  const fmt = (n: number) => (n >= 0 ? `+${n}` : `${n}`)
-  const addRoll = useRollStore((state) => state.addRoll)
-  function handleSpellRoll(formula: string, label?: string) {
-    addRoll(rollDice(formula, label, {
-      ...(creatureName ? { source: creatureName } : {}),
-      ...(encounterContext ? { combatId: encounterContext.encounterId } : {}),
-    }))
-  }
+  const handleSpellRoll = useRoll(creatureName, encounterContext?.encounterId)
 
   // Slot state — keyed by rank
   const [usedSlots, setUsedSlots] = useState<Record<number, number>>({})
@@ -1388,67 +1291,29 @@ function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureN
           <div className="flex gap-4 text-sm">
             {section.spellDc > 0 && (() => {
               const dcCol = spellMod.netModifier < 0 ? 'text-pf-blood' : spellMod.netModifier > 0 ? 'text-pf-threat-low' : 'text-primary'
-              const dcEl = <span className={cn('font-mono font-bold', dcCol)}>{modifiedSpellDc}</span>
               return (
                 <span className="text-muted-foreground">DC{' '}
-                  {spellMod.modifiers.length > 0 ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>{dcEl}</TooltipTrigger>
-                      <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-                        {spellMod.modifiers.map((m) => (
-                          <div key={m.slug} className="flex justify-between gap-4">
-                            <span className="text-muted-foreground">{m.label}</span>
-                            <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                              {m.modifier > 0 ? '+' : ''}{m.modifier}
-                            </span>
-                          </div>
-                        ))}
-                        <div className="border-t border-border mt-1 pt-1 flex justify-between">
-                          <span className="text-muted-foreground">Total</span>
-                          <span className={dcCol}>{modifiedSpellDc}</span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : dcEl}
+                  <ModifierTooltip modifiers={spellMod.modifiers} netModifier={spellMod.netModifier} finalDisplay={String(modifiedSpellDc)}>
+                    <span className={cn('font-mono font-bold', dcCol)}>{modifiedSpellDc}</span>
+                  </ModifierTooltip>
                 </span>
               )
             })()}
             {section.spellAttack !== 0 && (() => {
-              const attackBtn = (
-                <button
-                  onClick={() => handleSpellRoll(`1d20+${modifiedSpellAttack}`, `${section.tradition} spell attack`)}
-                  title={`Roll spell attack 1d20+${modifiedSpellAttack}`}
-                  className={cn(
-                    'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
-                    spellModColor || 'text-primary decoration-primary/50',
-                  )}
-                >
-                  {fmt(modifiedSpellAttack)}
-                </button>
-              )
               return (
                 <span className="text-muted-foreground">Attack{' '}
-                  {spellMod.modifiers.length > 0 ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>{attackBtn}</TooltipTrigger>
-                      <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-                        {spellMod.modifiers.map((m) => (
-                          <div key={m.slug} className="flex justify-between gap-4">
-                            <span className="text-muted-foreground">{m.label}</span>
-                            <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                              {m.modifier > 0 ? '+' : ''}{m.modifier}
-                            </span>
-                          </div>
-                        ))}
-                        <div className="border-t border-border mt-1 pt-1 flex justify-between">
-                          <span className="text-muted-foreground">Total</span>
-                          <span className={spellMod.netModifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                            {fmt(modifiedSpellAttack)}
-                          </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : attackBtn}
+                  <ModifierTooltip modifiers={spellMod.modifiers} netModifier={spellMod.netModifier} finalDisplay={formatModifier(modifiedSpellAttack)}>
+                    <button
+                      onClick={() => handleSpellRoll(`1d20+${modifiedSpellAttack}`, `${section.tradition} spell attack`)}
+                      title={`Roll spell attack 1d20+${modifiedSpellAttack}`}
+                      className={cn(
+                        'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
+                        spellModColor || 'text-primary decoration-primary/50',
+                      )}
+                    >
+                      {formatModifier(modifiedSpellAttack)}
+                    </button>
+                  </ModifierTooltip>
                 </span>
               )
             })()}
@@ -1679,29 +1544,9 @@ function StatItem({ label, value, modifier, highlight, colorClass, showDc, modRe
   return (
     <div className="px-4">
       <p className="text-[clamp(0.55rem,1.8cqw,0.75rem)] text-muted-foreground mb-1">{label}</p>
-      {modResult && modResult.modifiers.length > 0 ? (
-        <Tooltip>
-          <TooltipTrigger asChild>{valueEl}</TooltipTrigger>
-          <TooltipContent side="top" className="min-w-[180px] max-w-[240px] p-2 font-mono text-xs">
-            {modResult.modifiers.map((m) => (
-              <div key={m.slug} className="flex justify-between gap-4">
-                <span className="text-muted-foreground">{m.label}</span>
-                <span className={m.modifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                  {m.modifier > 0 ? '+' : ''}{m.modifier}
-                </span>
-              </div>
-            ))}
-            <div className="border-t border-border mt-1 pt-1 flex justify-between">
-              <span className="text-muted-foreground">Total</span>
-              <span className={netMod < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
-                {displayValue}{dc}
-              </span>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        valueEl
-      )}
+      <ModifierTooltip modifiers={modResult?.modifiers ?? []} netModifier={netMod} finalDisplay={`${displayValue}${dc}`}>
+        {valueEl}
+      </ModifierTooltip>
     </div>
   )
 }
