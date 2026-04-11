@@ -6,6 +6,7 @@ import {
 import { X, Backpack } from 'lucide-react'
 import { SectionHeader } from '@/shared/ui/section-header'
 import { IconButton } from '@/shared/ui/icon-button'
+import { Input } from '@/shared/ui/input'
 import type { CreatureItemRow } from '@/shared/api'
 import { ITEM_TYPE_COLORS, ItemReferenceDrawer } from '@/entities/item'
 import { useEquipment } from '../model/use-equipment'
@@ -121,12 +122,11 @@ export function EquipmentBlock({
             {/* Add item row — encounter context only */}
             {encounterContext && (
               <div className="relative mt-2">
-                <input
-                  type="text"
+                <Input
                   placeholder="Add item…"
                   value={addQuery}
                   onChange={(e) => setAddQuery(e.target.value)}
-                  className="w-full text-xs px-2 h-8 rounded-md border border-border/50 bg-secondary/40 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                  className="text-xs h-8 bg-secondary/40 border-border/50"
                 />
                 {addResults.length > 0 && (
                   <div className="absolute z-10 left-0 right-0 top-full mt-0.5 rounded border border-border bg-popover shadow-md max-h-40 overflow-y-auto">
