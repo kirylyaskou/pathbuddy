@@ -6,8 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 import { cn } from '@/shared/lib/utils'
 import { useEffectStore, formatRemainingTurns } from '@/entities/spell-effect'
 import { getActiveEffectsForCombatant, removeEffectFromCombatant } from '@/shared/api/effects'
-import { useCombatTrackerStore } from '@/features/combat-tracker'
-import { EffectPickerDialog } from '@/features/combat-tracker'
+import { useCombatTrackerStore, EffectPickerDialog } from '@/features/combat-tracker'
 import type { ActiveEffect } from '@/entities/spell-effect'
 
 interface EffectsSectionProps {
