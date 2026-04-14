@@ -19,7 +19,6 @@ export async function extractAndInsertSpellEffects(entities: RawEntity[]): Promi
   const effects: RawEffect[] = []
   for (const entity of entities) {
     if (entity.entity_type !== 'effect') continue
-    if (!entity.source_pack?.includes('spell-effects')) continue
     try {
       const raw = JSON.parse(entity.raw_json)
       const sys = raw.system ?? {}
