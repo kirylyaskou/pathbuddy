@@ -1,4 +1,5 @@
 import { getDb } from '@/shared/db'
+import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { BATCH_SIZE } from './types'
 import type { RawEntity } from './types'
 
@@ -27,7 +28,7 @@ export async function extractAndInsertSpellEffects(entities: RawEntity[]): Promi
         name: entity.name.replace(/^Spell Effect:\s*/i, ''),
         rules_json: JSON.stringify(sys.rules ?? []),
         duration_json: JSON.stringify(sys.duration ?? {}),
-        description: sys.description?.value ?? null,
+        description: sanitizeFoundryText(sys.description?.value) || null,
         spell_id: null,
       })
     } catch {
