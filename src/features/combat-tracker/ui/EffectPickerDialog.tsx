@@ -90,7 +90,7 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
             <div className="space-y-0.5">
               {filtered.map((effect) => {
                 const desc = effect.description
-                  ? effect.description.replace(/<[^>]+>/g, '').slice(0, 100)
+                  ? effect.description.slice(0, 100)
                   : null
                 return (
                   <div

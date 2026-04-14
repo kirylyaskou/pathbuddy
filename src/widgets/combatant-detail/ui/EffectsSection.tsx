@@ -21,7 +21,7 @@ interface EffectDetailPanelProps {
 
 function EffectDetailPanel({ effect, onClose }: EffectDetailPanelProps) {
   const descText = effect.description
-    ? effect.description.replace(/<[^>]+>/g, '').slice(0, 350)
+    ? effect.description.slice(0, 350)
     : null
 
   return (
@@ -116,7 +116,7 @@ export function EffectsSection({ combatantId }: EffectsSectionProps) {
                     </TooltipTrigger>
                     {e.description && (
                       <TooltipContent side="left" className="max-w-xs text-xs">
-                        {e.description.replace(/<[^>]+>/g, '').slice(0, 300)}
+                        {e.description.slice(0, 300)}
                       </TooltipContent>
                     )}
                   </Tooltip>
