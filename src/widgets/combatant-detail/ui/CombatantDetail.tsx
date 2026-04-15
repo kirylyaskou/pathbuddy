@@ -7,7 +7,6 @@ import { fetchCreatureStatBlockData } from '@/entities/creature'
 import type { CreatureStatBlockData } from '@/entities/creature'
 import { HpControls } from './HpControls'
 import { ConditionSection } from './ConditionSection'
-import { EffectsSection } from './EffectsSection'
 
 interface CombatantDetailProps {
   combatantId: string
@@ -73,10 +72,6 @@ export function CombatantDetail({ combatantId }: CombatantDetailProps) {
       <Separator />
 
       <ConditionSection combatantId={combatantId} />
-
-      <Separator />
-
-      <EffectsSection combatantId={combatantId} />
     </div>
   )
 }

@@ -2,10 +2,7 @@
 // Layer 1: resolves which active conditions apply to a specific stat slug,
 // then uses StatisticModifier (Layer 2) to apply stacking rules and sum.
 //
-// Extended in Phase 56 to also accept spell effect FlatModifier inputs,
-// feeding them into the same stacking rules pass as condition modifiers.
-//
-// Used by: src/entities/creature/model/use-modified-stats.ts (React hook layer)
+// Used by: src/shared/model/use-modified-stats.ts (React hook layer)
 // Does NOT import from React or any UI layer.
 
 import { Modifier, StatisticModifier } from '../modifiers/modifiers'
@@ -13,7 +10,6 @@ import { CONDITION_EFFECTS } from '../conditions/condition-effects'
 import { resolveSelector } from './selector-resolver'
 import type { ConditionModifierEffect } from '../conditions/condition-effects'
 import type { ConditionSlug } from '../conditions/conditions'
-import type { SpellEffectModifierInput } from '../effects/spell-effect-modifiers'
 
 // ─── Public Types ─────────────────────────────────────────────────────────────
 
@@ -56,7 +52,6 @@ export function computeStatModifier(
   conditions: ConditionInput[],
   statSlug: string,
   allStatSlugs: string[],
-  spellEffects?: SpellEffectModifierInput[],
 ): StatModifierResult {
   const rawModifiers: Modifier[] = []
 
@@ -89,27 +84,6 @@ export function computeStatModifier(
           label,
           modifier: modValue,
           type: modEffect.modifierType,
-        }),
-      )
-    }
-  }
-
-  // ── Spell Effect FlatModifier ────────────────────────────────────────────
-  // Fed into the same rawModifiers array so StatisticModifier applies stacking
-  // rules across both conditions and spell effects in a single pass.
-  // A +2 status bonus from Shield and a -2 status penalty from Frightened 2
-  // correctly cancel out because they share the 'status' typed bucket.
-  if (spellEffects) {
-    for (const effect of spellEffects) {
-      const targetSlugs = resolveSelector(effect.selector, allStatSlugs)
-      if (!targetSlugs.includes(statSlug)) continue
-
-      rawModifiers.push(
-        new Modifier({
-          slug: `effect:${effect.effectId}:${statSlug}`,
-          label: effect.effectName,
-          modifier: effect.value,
-          type: effect.modifierType,
         }),
       )
     }
