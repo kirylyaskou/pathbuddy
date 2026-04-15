@@ -21,6 +21,7 @@ export interface CombatantState {
   setStagingCombatants: (staging: StagingCombatant[]) => void
   releaseFromStaging: (id: string) => Combatant | undefined
   reorderStaging: (orderedIds: string[]) => void
+  updateStagingRound: (id: string, round: number | undefined) => void
 }
 
 export const useCombatantStore = create<CombatantState>()(
@@ -118,6 +119,11 @@ export const useCombatantStore = create<CombatantState>()(
         state.stagingCombatants.forEach((s, i) => {
           s.sortOrder = i
         })
+      }),
+    updateStagingRound: (id, round) =>
+      set((state) => {
+        const s = state.stagingCombatants.find((s) => s.combatant.id === id)
+        if (s) s.round = round
       }),
   }))
 )
