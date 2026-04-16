@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { Inbox } from 'lucide-react'
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { LevelBadge } from '@/shared/ui/level-badge'
-import { Button } from '@/shared/ui/button'
 import { CreatureCard, StatBlockModal, toCreature } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
 import { searchCreatures, fetchCreatures, searchHazards, getAllHazards, saveEncounterStagingCombatants } from '@/shared/api'
@@ -261,40 +259,29 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
                 const statDelta = getStatAdjustment(selectedTier)
                 return (
                   <DraggableCreatureRow key={row.id} row={row} tier={selectedTier}>
-                    <div className="relative group">
+                    <div>
                       <CreatureCard
                         creature={creature}
                         compact
                         onAdd={() => handleAddCreature(row)}
+                        onAddToStaging={encounterId ? () => {
+                          const combatant: NpcCombatant = {
+                            id: crypto.randomUUID(),
+                            kind: 'npc',
+                            creatureRef: row.id,
+                            displayName: creature.name,
+                            initiative: 0,
+                            hp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
+                            maxHp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
+                            tempHp: 0,
+                            level: creature.level,
+                          }
+                          useCombatantStore.getState().addStagingCombatant(combatant)
+                          const staging = useCombatantStore.getState().stagingCombatants
+                          saveEncounterStagingCombatants(encounterId, stagingToRows(encounterId, staging))
+                        } : undefined}
                         onClick={() => setStatBlockCreatureId(row.id)}
                       />
-                      {encounterId && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-1.5 right-14 h-6 w-6 hover:bg-secondary"
-                          title="Add to staging pool"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            const combatant: NpcCombatant = {
-                              id: crypto.randomUUID(),
-                              kind: 'npc',
-                              creatureRef: row.id,
-                              displayName: creature.name,
-                              initiative: 0,
-                              hp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                              maxHp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                              tempHp: 0,
-                              level: creature.level,
-                            }
-                            useCombatantStore.getState().addStagingCombatant(combatant)
-                            const staging = useCombatantStore.getState().stagingCombatants
-                            saveEncounterStagingCombatants(encounterId, stagingToRows(encounterId, staging))
-                          }}
-                        >
-                          <Inbox className="w-3 h-3" />
-                        </Button>
-                      )}
                     </div>
                     {hpDelta !== 0 && (
                       <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-1">
