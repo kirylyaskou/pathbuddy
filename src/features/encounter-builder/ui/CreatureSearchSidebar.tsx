@@ -272,7 +272,7 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute top-1.5 right-14 h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-secondary"
+                          className="absolute top-1.5 right-14 h-6 w-6 hover:bg-secondary"
                           title="Add to staging pool"
                           onClick={(e) => {
                             e.stopPropagation()

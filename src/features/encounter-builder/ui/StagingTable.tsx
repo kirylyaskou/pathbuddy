@@ -101,7 +101,7 @@ export function StagingTable({ encounterId, combatMode = false }: StagingTablePr
                   min={1}
                   placeholder="Round"
                   value={sc.round ?? ''}
-                  className="w-16 h-6 text-xs"
+                  className="w-24 h-8"
                   onChange={(e) => {
                     const v = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
                     updateStagingRound(sc.combatant.id, v)
