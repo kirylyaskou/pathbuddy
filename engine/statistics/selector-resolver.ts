@@ -99,6 +99,60 @@ function resolveSingleSelector(selector: string, statisticKeys: string[]): strin
     case 'cha-based':
       return statisticKeys.filter(k => CHA_SKILLS.includes(k))
 
+    // ── PF2e canonical: attack selectors ─────────────────────────────────
+    case 'attack':
+    case 'attack-roll':
+      // D-01, D-02: 'attack' and 'attack-roll' are PF2e aliases for the same thing.
+      // Maps to all virtual attack slugs present in this creature's statistic universe.
+      // Used by Bane (selector:'attack', value:-1), Aid, Inspire Courage, etc.
+      return statisticKeys.filter(
+        k => k === 'strike-attack' || k === 'melee-strike-attack' || k === 'spell-attack',
+      )
+
+    // ── PF2e canonical: save groups ──────────────────────────────────────
+    case 'all-saves':
+      // D-04: All saving throws.
+      return statisticKeys.filter(
+        k => k === 'fortitude' || k === 'reflex' || k === 'will',
+      )
+
+    // ── PF2e canonical: skill-check ──────────────────────────────────────
+    case 'skill-check': {
+      // D-05: All skill slugs on this creature.
+      // Includes standard PF2e skills + lore skills (detected by suffix).
+      const ALL_SKILLS = new Set([
+        ...DEX_SKILLS, ...STR_SKILLS, ...INT_SKILLS, ...WIS_SKILLS, ...CHA_SKILLS,
+      ])
+      return statisticKeys.filter(
+        k => ALL_SKILLS.has(k) || k.endsWith('-lore') || k.endsWith(' lore'),
+      )
+    }
+
+    // ── PF2e canonical: spell selectors ──────────────────────────────────
+    case 'spell-attack':
+      // D-06: Spell attack roll virtual slug.
+      // Requires 'spell-attack' to be present in the caller's statSlugs universe (D-03).
+      return statisticKeys.filter(k => k === 'spell-attack')
+
+    case 'spell-dc':
+      // D-07: Spell DC virtual slug.
+      return statisticKeys.filter(k => k === 'spell-dc')
+
+    case 'class-dc':
+      // D-08: Class DC applies to PCs only — not implemented for NPC stat blocks in v1.3.0.
+      // NPC creatures do not have a class-dc statistic slug; returning [] is a graceful no-op.
+      // TODO v1.4+: wire to PC character sheet when class-dc slug is added to PC stat universe.
+      return []
+
+    // ── PF2e canonical: damage ───────────────────────────────────────────
+    case 'damage':
+      // D-09: FlatModifier with selector:'damage' is intentionally ignored in v1.3.0.
+      // Damage modifiers are handled in engine/damage/ via a separate pipeline
+      // (strike damage bonuses, persistent damage, etc.) and do NOT flow through
+      // the stat modifier system. Returning [] prevents silent double-application.
+      // TODO v1.4+: unify damage modifier pipeline if FlatModifier damage support needed.
+      return []
+
     default:
       // Unknown selector — try exact match against statistic keys
       return statisticKeys.filter(k => k === selector)

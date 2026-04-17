@@ -18,6 +18,8 @@
 - 🚧 **v0.9.6-pre-alpha — МАТЕМАТИКА** — Phases 36-41 (complete 2026-04-05)
 - ✅ **v1.0.0 — PC Import (Pathbuilder 2e)** — Phases 42-46 (complete 2026-04-07)
 - ✅ **v1.1.0 — PathMaid Day-One Patch** — Phases 47-54 (complete 2026-04-10)
+- ✅ **v1.2.1 — Spell Effects + Custom Creatures** — Phases 56-59 (shipped 2026-04-17)
+- 🚧 **v1.3.0 — Encounter Import + Combat UX Refinement** — Phases 60-64 (in progress)
 
 ## Phases
 
@@ -860,12 +862,32 @@ Full details: `.planning/milestones/v1.1.0-ROADMAP.md`
 | 53. Code Audit | 2/2 | Complete | 2026-04-10 |
 | 54. Linux/Android CI/CD | 2/2 | Complete | 2026-04-10 |
 
-### v1.2.0 — Next Milestone
+### v1.2.0 — Spell Effects + Custom Creatures (SHIPPED 2026-04-17)
 
-_(Not yet defined — run `/gsd-new-milestone` to start)_
+Archived — see `.planning/milestones/v1.2.1-ROADMAP.md`
 
-- [ ] **Phase 55: CreatureStatBlock Refactor** — Split 1964-line CreatureStatBlock.tsx into separate files
+### 🚧 v1.3.0 — Encounter Import + Combat UX Refinement
+
+**Milestone Goal:** Encounter import, combat entry flow, effect/spellcasting UX polish, rules engine regressions
+
+- [ ] **Phase 60: Effect Rules Engine Fix** — FlatModifier `attack` selector regression + audit PF2e canonical selectors
+- [ ] **Phase 61: Effect Picker UX** — Widened modal, category groups, context-filtered default, global search, live-refresh
+- [ ] **Phase 62: Spellcasting UX Refactor** — Informational slots, edit mode, unified component
+- [ ] **Phase 63: Combat Entry Flow + Refresh Semantics** — Encounter-as-template, Start gate, Info panel, dedup dialog
+- [ ] **Phase 64: Encounter Import** — Pathmaiden JSON + Pathfinder Dashboard JSON, preview dialog
+
+### Phase 60: Effect Rules Engine Fix
+**Goal**: Исправить регрессию — FlatModifier с selector: "attack" (Bane и подобные) корректно применяется к attack rolls; провести аудит покрытия PF2e canonical selectors в engine selector resolver
+**Depends on**: Nothing (engine-only, no UI dependencies)
+**Requirements**: EFFECT-RULES-01, EFFECT-RULES-02
+**Success Criteria** (what must be TRUE):
+  1. Применив Bane к комбатанту в combat tracker, пользователь видит -1 status penalty на Strike-атаках этого комбатанта
+  2. Все PF2e canonical селекторы (attack, ac, all-saves, fortitude, reflex, will, skill-check, damage, spell-attack, spell-dc, class-dc) обрабатываются явно в resolveSingleSelector
+  3. pnpm tsc --noEmit и pnpm lint — 0 ошибок
+**Plans:** 1 plan
+Plans:
+- [ ] 60-01-PLAN.md — Selector-resolver canonical cases (attack/all-saves/skill-check/spell-attack/class-dc/damage) + spell-attack virtual slug в UI
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-10 — v1.1.0 PathMaid Day-One Patch shipped (phases 47-54)*
+*Last updated: 2026-04-18 — v1.3.0 roadmap added (phases 60-64)*
