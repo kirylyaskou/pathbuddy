@@ -20,6 +20,14 @@ export interface EncounterTab {
   encounterId: string | null     // null = blank/ad-hoc encounter
   name: string
   snapshot: TabSnapshot          // last saved state for this tab
+  // 63-01: pre-start gate. false = combatants loaded but combat not started yet
+  // (blur overlay + Start button gate in UI). Default true for ad-hoc/migrated
+  // running combats; false for tabs opened via builder Load-into-combat.
+  isStarted: boolean
+  // 63-01: deep-ish clone of the snapshot taken at load time, used by Refresh
+  // to restore the encounter to pristine pre-start state. Null for migrated
+  // tabs without a captured template; resetTab falls back to DB blueprint reload.
+  templateSnapshot: TabSnapshot | null
 }
 
 export interface EncounterTabsState {
@@ -27,18 +35,32 @@ export interface EncounterTabsState {
   activeTabId: string | null
   splitMode: boolean
 
-  openTab: (tab: { encounterId: string | null; name: string; snapshot: TabSnapshot }) => string
+  openTab: (tab: {
+    encounterId: string | null
+    name: string
+    snapshot: TabSnapshot
+    isStarted?: boolean
+    templateSnapshot?: TabSnapshot | null
+  }) => string
   /**
    * Add a new tab with a pre-built snapshot and activate it WITHOUT calling
    * updateActiveSnapshot() for the previously active tab. Use this when the
    * caller has already persisted the old tab's snapshot and the global stores
    * now contain the new tab's data (e.g. after loadEncounterIntoCombat).
    */
-  openTabFromSnapshot: (tab: { encounterId: string | null; name: string; snapshot: TabSnapshot }) => string
+  openTabFromSnapshot: (tab: {
+    encounterId: string | null
+    name: string
+    snapshot: TabSnapshot
+    isStarted?: boolean
+    templateSnapshot?: TabSnapshot | null
+  }) => string
   closeTab: (tabId: string) => void
   setActiveTab: (tabId: string) => void
   updateActiveSnapshot: () => void
   resetTab: (tabId: string) => Promise<void>
+  /** 63-01: mark a pre-start tab as started (removes blur + Start gate). */
+  startTab: (tabId: string) => void
   addCombatantToTab: (tabId: string, combatant: Combatant) => void
   getActiveTab: () => EncounterTab | undefined
   toggleSplitMode: () => void
@@ -94,7 +116,14 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
     openTab: (tabInput) => {
       const id = crypto.randomUUID()
       set((state) => {
-        state.openTabs.push({ id, ...tabInput })
+        state.openTabs.push({
+          id,
+          encounterId: tabInput.encounterId,
+          name: tabInput.name,
+          snapshot: tabInput.snapshot,
+          isStarted: tabInput.isStarted ?? true,
+          templateSnapshot: tabInput.templateSnapshot ?? null,
+        })
       })
       get().setActiveTab(id)
       return id
@@ -107,7 +136,14 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
       // We do NOT call updateActiveSnapshot() here because global stores already
       // contain the new tab's data — calling it would corrupt the old tab's snapshot.
       set((state) => {
-        state.openTabs.push({ id, ...tabInput })
+        state.openTabs.push({
+          id,
+          encounterId: tabInput.encounterId,
+          name: tabInput.name,
+          snapshot: tabInput.snapshot,
+          isStarted: tabInput.isStarted ?? false,
+          templateSnapshot: tabInput.templateSnapshot ?? null,
+        })
         state.activeTabId = id
       })
       return id
@@ -171,11 +207,24 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
 
       let freshSnapshot: TabSnapshot
 
-      if (!tab.encounterId) {
+      // 63-01: templateSnapshot (captured at load time) wins over DB blueprint
+      // reload. Falls back to legacy path for migrated tabs with no template.
+      if (tab.templateSnapshot) {
+        freshSnapshot = {
+          combatants: tab.templateSnapshot.combatants.map((c) => ({ ...c })),
+          stagingCombatants: tab.templateSnapshot.stagingCombatants.map((s) => ({ ...s })),
+          combatId: tab.templateSnapshot.combatId,
+          activeCombatantId: tab.templateSnapshot.activeCombatantId,
+          round: tab.templateSnapshot.round,
+          turn: tab.templateSnapshot.turn,
+          isRunning: tab.templateSnapshot.isRunning,
+          isEncounterBacked: tab.templateSnapshot.isEncounterBacked,
+        }
+      } else if (!tab.encounterId) {
         // Blank encounter: just clear
         freshSnapshot = createEmptySnapshot()
       } else {
-        // Blueprint-backed: reload from DB
+        // Blueprint-backed legacy fallback: reload from DB
         try {
           const { loadEncounterCombatants } = await import('@/shared/api')
           const encounterCombatants = await loadEncounterCombatants(tab.encounterId)
@@ -207,13 +256,23 @@ export const useEncounterTabsStore = create<EncounterTabsState>()(
 
       set((state) => {
         const t = state.openTabs.find((t) => t.id === tabId)
-        if (t) t.snapshot = freshSnapshot
+        if (t) {
+          t.snapshot = freshSnapshot
+          t.isStarted = false
+        }
       })
 
       // If resetting the active tab, also restore to global stores
       if (get().activeTabId === tabId) {
         restoreSnapshotToGlobalStores(freshSnapshot)
       }
+    },
+
+    startTab: (tabId) => {
+      set((state) => {
+        const t = state.openTabs.find((t) => t.id === tabId)
+        if (t) t.isStarted = true
+      })
     },
 
     addCombatantToTab: (tabId, combatant) => {
