@@ -499,4 +499,85 @@ export async function resetEncounterCombat(encounterId: string): Promise<void> {
     `DELETE FROM encounter_combatant_items WHERE encounter_id=?`,
     [encounterId]
   )
+  // Reset staging pool — fresh start on encounter reset
+  await db.execute(
+    `DELETE FROM encounter_staging_combatants WHERE encounter_id=?`,
+    [encounterId]
+  )
+}
+
+// ── Staging pool ──────────────────────────────────────────────────────────────
+
+export interface EncounterStagingRow {
+  id: string
+  encounterId: string
+  kind: 'npc' | 'pc' | 'hazard'
+  creatureRef: string
+  displayName: string
+  hp: number
+  maxHp: number
+  tempHp: number
+  creatureLevel: number
+  weakEliteTier: 'normal' | 'weak' | 'elite'
+  round: number | null
+  sortOrder: number
+}
+
+export async function saveEncounterStagingCombatants(
+  encounterId: string,
+  staging: EncounterStagingRow[]
+): Promise<void> {
+  const db = await getDb()
+  await db.execute(
+    `DELETE FROM encounter_staging_combatants WHERE encounter_id = ?`,
+    [encounterId]
+  )
+  for (let i = 0; i < staging.length; i++) {
+    const s = staging[i]
+    await db.execute(
+      `INSERT INTO encounter_staging_combatants
+         (id, encounter_id, kind, creature_ref, display_name, hp, max_hp, temp_hp,
+          creature_level, weak_elite_tier, round, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [s.id, encounterId, s.kind, s.creatureRef, s.displayName,
+       s.hp, s.maxHp, s.tempHp, s.creatureLevel, s.weakEliteTier, s.round ?? null, i]
+    )
+  }
+}
+
+export async function loadEncounterStagingCombatants(
+  encounterId: string
+): Promise<EncounterStagingRow[]> {
+  const db = await getDb()
+  const rows = await db.select<Array<{
+    id: string
+    encounter_id: string
+    kind: string
+    creature_ref: string
+    display_name: string
+    hp: number
+    max_hp: number
+    temp_hp: number
+    creature_level: number
+    weak_elite_tier: string
+    round: number | null
+    sort_order: number
+  }>>(
+    `SELECT * FROM encounter_staging_combatants WHERE encounter_id = ? ORDER BY sort_order`,
+    [encounterId]
+  )
+  return rows.map((r) => ({
+    id: r.id,
+    encounterId: r.encounter_id,
+    kind: r.kind as 'npc' | 'pc' | 'hazard',
+    creatureRef: r.creature_ref,
+    displayName: r.display_name,
+    hp: r.hp,
+    maxHp: r.max_hp,
+    tempHp: r.temp_hp,
+    creatureLevel: r.creature_level,
+    weakEliteTier: r.weak_elite_tier as 'normal' | 'weak' | 'elite',
+    round: r.round,
+    sortOrder: r.sort_order,
+  }))
 }
