@@ -12,11 +12,15 @@
 -- (https://www.sqlite.org/quirks.html#dblquote).
 --
 -- To avoid both issues permanently, the column is renamed to `enter_round`. The TS
--- domain type still exposes the field as `round`; the mapping lives in
+-- domain type still exposes the field as `round` — the mapping lives in
 -- src/shared/api/encounters.ts (saveEncounterStagingCombatants / loadEncounterStagingCombatants).
 --
--- Existing rows are preserved by id/content; enter_round becomes NULL for all rows
+-- Existing rows are preserved by id/content, and enter_round becomes NULL for all rows
 -- (SQLite DDL has no IF-COLUMN-EXISTS conditional and the feature is pre-release).
+--
+-- NOTE: migrate.ts splits this file on `;` without stripping SQL comments first, so any
+-- semicolon inside an inline comment will corrupt the statement stream. Keep comments
+-- semicolon-free.
 
 DROP TABLE IF EXISTS encounter_staging_combatants_v2;
 
