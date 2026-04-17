@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { LevelBadge } from '@/shared/ui/level-badge'
 import { CreatureCard, StatBlockModal, toCreature } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
-import { searchCreatures, fetchCreatures, searchHazards, getAllHazards, saveEncounterStagingCombatants } from '@/shared/api'
+import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
+import type { CreatureStatBlockData } from '@/entities/creature/model/types'
+import type { CustomCreatureRow } from '@/entities/creature/model/custom-creature-types'
+import { searchCreatures, fetchCreatures, searchHazards, getAllHazards, saveEncounterStagingCombatants, getAllCustomCreatures } from '@/shared/api'
 import type { CreatureRow, HazardRow, EncounterStagingRow } from '@/shared/api'
+import { toast } from 'sonner'
 import { useEncounterBuilderStore } from '../model/store'
 import { useCombatantStore } from '@/entities/combatant'
 import type { NpcCombatant, StagingCombatant } from '@/entities/combatant'
@@ -82,6 +86,32 @@ function DraggableHazardRow({
   )
 }
 
+// D-25: adapt a loaded custom stat block into the CreatureRow shape the existing
+// onAddCreature / handleAddCreature pipeline consumes. Co-located — not exported.
+// traits is JSON-stringified (toCreature uses parseJsonArray); raw_json carries the
+// full stat block but downstream fetchStatBlockData routes custom- ids through the
+// 59-10 Task 1 prefix branch, so raw_json re-parsing never runs for custom rows.
+function customToCreatureRow(custom: CustomCreatureRow, stat: CreatureStatBlockData): CreatureRow {
+  return {
+    id: custom.id,
+    name: stat.name,
+    type: stat.type,
+    level: stat.level,
+    hp: stat.hp,
+    ac: stat.ac,
+    fort: stat.fort,
+    ref: stat.ref,
+    will: stat.will,
+    perception: stat.perception,
+    traits: JSON.stringify(stat.traits ?? []),
+    rarity: stat.rarity,
+    size: stat.size,
+    source_pack: null,
+    source_name: null,
+    raw_json: JSON.stringify(stat),
+  }
+}
+
 export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId }: CreatureSearchSidebarProps = {}) {
   const [activeTab, setActiveTab] = useState<SidebarTab>('creatures')
   const [query, setQuery] = useState('')
@@ -90,6 +120,9 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
   const [creatureResults, setCreatureResults] = useState<CreatureRow[]>([])
   const [creatureLoading, setCreatureLoading] = useState(false)
   const [selectedTier, setSelectedTier] = useState<WeakEliteTier>('normal')
+
+  // D-25: custom creatures loaded once on mount, filtered in-memory by query.
+  const [customCreatures, setCustomCreatures] = useState<CustomCreatureRow[]>([])
 
   // Hazard state
   const [hazardResults, setHazardResults] = useState<HazardRow[]>([])
@@ -139,10 +172,33 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
     return () => { cancelled = true; clearTimeout(timer) }
   }, [query, activeTab])
 
+  // D-25: load custom creatures once on mount (cheap — small list, no pagination).
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const rows = await getAllCustomCreatures()
+        if (!cancelled) setCustomCreatures(rows)
+      } catch {
+        // Silent — absence of custom creatures must not break bestiary sidebar.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // Reset tier on query change
   useEffect(() => {
     setSelectedTier('normal')
   }, [query])
+
+  // D-25: filter custom creatures by name; cap at 20 for row-density parity.
+  const customFiltered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return customCreatures.slice(0, 20)
+    return customCreatures.filter((r) => r.name.toLowerCase().includes(q)).slice(0, 20)
+  }, [customCreatures, query])
 
   const handleAddCreature = useCallback(
     (row: CreatureRow) => {
@@ -160,6 +216,26 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
       setSelectedTier('normal')
     },
     [onAddCreature, addCreatureToDraft, selectedTier]
+  )
+
+  // D-25: reuse the EXACT bestiary add-path — load the custom stat block, adapt
+  // it into a CreatureRow, and delegate to handleAddCreature. Weak/Elite tier
+  // selector continues to apply via the shared selectedTier state.
+  const handleAddCustomCreature = useCallback(
+    async (custom: CustomCreatureRow) => {
+      try {
+        const stat = await fetchCreatureStatBlockData(custom.id)
+        if (!stat) {
+          toast.error('Failed to load custom creature')
+          return
+        }
+        const row = customToCreatureRow(custom, stat)
+        handleAddCreature(row)
+      } catch {
+        toast.error('Failed to load custom creature')
+      }
+    },
+    [handleAddCreature]
   )
 
   const handleAddHazard = useCallback(
@@ -251,9 +327,24 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
               {creatureLoading && creatureResults.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
               )}
-              {!creatureLoading && creatureResults.length === 0 && query.trim() && (
+              {!creatureLoading && creatureResults.length === 0 && customFiltered.length === 0 && query.trim() && (
                 <p className="text-sm text-muted-foreground text-center py-4">No creatures found</p>
               )}
+              {/* D-25: custom creatures — rendered FIRST with a gold left-border accent + `custom` chip */}
+              {customFiltered.map((custom) => (
+                <div
+                  key={`custom-${custom.id}`}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary/30 hover:bg-secondary/50 border-l-2 border-l-pf-gold group cursor-pointer"
+                  onClick={() => void handleAddCustomCreature(custom)}
+                >
+                  <LevelBadge level={custom.level} size="sm" />
+                  <span className="flex-1 text-sm font-medium truncate">{custom.name}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-pf-gold/15 text-pf-gold border border-pf-gold/30 shrink-0">custom</span>
+                  <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0">
+                    + add
+                  </span>
+                </div>
+              ))}
               {creatureResults.map((row) => {
                 const creature = toCreature(row)
                 const hpDelta = getHpAdjustment(selectedTier, creature.level)
