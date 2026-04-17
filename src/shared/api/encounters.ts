@@ -504,6 +504,76 @@ export async function resetEncounterCombat(encounterId: string): Promise<void> {
     `DELETE FROM encounter_staging_combatants WHERE encounter_id=?`,
     [encounterId]
   )
+  // 62-01: clear prepared-spell cast marks on refresh
+  await db.execute(
+    `DELETE FROM encounter_prepared_casts WHERE encounter_id=?`,
+    [encounterId]
+  )
+}
+
+// ── Prepared spell cast marks (62-01) ─────────────────────────────────────────
+
+export interface PreparedCastRow {
+  encounterId: string
+  combatantId: string
+  entryId: string
+  rank: number
+  spellSlotKey: string
+}
+
+export async function loadPreparedCasts(
+  encounterId: string,
+  combatantId: string
+): Promise<PreparedCastRow[]> {
+  const db = await getDb()
+  const rows = await db.select<{
+    encounter_id: string
+    combatant_id: string
+    entry_id: string
+    rank: number
+    spell_slot_key: string
+  }[]>(
+    `SELECT * FROM encounter_prepared_casts WHERE encounter_id=? AND combatant_id=?`,
+    [encounterId, combatantId]
+  )
+  return rows.map((r) => ({
+    encounterId: r.encounter_id,
+    combatantId: r.combatant_id,
+    entryId: r.entry_id,
+    rank: r.rank,
+    spellSlotKey: r.spell_slot_key,
+  }))
+}
+
+export async function markPreparedSpellCast(
+  encounterId: string,
+  combatantId: string,
+  entryId: string,
+  rank: number,
+  spellSlotKey: string
+): Promise<void> {
+  const db = await getDb()
+  await db.execute(
+    `INSERT OR IGNORE INTO encounter_prepared_casts
+       (encounter_id, combatant_id, entry_id, rank, spell_slot_key)
+     VALUES (?, ?, ?, ?, ?)`,
+    [encounterId, combatantId, entryId, rank, spellSlotKey]
+  )
+}
+
+export async function unmarkPreparedSpellCast(
+  encounterId: string,
+  combatantId: string,
+  entryId: string,
+  rank: number,
+  spellSlotKey: string
+): Promise<void> {
+  const db = await getDb()
+  await db.execute(
+    `DELETE FROM encounter_prepared_casts
+     WHERE encounter_id=? AND combatant_id=? AND entry_id=? AND rank=? AND spell_slot_key=?`,
+    [encounterId, combatantId, entryId, rank, spellSlotKey]
+  )
 }
 
 // ── Staging pool ──────────────────────────────────────────────────────────────
