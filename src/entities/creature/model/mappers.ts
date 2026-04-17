@@ -156,6 +156,8 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     source,
     spellDC,
     classDC,
+    // Phase 59 (D-08) — temp backfill; Task 2 replaces with Foundry extraction.
+    abilityMods: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
   }
 }
 

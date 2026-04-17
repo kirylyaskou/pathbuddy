@@ -41,6 +41,7 @@ function defaultStatBlock(id: string): CreatureStatBlockData {
     size: 'Medium',
     type: 'npc',
     traits: [],
+    abilityMods: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
     immunities: [],
     weaknesses: [],
     resistances: [],
