@@ -5,22 +5,46 @@
 -- `round INTEGER` but CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so
 -- databases that applied the old 0024 kept the `label` column and saves broke silently.
 --
--- Two earlier attempts at this migration both failed with `near "round": syntax error`
--- because this version of SQLite parses `round` inconsistently as an identifier in
--- certain positions (collision with the built-in round() function) and the standard
--- "round" quoting falls back to a string literal due to a long-standing SQLite quirk
--- (https://www.sqlite.org/quirks.html#dblquote).
+-- Earlier attempts at this migration failed with
+--   near "round": syntax error   (SQLite parses `round` as round() in some contexts,
+--                                  and "round" quoting falls back to a string literal
+--                                  due to the long-standing SQLite quirk
+--                                  https://www.sqlite.org/quirks.html#dblquote)
+--   near "the": syntax error     (migrate.ts split on every `;`, including semicolons
+--                                  that appeared inside comment prose)
 --
 -- To avoid both issues permanently, the column is renamed to `enter_round`. The TS
 -- domain type still exposes the field as `round` — the mapping lives in
--- src/shared/api/encounters.ts (saveEncounterStagingCombatants / loadEncounterStagingCombatants).
+-- src/shared/api/encounters.ts (saveEncounterStagingCombatants, loadEncounterStagingCombatants).
 --
--- Existing rows are preserved by id/content, and enter_round becomes NULL for all rows
--- (SQLite DDL has no IF-COLUMN-EXISTS conditional and the feature is pre-release).
+-- The migration is idempotent across four possible starting states:
+--   A) Fresh DB (never ran 0024)         — tables don't exist
+--   B) Legacy DB (old 0024 with label)   — encounter_staging_combatants has `label`
+--   C) Fresh-ish DB (new 0024 with round)— encounter_staging_combatants has `round`
+--   D) Recovery (failed 0026 attempt)    — encounter_staging_combatants was dropped,
+--                                          no _v2 exists (DROP IF EXISTS in prior version)
 --
--- NOTE: migrate.ts splits this file on `;` without stripping SQL comments first, so any
--- semicolon inside an inline comment will corrupt the statement stream. Keep comments
--- semicolon-free.
+-- Strategy: (1) CREATE IF NOT EXISTS restores the table for state D without disturbing
+-- B or C. (2) Rebuild via _v2 finalises enter_round schema. Any existing `label` or
+-- `round` values are discarded — acceptable because the feature is pre-release.
+--
+-- NOTE: migrate.ts now strips `--` comments before splitting on `;`, but keep comments
+-- semicolon-free anyway for safety.
+
+CREATE TABLE IF NOT EXISTS encounter_staging_combatants (
+  id TEXT PRIMARY KEY,
+  encounter_id TEXT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL DEFAULT 'npc',
+  creature_ref TEXT NOT NULL DEFAULT '',
+  display_name TEXT NOT NULL,
+  hp INTEGER NOT NULL DEFAULT 0,
+  max_hp INTEGER NOT NULL DEFAULT 0,
+  temp_hp INTEGER NOT NULL DEFAULT 0,
+  creature_level INTEGER NOT NULL DEFAULT 0,
+  weak_elite_tier TEXT NOT NULL DEFAULT 'normal',
+  label TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
 
 DROP TABLE IF EXISTS encounter_staging_combatants_v2;
 
