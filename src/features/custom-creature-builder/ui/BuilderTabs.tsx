@@ -6,6 +6,8 @@ import { AbilityModsTab } from './tabs/AbilityModsTab'
 import { DefenseTab } from './tabs/DefenseTab'
 import { PerceptionSkillsTab } from './tabs/PerceptionSkillsTab'
 import { SpeedsSensesTab } from './tabs/SpeedsSensesTab'
+import { StrikesTab } from './tabs/StrikesTab'
+import { SpellcastingTab } from './tabs/SpellcastingTab'
 
 export interface BuilderTabsProps {
   state: BuilderState
@@ -69,10 +71,10 @@ export function BuilderTabs({ state, dispatch }: BuilderTabsProps) {
         <SpeedsSensesTab state={state} dispatch={dispatch} />
       </TabsContent>
       <TabsContent value="strikes" className="flex-1 overflow-y-auto">
-        <Placeholder label="Strikes" />
+        <StrikesTab state={state} dispatch={dispatch} />
       </TabsContent>
       <TabsContent value="spellcasting" className="flex-1 overflow-y-auto">
-        <Placeholder label="Spellcasting" />
+        <SpellcastingTab state={state} dispatch={dispatch} />
       </TabsContent>
       <TabsContent value="abilities" className="flex-1 overflow-y-auto">
         <Placeholder label="Abilities" />
