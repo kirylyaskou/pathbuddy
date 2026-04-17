@@ -14,7 +14,7 @@ type IntervalHeighten = { type: 'interval'; perRanks: number; damage: Record<str
 type FixedHeighten = { type: 'fixed'; levels: Record<string, unknown> }
 type HeightenSpec = IntervalHeighten | FixedHeighten
 
-export function SpellCard({ foundryId, name, source, combatId, castRank }: {
+export function SpellCard({ foundryId, name, source, combatId, castRank, castConsumed }: {
   foundryId: string | null
   name: string
   source?: string
@@ -23,6 +23,8 @@ export function SpellCard({ foundryId, name, source, combatId, castRank }: {
    *  and the spell has an interval heighten spec, damage formulas scale automatically.
    *  PF2e rules: https://2e.aonprd.com/Rules.aspx?ID=2225 */
   castRank?: number
+  /** 62-02: prepared spells marked consumed render name struck-through. */
+  castConsumed?: boolean
 }) {
   const [open, setOpen] = useState(true)
   const [spell, setSpell] = useState<SpellRow | null>(null)
@@ -112,7 +114,7 @@ export function SpellCard({ foundryId, name, source, combatId, castRank }: {
           ? <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
           : <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />
         }
-        <span className="font-medium">{name}</span>
+        <span className={cn('font-medium', castConsumed && 'line-through text-muted-foreground/60')}>{name}</span>
         {loading && <span className="text-xs text-muted-foreground ml-auto">…</span>}
       </button>
 

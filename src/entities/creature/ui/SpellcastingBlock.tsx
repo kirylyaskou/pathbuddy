@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useRoll } from '@/shared/hooks'
 import { formatModifier, formatRollFormula } from '@/shared/lib/format'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
@@ -7,7 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/shared/ui/collapsible'
-import { ChevronDown, Plus, Minus, X, HelpCircle } from 'lucide-react'
+import { ChevronDown, Plus, Minus, X, HelpCircle, Pencil, Check, Flame } from 'lucide-react'
 import { IconButton } from '@/shared/ui/icon-button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import type { SpellcastingSection } from '@/entities/spell'
@@ -40,8 +41,17 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
     handleTogglePip, handleSlotDelta, handleAddRank, handleAddSpell, handleRemoveSpell,
     removedSpells, addedByRank, effectiveRanks, nextRank, isFocus, traditionFilter,
     rankWarning, minAvailableRank, effectiveSelectedSlotLevel, filteredRanks,
+    preparedCasts, handleCastPreparedSpell, handleCastSpontaneousSpell,
   } = useSpellcasting(section, creatureLevel, encounterContext)
   const { encounterId } = encounterContext ?? {}
+
+  // 62-02: mode toggle — view default, edit unlocks +/-, add/remove spell, pip click.
+  // Mode is per-component; not persisted. Only relevant when combat-backed.
+  const [mode, setMode] = useState<'view' | 'edit'>('view')
+  const isEdit = mode === 'edit' && !!encounterId
+  const isPrepared = section.castType === 'prepared'
+  const isSpontaneous = section.castType === 'spontaneous'
+
   const dcCol = spellMod.netModifier < 0 ? 'text-pf-blood' : spellMod.netModifier > 0 ? 'text-pf-threat-low' : 'text-primary'
 
   return (
@@ -54,21 +64,45 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
           </span>
           <ChevronDown className="w-4 h-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
-        {encounterId && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className="p-0.5" type="button">
-                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              {progression === 'unknown'
-                ? `Custom progression — max rank ${recommendedMaxRank} at level ${creatureLevel}`
-                : `${progression === 'full' ? 'Full' : 'Bounded'} caster (${section.tradition} ${section.castType}) — max rank ${recommendedMaxRank} at level ${creatureLevel}`
-              }
-            </TooltipContent>
-          </Tooltip>
-        )}
+        <div className="flex items-center gap-1">
+          {encounterId && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setMode((m) => (m === 'view' ? 'edit' : 'view'))}
+                  className={cn(
+                    'p-1 rounded transition-colors',
+                    isEdit
+                      ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                      : 'text-muted-foreground hover:text-primary hover:bg-accent/30'
+                  )}
+                  aria-label={isEdit ? 'Exit edit mode' : 'Edit spellcasting'}
+                >
+                  {isEdit ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                {isEdit ? 'Done — exit edit mode' : 'Edit slots and spell list'}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {encounterId && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="p-0.5" type="button">
+                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {progression === 'unknown'
+                  ? `Custom progression — max rank ${recommendedMaxRank} at level ${creatureLevel}`
+                  : `${progression === 'full' ? 'Full' : 'Bounded'} caster (${section.tradition} ${section.castType}) — max rank ${recommendedMaxRank} at level ${creatureLevel}`
+                }
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
       <CollapsibleContent>
         <div className="px-4 pb-3 pt-2 space-y-3">
@@ -146,6 +180,13 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
               : []
             const added = addedByRank[rank] ?? []
             const warn = encounterId ? rankWarning(rank) : null
+            // 62-02: per-rank occurrence counter so duplicate prepared spells get unique slot keys
+            const occurrenceCount = new Map<string, number>()
+            const takeSlotKey = (spellName: string) => {
+              const seen = occurrenceCount.get(spellName) ?? 0
+              occurrenceCount.set(spellName, seen + 1)
+              return `${spellName}#${seen}`
+            }
             return (
               <div key={rank}>
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -168,80 +209,159 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
                   {rank === 0 ? null
                     : encounterId && totalSlots > 0 ? (
                       <div className="flex items-center gap-1.5">
-                        <IconButton
-                          intent="danger"
-                          onClick={() => handleSlotDelta(rank, -1)}
-                          disabled={totalSlots <= 0}
-                          title="Remove slot"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </IconButton>
-                        <SlotPips
-                          total={totalSlots}
-                          used={used}
-                          baseSlots={baseSlots}
-                          tradition={section.tradition}
-                          onToggle={(idx) => handleTogglePip(rank, idx, totalSlots)}
-                        />
-                        <IconButton
-                          intent="primary"
-                          onClick={() => handleSlotDelta(rank, 1)}
-                          title="Add slot"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </IconButton>
+                        {isEdit && (
+                          <IconButton
+                            intent="danger"
+                            onClick={() => handleSlotDelta(rank, -1)}
+                            disabled={totalSlots <= 0}
+                            title="Remove slot"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </IconButton>
+                        )}
+                        <div className={cn(!isEdit && 'pointer-events-none select-none')}>
+                          <SlotPips
+                            total={totalSlots}
+                            used={used}
+                            baseSlots={baseSlots}
+                            tradition={section.tradition}
+                            onToggle={(idx) => handleTogglePip(rank, idx, totalSlots)}
+                          />
+                        </div>
+                        {isEdit && (
+                          <IconButton
+                            intent="primary"
+                            onClick={() => handleSlotDelta(rank, 1)}
+                            title="Add slot"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </IconButton>
+                        )}
                       </div>
                     ) : encounterId && totalSlots === 0 ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">(0 slots)</span>
-                        <IconButton
-                          intent="primary"
-                          onClick={() => handleSlotDelta(rank, 1)}
-                          title="Add slot"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </IconButton>
-                      </div>
+                      isEdit ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground">(0 slots)</span>
+                          <IconButton
+                            intent="primary"
+                            onClick={() => handleSlotDelta(rank, 1)}
+                            title="Add slot"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </IconButton>
+                        </div>
+                      ) : null
                     ) : !encounterId && baseSlots > 0 ? (
                       <span className="text-xs text-muted-foreground">({baseSlots} slots)</span>
                     ) : null}
                 </div>
                 <div className="space-y-1">
-                  {visibleSpells.map((spell, i) => (
-                    <div key={i} className="flex items-center gap-1 group">
-                      <div className="flex-1">
-                        <SpellCard name={spell.name} foundryId={spell.foundryId} source={creatureName} combatId={encounterContext?.encounterId} castRank={rank} />
+                  {visibleSpells.map((spell, i) => {
+                    const slotKey = takeSlotKey(spell.name)
+                    const cast = isPrepared && preparedCasts.has(`${rank}:${slotKey}`)
+                    const showCastButton = !isEdit && !!encounterId && rank > 0
+                    const canSpontCast = isSpontaneous && used < totalSlots
+                    return (
+                      <div key={i} className="flex items-center gap-1 group">
+                        {showCastButton && (isPrepared || canSpontCast) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  isPrepared
+                                    ? handleCastPreparedSpell(rank, slotKey, totalSlots)
+                                    : handleCastSpontaneousSpell(rank, totalSlots)
+                                }
+                                className={cn(
+                                  'p-1 rounded shrink-0 transition-colors',
+                                  cast
+                                    ? 'text-primary bg-primary/10'
+                                    : 'text-muted-foreground/70 hover:text-primary hover:bg-accent/30'
+                                )}
+                                aria-label={cast ? `Unmark ${spell.name} cast` : `Mark ${spell.name} cast`}
+                              >
+                                <Flame className="w-3 h-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="text-xs">
+                              {cast ? 'Mark uncast' : 'Mark cast'}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        <div className="flex-1">
+                          <SpellCard
+                            name={spell.name}
+                            foundryId={spell.foundryId}
+                            source={creatureName}
+                            combatId={encounterContext?.encounterId}
+                            castRank={rank}
+                            castConsumed={cast}
+                          />
+                        </div>
+                        {isEdit && encounterId && (
+                          <IconButton
+                            intent="danger"
+                            showOnHover
+                            onClick={() => handleRemoveSpell(spell.name, rank, true)}
+                            title="Remove for this encounter"
+                          >
+                            <X className="w-3 h-3" />
+                          </IconButton>
+                        )}
                       </div>
-                      {encounterId && (
-                        <IconButton
-                          intent="danger"
-                          showOnHover
-                          onClick={() => handleRemoveSpell(spell.name, rank, true)}
-                          title="Remove for this encounter"
-                        >
-                          <X className="w-3 h-3" />
-                        </IconButton>
-                      )}
-                    </div>
-                  ))}
-                  {added.map((name, i) => (
-                    <div key={`added-${i}`} className="flex items-center gap-1 group">
-                      <div className="flex-1">
-                        <SpellCard name={name} foundryId={null} source={creatureName} combatId={encounterContext?.encounterId} castRank={rank} />
+                    )
+                  })}
+                  {added.map((name, i) => {
+                    const slotKey = takeSlotKey(name)
+                    const cast = isPrepared && preparedCasts.has(`${rank}:${slotKey}`)
+                    const showCastButton = !isEdit && !!encounterId && rank > 0
+                    const canSpontCast = isSpontaneous && used < totalSlots
+                    return (
+                      <div key={`added-${i}`} className="flex items-center gap-1 group">
+                        {showCastButton && (isPrepared || canSpontCast) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              isPrepared
+                                ? handleCastPreparedSpell(rank, slotKey, totalSlots)
+                                : handleCastSpontaneousSpell(rank, totalSlots)
+                            }
+                            className={cn(
+                              'p-1 rounded shrink-0 transition-colors',
+                              cast
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground/70 hover:text-primary hover:bg-accent/30'
+                            )}
+                            aria-label={cast ? `Unmark ${name} cast` : `Mark ${name} cast`}
+                          >
+                            <Flame className="w-3 h-3" />
+                          </button>
+                        )}
+                        <div className="flex-1">
+                          <SpellCard
+                            name={name}
+                            foundryId={null}
+                            source={creatureName}
+                            combatId={encounterContext?.encounterId}
+                            castRank={rank}
+                            castConsumed={cast}
+                          />
+                        </div>
+                        {isEdit && encounterId && (
+                          <IconButton
+                            intent="danger"
+                            showOnHover
+                            onClick={() => handleRemoveSpell(name, rank, false)}
+                            title="Remove added spell"
+                          >
+                            <X className="w-3 h-3" />
+                          </IconButton>
+                        )}
                       </div>
-                      {encounterId && (
-                        <IconButton
-                          intent="danger"
-                          showOnHover
-                          onClick={() => handleRemoveSpell(name, rank, false)}
-                          title="Remove added spell"
-                        >
-                          <X className="w-3 h-3" />
-                        </IconButton>
-                      )}
-                    </div>
-                  ))}
-                  {encounterId && (
+                    )
+                  })}
+                  {isEdit && encounterId && (
                     <button
                       onClick={() => { setSpellDialogRank(rank); setSpellDialogOpen(true) }}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
@@ -254,8 +374,8 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
               </div>
             )
           })}
-          {/* Add new rank button */}
-          {encounterId && nextRank <= 10 && (
+          {/* Add new rank button — edit mode only */}
+          {isEdit && encounterId && nextRank <= 10 && (
             <button
               onClick={() => handleAddRank(nextRank)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"

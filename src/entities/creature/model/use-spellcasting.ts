@@ -8,6 +8,9 @@ import {
   deleteSpellOverride,
   saveSlotOverride,
   loadSlotOverrides,
+  loadPreparedCasts,
+  markPreparedSpellCast,
+  unmarkPreparedSpellCast,
 } from '@/shared/api'
 import type { SpellOverrideRow } from '@/shared/api'
 import type { SpellcastingSection } from '@/entities/spell'
@@ -31,6 +34,8 @@ export function useSpellcasting(
   const [spellDialogOpen, setSpellDialogOpen] = useState(false)
   const [spellDialogRank, setSpellDialogRank] = useState(0)
   const [selectedSlotLevel, setSelectedSlotLevel] = useState<number | null>(null)
+  // 62-02: set of `${rank}:${spell_slot_key}` for this entry — prepared spells marked cast
+  const [preparedCasts, setPreparedCasts] = useState<Set<string>>(new Set())
 
   const { encounterId, combatantId } = encounterContext ?? {}
 
@@ -89,11 +94,22 @@ export function useSpellcasting(
     setSlotDeltas(byRank)
   }, [encounterId, combatantId, section.entryId])
 
+  const loadPreparedCastsState = useCallback(async () => {
+    if (!encounterId || !combatantId) return
+    const rows = await loadPreparedCasts(encounterId, combatantId)
+    const next = new Set<string>()
+    for (const r of rows) {
+      if (r.entryId === section.entryId) next.add(`${r.rank}:${r.spellSlotKey}`)
+    }
+    setPreparedCasts(next)
+  }, [encounterId, combatantId, section.entryId])
+
   useEffect(() => {
     loadSlotState()
     loadOverrideState()
     loadSlotOverrideState()
-  }, [loadSlotState, loadOverrideState, loadSlotOverrideState])
+    loadPreparedCastsState()
+  }, [loadSlotState, loadOverrideState, loadSlotOverrideState, loadPreparedCastsState])
 
   // Handlers
   async function handleTogglePip(rank: number, idx: number, total: number) {
@@ -132,6 +148,46 @@ export function useSpellcasting(
     }
     await upsertSpellOverride(override)
     setOverrides((prev) => [...prev.filter((o) => o.id !== id), override])
+  }
+
+  // 62-02: toggle cast mark on a specific prepared spell instance and bump
+  // used_count for the rank so slot pip dims. Unmarking reverses both.
+  async function handleCastPreparedSpell(rank: number, spellSlotKey: string, totalSlots: number) {
+    if (!encounterId || !combatantId) return
+    const key = `${rank}:${spellSlotKey}`
+    const wasCast = preparedCasts.has(key)
+    const currentUsed = usedSlots[rank] ?? 0
+    if (wasCast) {
+      await unmarkPreparedSpellCast(encounterId, combatantId, section.entryId, rank, spellSlotKey)
+      const nextUsed = Math.max(0, currentUsed - 1)
+      await saveSpellSlotUsage(encounterId, combatantId, section.entryId, rank, nextUsed)
+      setPreparedCasts((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+      setUsedSlots((prev) => ({ ...prev, [rank]: nextUsed }))
+    } else {
+      await markPreparedSpellCast(encounterId, combatantId, section.entryId, rank, spellSlotKey)
+      const nextUsed = Math.min(totalSlots, currentUsed + 1)
+      await saveSpellSlotUsage(encounterId, combatantId, section.entryId, rank, nextUsed)
+      setPreparedCasts((prev) => {
+        const next = new Set(prev)
+        next.add(key)
+        return next
+      })
+      setUsedSlots((prev) => ({ ...prev, [rank]: nextUsed }))
+    }
+  }
+
+  // 62-02: spontaneous cast = bump used_count by one (no strike-through).
+  async function handleCastSpontaneousSpell(rank: number, totalSlots: number) {
+    if (!encounterId || !combatantId) return
+    const currentUsed = usedSlots[rank] ?? 0
+    if (currentUsed >= totalSlots) return
+    const nextUsed = currentUsed + 1
+    setUsedSlots((prev) => ({ ...prev, [rank]: nextUsed }))
+    await saveSpellSlotUsage(encounterId, combatantId, section.entryId, rank, nextUsed)
   }
 
   async function handleRemoveSpell(spellName: string, rank: number, isDefault: boolean) {
@@ -223,6 +279,10 @@ export function useSpellcasting(
     handleAddRank,
     handleAddSpell,
     handleRemoveSpell,
+    // 62-02: cast handlers + consumed state
+    preparedCasts,
+    handleCastPreparedSpell,
+    handleCastSpontaneousSpell,
     // Derived
     removedSpells,
     addedByRank,
