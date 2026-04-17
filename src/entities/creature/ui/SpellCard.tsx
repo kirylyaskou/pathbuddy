@@ -64,8 +64,8 @@ export function SpellCard({ foundryId, name, source, combatId, castRank }: {
     return a?.value ? { type: a.type, value: a.value } : null
   }, [spell?.area])
   const heighten = useMemo(
-    () => parseJsonOrNull<HeightenSpec>(spell?.heightened),
-    [spell?.heightened],
+    () => parseJsonOrNull<HeightenSpec>(spell?.heightened_json),
+    [spell?.heightened_json],
   )
 
   const parsedDamage = useMemo(() => {

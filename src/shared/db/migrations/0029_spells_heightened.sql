@@ -14,4 +14,4 @@
 -- usage. 'fixed' heightening (magic missile-style) is parsed and stored for
 -- later phases but not yet applied at display time.
 
-ALTER TABLE spells ADD COLUMN heightened TEXT;
+ALTER TABLE spells ADD COLUMN heightened_json TEXT;

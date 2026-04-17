@@ -18,7 +18,7 @@ interface RawSpell {
   save_stat: string | null
   source_book: string | null
   source_pack: string | null
-  heightened: string | null
+  heightened_json: string | null
 }
 
 /**
@@ -109,7 +109,7 @@ export async function extractAndInsertSpells(entities: RawEntity[]): Promise<voi
         save_stat: defenseObj?.save?.statistic ?? null,
         source_book: sys.publication?.title || null,
         source_pack: entity.source_pack,
-        heightened: extractHeightening(sys),
+        heightened_json: extractHeightening(sys),
       })
     } catch {
       // skip malformed spell JSON
@@ -125,10 +125,10 @@ export async function extractAndInsertSpells(entities: RawEntity[]): Promise<voi
       s.id, s.name, s.rank, s.traditions, s.traits,
       s.description, s.damage, s.area, s.range_text,
       s.duration_text, s.action_cost, s.save_stat,
-      s.source_book, s.source_pack, s.heightened,
+      s.source_book, s.source_pack, s.heightened_json,
     ])
     await db.execute(
-      `INSERT OR REPLACE INTO spells (id, name, rank, traditions, traits, description, damage, area, range_text, duration_text, action_cost, save_stat, source_book, source_pack, heightened) VALUES ${placeholders}`,
+      `INSERT OR REPLACE INTO spells (id, name, rank, traditions, traits, description, damage, area, range_text, duration_text, action_cost, save_stat, source_book, source_pack, heightened_json) VALUES ${placeholders}`,
       values
     )
   }
