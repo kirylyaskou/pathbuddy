@@ -16,6 +16,7 @@ import {
 import { isDirty as checkIsDirty } from '../model/isDirty'
 import { BuilderHeader } from './BuilderHeader'
 import { BuilderTabs } from './BuilderTabs'
+import { CloneFromBestiaryDialog } from './CloneFromBestiaryDialog'
 import { DesignReviewPanel } from './DesignReviewPanel'
 import { DirtyGuardDialog } from './DirtyGuardDialog'
 
@@ -45,6 +46,7 @@ export function BuilderPage({ creatureId }: Props) {
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [wasSaved, setWasSaved] = useState(false)
+  const [cloneOpen, setCloneOpen] = useState(false)
 
   // Load creature once on mount.
   useEffect(() => {
@@ -147,7 +149,7 @@ export function BuilderPage({ creatureId }: Props) {
         saving={saving}
         onSave={() => void handleSave()}
         onApplyRole={handleApplyRole}
-        onClone={() => toast.info('Clone from Bestiary ships in plan 59-09')}
+        onClone={() => setCloneOpen(true)}
         onExport={() => toast.info('Export JSON ships in plan 59-09')}
       />
       {/* Two-pane layout — D-17. Stacks vertically below xl (Tauri window resize). */}
@@ -168,6 +170,16 @@ export function BuilderPage({ creatureId }: Props) {
           onDiscard={() => blocker.proceed?.()}
         />
       )}
+
+      <CloneFromBestiaryDialog
+        open={cloneOpen}
+        onOpenChange={setCloneOpen}
+        onClone={(data) => {
+          // Preserve the current creature's id — clone only replaces content.
+          dispatch({ type: 'REPLACE_ALL', form: { ...data, id: creatureId } })
+          toast(`Replaced form with ${data.name}. Click Save to persist.`)
+        }}
+      />
     </div>
   )
 }

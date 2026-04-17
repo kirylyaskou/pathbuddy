@@ -22,6 +22,7 @@ import {
 import type { CustomCreatureRow } from '@/entities/creature/model/custom-creature-types'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
 import { PATHS } from '@/shared/routes'
+import { CloneFromBestiaryDialog } from '@/features/custom-creature-builder/ui/CloneFromBestiaryDialog'
 import { CustomCreatureListRow } from './CustomCreatureListRow'
 
 export function CustomCreaturesListPage() {
@@ -31,6 +32,7 @@ export function CustomCreaturesListPage() {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [cloneOpen, setCloneOpen] = useState(false)
 
   // Debounce search 200ms (UI-SPEC micro-interactions)
   useEffect(() => {
@@ -70,8 +72,18 @@ export function CustomCreaturesListPage() {
   }
 
   function handleCloneFromBestiary() {
-    // Real modal lives in plan 59-09. Placeholder toast keeps the CTA wired.
-    toast.info('Clone-from-bestiary ships in plan 59-09')
+    setCloneOpen(true)
+  }
+
+  async function handleCloneSelected(data: CreatureStatBlockData) {
+    try {
+      const id = await createCustomCreature(data, 'foundry_clone')
+      toast(`${data.name} cloned`)
+      await reload()
+      navigate(PATHS.CUSTOM_CREATURE_EDIT(id))
+    } catch (e) {
+      toast.error(`Failed to clone: ${(e as Error).message}`)
+    }
   }
 
   async function confirmDelete() {
@@ -176,6 +188,13 @@ export function CustomCreaturesListPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Clone from Bestiary picker */}
+      <CloneFromBestiaryDialog
+        open={cloneOpen}
+        onOpenChange={setCloneOpen}
+        onClone={handleCloneSelected}
+      />
     </div>
   )
 }
