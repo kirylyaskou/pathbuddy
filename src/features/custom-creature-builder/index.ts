@@ -1,4 +1,4 @@
-// Full public surface — BuilderPage is added in Task 2 of plan 59-04.
+export { BuilderPage } from './ui/BuilderPage'
 export { DirtyGuardDialog } from './ui/DirtyGuardDialog'
 export type { BuilderState, BuilderAction } from './model/builderReducer'
 export { builderReducer, makeInitialState } from './model/builderReducer'

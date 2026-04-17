@@ -2,7 +2,8 @@ import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/shared/ui/button'
 import { PATHS } from '@/shared/routes'
 
-// Placeholder — full builder wired in plan 59-04.
+// Deprecated — replaced by CustomCreaturesEditPage.tsx in plan 59-04.
+// Kept as dead code; safe to delete in a future cleanup pass.
 export function CustomCreaturesEditPage() {
   const { id } = useParams<{ id: string }>()
   return (

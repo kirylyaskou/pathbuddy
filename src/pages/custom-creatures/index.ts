@@ -1,2 +1,2 @@
 export { CustomCreaturesListPage } from './ui/CustomCreaturesListPage'
-export { CustomCreaturesEditPage } from './ui/CustomCreaturesEditPagePlaceholder'
+export { CustomCreaturesEditPage } from './ui/CustomCreaturesEditPage'
