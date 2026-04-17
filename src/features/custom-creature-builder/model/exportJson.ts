@@ -11,7 +11,7 @@ const FORMAT_VERSION = '1.2.1'
 // Pathmaid app version — hand-bump per release. Kept as a constant (not read
 // from package.json at runtime) because Vite would otherwise need a `define`
 // injection. Matches the FORMAT_VERSION policy.
-const PATHMAID_VERSION = '1.0.1'
+const PATHMAID_VERSION = '1.2.1'
 
 interface ExportEnvelope {
   formatVersion: string
