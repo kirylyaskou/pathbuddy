@@ -18,6 +18,39 @@ interface RawSpell {
   save_stat: string | null
   source_book: string | null
   source_pack: string | null
+  heightened: string | null
+}
+
+/**
+ * Extract heighten spec from Foundry system.heightening.
+ * Returns:
+ *   { type: 'interval', perRanks, damage }  — fireball / lightning bolt
+ *   { type: 'fixed', levels }               — magic missile at ranks 3,5,7…
+ *   null                                    — spell doesn't heighten, or spec missing
+ */
+function extractHeightening(sys: Record<string, unknown>): string | null {
+  const h = sys.heightening as Record<string, unknown> | undefined
+  if (!h || !h.type) return null
+
+  if (h.type === 'interval') {
+    const interval = typeof h.interval === 'number' ? h.interval : 1
+    const damage = h.damage as Record<string, { formula?: string }> | undefined
+    if (!damage || Object.keys(damage).length === 0) return null
+    const normalized: Record<string, string> = {}
+    for (const [key, part] of Object.entries(damage)) {
+      if (part?.formula) normalized[key] = part.formula
+    }
+    if (Object.keys(normalized).length === 0) return null
+    return JSON.stringify({ type: 'interval', perRanks: interval, damage: normalized })
+  }
+
+  if (h.type === 'fixed') {
+    const levels = h.levels as Record<string, unknown> | undefined
+    if (!levels) return null
+    return JSON.stringify({ type: 'fixed', levels })
+  }
+
+  return null
 }
 
 interface RawSpellcastingEntry {
@@ -76,6 +109,7 @@ export async function extractAndInsertSpells(entities: RawEntity[]): Promise<voi
         save_stat: defenseObj?.save?.statistic ?? null,
         source_book: sys.publication?.title || null,
         source_pack: entity.source_pack,
+        heightened: extractHeightening(sys),
       })
     } catch {
       // skip malformed spell JSON
@@ -85,16 +119,16 @@ export async function extractAndInsertSpells(entities: RawEntity[]): Promise<voi
   for (let i = 0; i < spells.length; i += BATCH_SIZE) {
     const batch = spells.slice(i, i + BATCH_SIZE)
     const placeholders = batch
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .join(', ')
     const values = batch.flatMap((s) => [
       s.id, s.name, s.rank, s.traditions, s.traits,
       s.description, s.damage, s.area, s.range_text,
       s.duration_text, s.action_cost, s.save_stat,
-      s.source_book, s.source_pack,
+      s.source_book, s.source_pack, s.heightened,
     ])
     await db.execute(
-      `INSERT OR REPLACE INTO spells (id, name, rank, traditions, traits, description, damage, area, range_text, duration_text, action_cost, save_stat, source_book, source_pack) VALUES ${placeholders}`,
+      `INSERT OR REPLACE INTO spells (id, name, rank, traditions, traits, description, damage, area, range_text, duration_text, action_cost, save_stat, source_book, source_pack, heightened) VALUES ${placeholders}`,
       values
     )
   }
