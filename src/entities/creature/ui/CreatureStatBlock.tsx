@@ -79,6 +79,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
       'ac', 'fortitude', 'reflex', 'will', 'perception',
       'strike-attack',        // virtual: ranged + 'all'-selector conditions (frightened, sickened)
       'melee-strike-attack',  // virtual: melee strikes — also receives enfeebled (str-based)
+      'spell-attack',         // virtual: spell attack roll — receives 'attack' selector effects (D-03)
       'spell-dc',             // virtual: 'all'-selector conditions for core DC display
       ...creature.skills.map((s) => s.name.toLowerCase()),
     ],
