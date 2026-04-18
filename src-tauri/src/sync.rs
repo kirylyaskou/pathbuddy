@@ -30,10 +30,28 @@ pub struct SyncProgress {
     pub total: u64,
 }
 
+// 61-fix: allowlist for effect-type entities. The PF2e system ships effects
+// across many packs but most of them (bestiary-effects, campaign-effects,
+// feat-effects, other-effects, criticaldeck) are noise for the GM's effect
+// picker. Keep only the three that the picker actually surfaces usefully.
+const ALLOWED_EFFECT_PACKS: &[&str] = &[
+    "spell-effects",
+    "equipment-effects",
+    "boons-and-curses",
+];
+
 fn extract_entity(value: &serde_json::Value, source_pack: &str) -> Option<RawEntity> {
     let id = value.get("_id")?.as_str()?.to_string();
     let name = value.get("name")?.as_str()?.to_string();
     let entity_type = value.get("type")?.as_str()?.to_string();
+
+    // 61-fix: drop effects from non-allowlisted packs at sync time so they
+    // never make it into the entities table (or the downstream spell_effects
+    // table derived from entities).
+    if entity_type == "effect" && !ALLOWED_EFFECT_PACKS.contains(&source_pack) {
+        return None;
+    }
+
     let system = value.get("system")?;
 
     let level = system
