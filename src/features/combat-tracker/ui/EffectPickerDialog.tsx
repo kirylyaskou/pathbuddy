@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
+import { MascotHex } from '@/shared/ui/mascot-hex'
 import { cn } from '@/shared/lib/utils'
 import {
   listSpellEffects,
@@ -22,23 +21,18 @@ interface EffectPickerDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const CATEGORY_LABEL: Record<SpellEffectCategory, string> = {
-  spell: 'Spell Effects',
-  alchemical: 'Alchemical',
-  other: 'Other',
-}
-const CATEGORY_ORDER: SpellEffectCategory[] = ['spell', 'alchemical', 'other']
+const TABS: { id: SpellEffectCategory; label: string }[] = [
+  { id: 'spell', label: 'Spell' },
+  { id: 'alchemical', label: 'Alchemical' },
+  { id: 'other', label: 'Other' },
+]
 
 export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPickerDialogProps) {
   const [allEffects, setAllEffects] = useState<SpellEffectRow[]>([])
   const [contextEffects, setContextEffects] = useState<SpellEffectRow[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [openSections, setOpenSections] = useState<Record<SpellEffectCategory, boolean>>({
-    spell: true,
-    alchemical: true,
-    other: true,
-  })
+  const [activeTab, setActiveTab] = useState<SpellEffectCategory>('spell')
 
   // 61-02: refetch context when data version bumps (sync, overrides).
   const entityDataVersion = useCombatTrackerStore((s) => s.entityDataVersion)
@@ -75,7 +69,9 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     return contextEffects.length > 0 ? contextEffects : allEffects
   }, [isSearching, searchQuery, allEffects, contextEffects])
 
-  const grouped = useMemo(() => {
+  // 61-04: pre-compute per-tab buckets so counts on tab strip and the rendered
+  // list are always consistent with the same source set.
+  const byCategory = useMemo(() => {
     const acc: Record<SpellEffectCategory, SpellEffectRow[]> = {
       spell: [],
       alchemical: [],
@@ -85,6 +81,16 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     return acc
   }, [displayed])
 
+  // Auto-switch to a non-empty tab when the active one has no rows (e.g. after
+  // clearing search into a context where only one category is populated).
+  useEffect(() => {
+    if (loading) return
+    if (byCategory[activeTab].length > 0) return
+    const firstNonEmpty = TABS.find((t) => byCategory[t.id].length > 0)
+    if (firstNonEmpty) setActiveTab(firstNonEmpty.id)
+  }, [byCategory, activeTab, loading])
+
+  const rows = byCategory[activeTab]
   const showFallbackHint =
     !isSearching && contextEffects.length === 0 && !loading
 
@@ -115,23 +121,19 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     [combatantId, onOpenChange]
   )
 
-  const toggleSection = useCallback((cat: SpellEffectCategory) => {
-    setOpenSections((prev) => ({ ...prev, [cat]: !prev[cat] }))
-  }, [])
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="px-4 pt-4 pb-0">
-          <DialogTitle className="text-sm">Add Spell Effect</DialogTitle>
+      <DialogContent className="max-w-2xl p-0 gap-0">
+        <DialogHeader className="px-4 pt-4 pb-2">
+          <DialogTitle className="text-sm">Spell Effects</DialogTitle>
         </DialogHeader>
 
-        <div className="px-4 pb-2 pt-2">
+        <div className="px-4 pb-2">
           <SearchInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={
-              contextEffects.length > 0
+              contextEffects.length > 0 && !isSearching
                 ? 'Search all effects…'
                 : 'Search effects…'
             }
@@ -146,66 +148,59 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
           )}
         </div>
 
-        <ScrollArea className="max-h-[28rem] px-2 pb-2">
+        {/* Tab strip */}
+        <div className="flex items-stretch border-y border-border/40">
+          {TABS.map((t) => {
+            const count = byCategory[t.id].length
+            const isActive = activeTab === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActiveTab(t.id)}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors border-r border-border/40 last:border-r-0',
+                  isActive
+                    ? 'bg-primary/10 text-primary border-b-2 border-b-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
+                )}
+              >
+                <span>{t.label}</span>
+                <span className={cn('font-mono text-[10px]', isActive ? 'text-primary/80' : 'text-muted-foreground/70')}>
+                  ({count})
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <ScrollArea className="h-[28rem] px-2">
           {loading ? (
-            <div className="space-y-1 px-2">
+            <div className="space-y-1 px-2 py-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full rounded-md" />
+                <Skeleton key={i} className="h-12 w-full rounded-md" />
               ))}
             </div>
-          ) : displayed.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">No effects found</p>
+          ) : rows.length === 0 ? (
+            <EmptyState isSearching={isSearching} tabLabel={TABS.find((t) => t.id === activeTab)!.label} />
           ) : (
-            <div className="space-y-1">
-              {CATEGORY_ORDER.map((cat) => {
-                const rows = grouped[cat]
-                if (rows.length === 0) return null
-                const isOpen = openSections[cat]
+            <div className="space-y-1 py-2">
+              {rows.map((effect) => {
+                const desc = effect.description ? effect.description.slice(0, 160) : null
                 return (
-                  <Collapsible key={cat} open={isOpen} onOpenChange={() => toggleSection(cat)}>
-                    <CollapsibleTrigger
-                      className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-2 py-1.5',
-                        'text-xs font-semibold uppercase tracking-wider text-muted-foreground',
-                        'hover:bg-accent/20 transition-colors'
-                      )}
-                    >
-                      <ChevronDown
-                        className={cn(
-                          'w-3 h-3 transition-transform',
-                          isOpen ? '' : '-rotate-90'
-                        )}
-                      />
-                      <span>{CATEGORY_LABEL[cat]}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground/70">
-                        ({rows.length})
-                      </span>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="grid grid-cols-2 gap-1 pb-1">
-                        {rows.map((effect) => {
-                          const desc = effect.description
-                            ? effect.description.slice(0, 90)
-                            : null
-                          return (
-                            <div
-                              key={effect.id}
-                              role="button"
-                              tabIndex={0}
-                              className="flex flex-col px-2.5 py-1.5 rounded-md cursor-pointer hover:bg-accent/30 transition-colors border border-border/20 bg-card/30 min-w-0"
-                              onClick={() => handleSelect(effect)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSelect(effect)}
-                            >
-                              <span className="text-sm font-semibold truncate">{effect.name}</span>
-                              {desc && (
-                                <span className="text-[11px] text-muted-foreground line-clamp-2">{desc}</span>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                  <div
+                    key={effect.id}
+                    role="button"
+                    tabIndex={0}
+                    className="flex flex-col px-3 py-2 rounded-md cursor-pointer hover:bg-accent/30 transition-colors border border-border/20 bg-card/30"
+                    onClick={() => handleSelect(effect)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSelect(effect)}
+                  >
+                    <span className="text-sm font-semibold">{effect.name}</span>
+                    {desc && (
+                      <span className="text-xs text-muted-foreground line-clamp-2 leading-snug">{desc}</span>
+                    )}
+                  </div>
                 )
               })}
             </div>
@@ -213,5 +208,23 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
         </ScrollArea>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function EmptyState({ isSearching, tabLabel }: { isSearching: boolean; tabLabel: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-10 px-4 text-center">
+      <MascotHex height={128} className="opacity-70" />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">
+          {isSearching ? 'No effects match your search' : `No ${tabLabel.toLowerCase()} effects here`}
+        </p>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          {isSearching
+            ? 'Try a different term, or switch tabs to browse other categories.'
+            : 'Switch tabs to browse other categories, or type in search to find any effect in the library.'}
+        </p>
+      </div>
+    </div>
   )
 }
