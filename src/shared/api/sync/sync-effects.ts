@@ -25,7 +25,10 @@ export async function extractAndInsertSpellEffects(entities: RawEntity[]): Promi
       const sys = raw.system ?? {}
       effects.push({
         id: entity.id,
-        name: entity.name.replace(/^Spell Effect:\s*/i, ''),
+        // 61-fix: PF2e data uses several display-prefixes ("Spell Effect:",
+        // "Effect:", "Stance:", "Aura:"). Strip them so the canonical name
+        // matches spells.name and FK resolution works in the UPDATE below.
+        name: entity.name.replace(/^(?:Spell Effect|Effect|Stance|Aura):\s*/i, ''),
         rules_json: JSON.stringify(sys.rules ?? []),
         duration_json: JSON.stringify(sys.duration ?? {}),
         description: sanitizeFoundryText(sys.description?.value) || null,

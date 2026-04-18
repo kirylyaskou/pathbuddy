@@ -31,7 +31,9 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
   const [contextEffects, setContextEffects] = useState<SpellEffectRow[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<SpellEffectCategory>('spell')
+  // 61-05: no default tab — initial state renders the mascot + help text.
+  // User picks a tab (or starts typing in search) to populate the list.
+  const [activeTab, setActiveTab] = useState<SpellEffectCategory | null>(null)
 
   // 61-02: refetch context when data version bumps (sync, overrides).
   const entityDataVersion = useCombatTrackerStore((s) => s.entityDataVersion)
@@ -41,6 +43,7 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     const encounterId = useCombatTrackerStore.getState().combatId
     setLoading(true)
     setSearchQuery('')
+    setActiveTab(null)
     Promise.all([
       listSpellEffects(),
       encounterId ? getContextEffectsForEncounter(encounterId) : Promise.resolve([]),
@@ -80,16 +83,14 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     return acc
   }, [displayed])
 
-  // Auto-switch to a non-empty tab when the active one has no rows (e.g. after
-  // clearing search into a context where only one category is populated).
-  useEffect(() => {
-    if (loading) return
-    if (byCategory[activeTab].length > 0) return
-    const firstNonEmpty = TABS.find((t) => byCategory[t.id].length > 0)
-    if (firstNonEmpty) setActiveTab(firstNonEmpty.id)
-  }, [byCategory, activeTab, loading])
-
-  const rows = byCategory[activeTab]
+  // 61-05: no default tab. Welcome mascot shows until user acts.
+  // When searching with no tab selected we show results flat across all
+  // categories so the user isn't forced to click a tab to see hits.
+  const rows: SpellEffectRow[] =
+    activeTab ? byCategory[activeTab]
+    : isSearching ? displayed
+    : []
+  const showMascotWelcome = !isSearching && activeTab === null && !loading
   const showFallbackHint =
     !isSearching && contextEffects.length === 0 && !loading
 
@@ -180,8 +181,13 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
                 <Skeleton key={i} className="h-12 w-full rounded-md" />
               ))}
             </div>
+          ) : showMascotWelcome ? (
+            <WelcomeState />
           ) : rows.length === 0 ? (
-            <EmptyState isSearching={isSearching} tabLabel={TABS.find((t) => t.id === activeTab)!.label} />
+            <EmptyState
+              isSearching={isSearching}
+              tabLabel={activeTab ? TABS.find((t) => t.id === activeTab)!.label : ''}
+            />
           ) : (
             <div className="space-y-1 py-2">
               {rows.map((effect) => {
@@ -207,6 +213,24 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
         </ScrollArea>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function WelcomeState() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-8 px-4 text-center">
+      <img
+        src="/mascot/placeholder_maid.png"
+        alt="Pathmaid greeter"
+        className="h-44 w-auto drop-shadow-lg"
+      />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">Pick a category or search</p>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          Choose a tab above to browse effects, or start typing in the search box to hunt across the full library.
+        </p>
+      </div>
+    </div>
   )
 }
 
