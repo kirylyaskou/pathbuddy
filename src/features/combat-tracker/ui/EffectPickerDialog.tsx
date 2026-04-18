@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/di
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { MascotHex } from '@/shared/ui/mascot-hex'
 import { cn } from '@/shared/lib/utils'
 import {
   listSpellEffects,
@@ -213,8 +212,12 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
 
 function EmptyState({ isSearching, tabLabel }: { isSearching: boolean; tabLabel: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-10 px-4 text-center">
-      <MascotHex height={128} className="opacity-70" />
+    <div className="flex flex-col items-center justify-center gap-3 py-8 px-4 text-center">
+      <img
+        src="/mascot/placeholder_maid.png"
+        alt="No effects here"
+        className="h-40 w-auto opacity-90 drop-shadow-lg"
+      />
       <div className="space-y-1">
         <p className="text-sm font-semibold">
           {isSearching ? 'No effects match your search' : `No ${tabLabel.toLowerCase()} effects here`}
