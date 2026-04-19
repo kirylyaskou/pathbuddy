@@ -11,8 +11,11 @@ import {
   loadPreparedCasts,
   markPreparedSpellCast,
   unmarkPreparedSpellCast,
+  getSpellByName,
 } from '@/shared/api'
-import type { SpellOverrideRow } from '@/shared/api'
+import { getSpellEffectsForSpells } from '@/shared/api/effects'
+import type { SpellOverrideRow, SpellRow } from '@/shared/api'
+import type { SpellEffectRow } from '@/entities/spell-effect'
 import type { SpellcastingSection } from '@/entities/spell'
 import { useSpellModifiers } from './use-modified-stats'
 import { RANK_WARNINGS } from '../lib/spellcasting-helpers'
@@ -36,6 +39,12 @@ export function useSpellcasting(
   const [selectedSlotLevel, setSelectedSlotLevel] = useState<number | null>(null)
   // 62-02: set of `${rank}:${spell_slot_key}` for this entry — prepared spells marked cast
   const [preparedCasts, setPreparedCasts] = useState<Set<string>>(new Set())
+  // Phase 68 D-68-01: precomputed effect-link lookup keyed by lowercase name.
+  // Populated once at section-load time so the Cast flame can render without
+  // per-row async lookups. `null` values mean "checked, no link found".
+  const [effectByName, setEffectByName] = useState<Map<string, SpellEffectRow>>(new Map())
+  // Cache of resolved SpellRow (for getMaxTargets). Keyed by name lowercase.
+  const [spellByName, setSpellByName] = useState<Map<string, SpellRow>>(new Map())
 
   const { encounterId, combatantId } = encounterContext ?? {}
 
@@ -110,6 +119,34 @@ export function useSpellcasting(
     loadSlotOverrideState()
     loadPreparedCastsState()
   }, [loadSlotState, loadOverrideState, loadSlotOverrideState, loadPreparedCastsState])
+
+  // Phase 68 D-68-01: batch-resolve spell_effects links for every spell in this
+  // entry. Runs whenever the entry's spell list changes (including overrides).
+  // Result feeds the Flame-button gate + the TargetPickerDialog's effect prop.
+  useEffect(() => {
+    if (!encounterId) return
+    const refs: Array<{ foundryId: string | null; name: string }> = []
+    for (const byRank of section.spellsByRank) {
+      for (const s of byRank.spells) {
+        refs.push({ foundryId: s.foundryId, name: s.name })
+      }
+    }
+    // Include added-by-rank overrides too (no foundryId for added spells).
+    for (const o of overrides) {
+      if (!o.isRemoved) refs.push({ foundryId: null, name: o.spellName })
+    }
+    if (refs.length === 0) {
+      setEffectByName(new Map())
+      return
+    }
+    let cancelled = false
+    getSpellEffectsForSpells(refs).then((map) => {
+      if (!cancelled) setEffectByName(map)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [encounterId, section.spellsByRank, overrides])
 
   // Handlers
   async function handleTogglePip(rank: number, idx: number, total: number) {
@@ -219,6 +256,60 @@ export function useSpellcasting(
       return acc
     }, {})
 
+  // Phase 68 D-68-01: patched section where every listed spell carries a
+  // concrete `hasLinkedEffect` flag based on the precomputed effectByName map.
+  // Runs cheaply — one shallow copy per render when effects map updates.
+  const sectionWithLinkFlags = useMemo<SpellcastingSection>(() => {
+    if (!encounterId || effectByName.size === 0 && section.spellsByRank.every((r) => r.spells.every((s) => s.hasLinkedEffect === undefined))) {
+      // No encounter context OR no effects loaded yet — mark everything as
+      // unknown (`undefined`) so Flame renders only if the caller explicitly
+      // wires cast callbacks. The editor treats `undefined` as "show".
+      return section
+    }
+    return {
+      ...section,
+      spellsByRank: section.spellsByRank.map((byRank) => ({
+        ...byRank,
+        spells: byRank.spells.map((s) => ({
+          ...s,
+          hasLinkedEffect: effectByName.has(s.name.trim().toLowerCase()),
+        })),
+      })),
+    }
+  }, [section, effectByName, encounterId])
+
+  const hasLinkedEffectForAdded = useCallback(
+    (name: string): boolean => effectByName.has(name.trim().toLowerCase()),
+    [effectByName],
+  )
+
+  // Phase 68 D-68-05 support: load the spell row lazily on demand so
+  // getMaxTargets can read action_cost + description. Memoised per name.
+  const ensureSpellRow = useCallback(
+    async (name: string): Promise<SpellRow | null> => {
+      const key = name.trim().toLowerCase()
+      const cached = spellByName.get(key)
+      if (cached) return cached
+      const row = await getSpellByName(name)
+      if (row) {
+        setSpellByName((prev) => {
+          const next = new Map(prev)
+          next.set(key, row)
+          return next
+        })
+      }
+      return row
+    },
+    [spellByName],
+  )
+
+  const getCastEffect = useCallback(
+    (name: string): SpellEffectRow | null => {
+      return effectByName.get(name.trim().toLowerCase()) ?? null
+    },
+    [effectByName],
+  )
+
   const effectiveRanks = useMemo(() => {
     const baseRanks = section.spellsByRank.map((br) => br.rank)
     const customRanks = Object.entries(slotDeltas)
@@ -278,11 +369,15 @@ export function useSpellcasting(
     handleSlotDelta,
     handleAddRank,
     handleAddSpell,
-    handleRemoveSpell,
-    // 62-02: cast handlers + consumed state
+    handleRemoveSpell,    // 62-02: cast handlers + consumed state
     preparedCasts,
     handleCastPreparedSpell,
     handleCastSpontaneousSpell,
+    // Phase 68: cast-apply helpers
+    sectionWithLinkFlags,
+    hasLinkedEffectForAdded,
+    getCastEffect,
+    ensureSpellRow,
     // Derived
     removedSpells,
     addedByRank,

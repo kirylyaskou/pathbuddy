@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useRoll } from '@/shared/hooks'
 import { formatModifier, formatRollFormula } from '@/shared/lib/format'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
@@ -15,11 +16,33 @@ import { traditionColor } from '../lib/spellcasting-helpers'
 import { useSpellcasting } from '../model/use-spellcasting'
 import { SpellSearchDialog } from './SpellSearchDialog'
 import { SpellcastingEditor } from '@/features/spellcasting-editor'
+import {
+  TargetPickerDialog,
+  getMaxTargets,
+  type TargetPickerEffect,
+} from '@/features/cast-apply'
+import { applyEffectToCombatant, applyGrantedEffects } from '@/shared/api/effects'
+import { useEffectStore, durationToRounds } from '@/entities/spell-effect'
 
 interface EncounterContext {
   encounterId: string
   combatantId: string
   onInventoryChanged?: () => void
+}
+
+// Phase 68: ephemeral Cast request in flight (picker is open).
+interface PendingCast {
+  castType: 'prepared' | 'spontaneous'
+  spellName: string
+  rank: number
+  slotKey: string | null  // null for spontaneous
+  totalSlots: number
+  effect: TargetPickerEffect
+  effectRulesJson: string
+  effectDurationJson: string
+  effectDescription: string | null
+  effectLevel: number
+  maxTargets: number
 }
 
 export function SpellcastingBlock({ section, creatureLevel, encounterContext, creatureName }: {
@@ -39,8 +62,9 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
     removedSpells, addedByRank, isFocus, traditionFilter,
     rankWarning, minAvailableRank, filteredRanks,
     preparedCasts, handleCastPreparedSpell, handleCastSpontaneousSpell,
+    sectionWithLinkFlags, hasLinkedEffectForAdded, getCastEffect, ensureSpellRow,
   } = useSpellcasting(section, creatureLevel, encounterContext)
-  const { encounterId } = encounterContext ?? {}
+  const { encounterId, combatantId } = encounterContext ?? {}
 
   // 62-02: mode toggle — view default, edit unlocks +/-, add/remove spell, pip click.
   // Mode is per-component; not persisted. Only relevant when combat-backed.
@@ -48,7 +72,127 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
   const isEdit = mode === 'edit' && !!encounterId
   const editorMode: 'view' | 'edit' = isEdit ? 'edit' : 'view'
 
+  // Phase 68: target picker wiring.
+  const [pendingCast, setPendingCast] = useState<PendingCast | null>(null)
+
   const dcCol = spellMod.netModifier < 0 ? 'text-pf-blood' : spellMod.netModifier > 0 ? 'text-pf-threat-low' : 'text-primary'
+
+  // Phase 68 D-68-06: helper — opens the picker for a cast request, or no-ops
+  // if no linked effect is known for the spell.
+  async function openPicker(
+    castType: 'prepared' | 'spontaneous',
+    spellName: string,
+    rank: number,
+    slotKey: string | null,
+    totalSlots: number,
+  ) {
+    const effectRow = getCastEffect(spellName)
+    if (!effectRow) {
+      // Defensive — editor should already have hidden the Flame. Fall back to
+      // plain mark-cast so users don't get a silent dead button.
+      if (castType === 'prepared' && slotKey !== null) {
+        await handleCastPreparedSpell(rank, slotKey, totalSlots)
+      } else if (castType === 'spontaneous') {
+        await handleCastSpontaneousSpell(rank, totalSlots)
+      }
+      return
+    }
+    const spellRow = await ensureSpellRow(spellName)
+    const maxTargets = spellRow
+      ? getMaxTargets({ action_cost: spellRow.action_cost, description: spellRow.description })
+      : 1
+
+    setPendingCast({
+      castType,
+      spellName,
+      rank,
+      slotKey,
+      totalSlots,
+      effect: {
+        id: effectRow.id,
+        name: effectRow.name,
+        rulesJson: effectRow.rules_json,
+      },
+      effectRulesJson: effectRow.rules_json,
+      effectDurationJson: effectRow.duration_json,
+      effectDescription: effectRow.description,
+      effectLevel: effectRow.level,
+      maxTargets,
+    })
+  }
+
+  const handleEditorCastPrepared = encounterId
+    ? (spellName: string, _foundryId: string | null, rank: number, slotKey: string, total: number) => {
+        void openPicker('prepared', spellName, rank, slotKey, total)
+      }
+    : undefined
+
+  const handleEditorCastSpontaneous = encounterId
+    ? (spellName: string, _foundryId: string | null, rank: number, total: number) => {
+        void openPicker('spontaneous', spellName, rank, null, total)
+      }
+    : undefined
+
+  // Phase 68 D-68-06: commit — for each selected target, apply effect + any
+  // same-pack granted children, then consume the caster's slot once.
+  async function handlePickerApply(targetIds: string[]) {
+    if (!encounterId || !pendingCast) return
+    const { effect, effectRulesJson, effectDurationJson, effectDescription, effectLevel } = pendingCast
+    const remainingTurns = durationToRounds(effectDurationJson)
+
+    try {
+      for (const targetId of targetIds) {
+        const newId = await applyEffectToCombatant(encounterId, targetId, effect.id, remainingTurns)
+        useEffectStore.getState().addEffect({
+          id: newId,
+          combatantId: targetId,
+          effectId: effect.id,
+          effectName: effect.name,
+          remainingTurns,
+          rulesJson: effectRulesJson,
+          durationJson: effectDurationJson,
+          description: effectDescription,
+          level: effectLevel,
+        })
+
+        // 65-06: same-pack GrantItem children cascade to the same combatant.
+        const granted = await applyGrantedEffects(
+          encounterId,
+          targetId,
+          newId,
+          effectRulesJson,
+          remainingTurns,
+        )
+        for (const g of granted) {
+          useEffectStore.getState().addEffect({
+            id: g.id,
+            combatantId: targetId,
+            effectId: g.effectId,
+            effectName: g.name,
+            remainingTurns: g.remainingTurns,
+            rulesJson: g.rulesJson,
+            durationJson: g.durationJson,
+            description: g.description,
+            level: g.level,
+          })
+        }
+      }
+
+      // Slot consumption — one slot per Cast regardless of target count.
+      if (pendingCast.castType === 'prepared' && pendingCast.slotKey !== null) {
+        await handleCastPreparedSpell(pendingCast.rank, pendingCast.slotKey, pendingCast.totalSlots)
+      } else if (pendingCast.castType === 'spontaneous') {
+        await handleCastSpontaneousSpell(pendingCast.rank, pendingCast.totalSlots)
+      }
+
+      const n = targetIds.length
+      toast.success(`Applied ${effect.name} to ${n} target${n === 1 ? '' : 's'}`)
+    } catch {
+      toast.error(`Failed to apply ${effect.name}`)
+    } finally {
+      setPendingCast(null)
+    }
+  }
 
   return (
     <Collapsible defaultOpen>
@@ -130,7 +274,7 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
           </div>
           {/* Shared editor body — rank pills + per-rank slot pips + spell cards. */}
           <SpellcastingEditor
-            entry={section}
+            entry={sectionWithLinkFlags}
             creatureLevel={creatureLevel}
             mode={editorMode}
             usedSlots={usedSlots}
@@ -142,8 +286,9 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
             onSlotDelta={encounterId ? handleSlotDelta : undefined}
             onAddRank={encounterId ? handleAddRank : undefined}
             onRemoveSpell={encounterId ? handleRemoveSpell : undefined}
-            onCastPrepared={encounterId ? handleCastPreparedSpell : undefined}
-            onCastSpontaneous={encounterId ? handleCastSpontaneousSpell : undefined}
+            onCastPrepared={handleEditorCastPrepared}
+            onCastSpontaneous={handleEditorCastSpontaneous}
+            hasLinkedEffectForAdded={encounterId ? hasLinkedEffectForAdded : undefined}
             onOpenSpellSearch={encounterId ? (rank) => { setSpellDialogRank(rank); setSpellDialogOpen(true) } : undefined}
             selectedSlotLevel={selectedSlotLevel}
             onSelectSlotLevel={setSelectedSlotLevel}
@@ -165,6 +310,21 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
           defaultTradition={traditionFilter}
           focusOnly={isFocus}
           onAdd={(name, rank) => handleAddSpell(name, rank)}
+        />
+      )}
+
+      {/* Phase 68: target picker dialog */}
+      {pendingCast && combatantId && (
+        <TargetPickerDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setPendingCast(null)
+          }}
+          spellName={pendingCast.spellName}
+          effect={pendingCast.effect}
+          casterId={combatantId}
+          maxTargets={pendingCast.maxTargets}
+          onApply={handlePickerApply}
         />
       )}
     </Collapsible>

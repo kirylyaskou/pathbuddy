@@ -38,6 +38,74 @@ export async function listSpellEffects(): Promise<SpellEffectRow[]> {
   )
 }
 
+// Phase 68 D-68-01: batch-resolve spell → spell_effects linkage so the
+// Cast button visibility + cast-apply flow can be primed at spellcasting
+// section load time (not per-render async).
+//
+// Matching strategy mirrors the sync-time + context-query behavior:
+//   - Path A: se.spell_id === spell.id (authoritative post-sync link).
+//   - Path B: LOWER(TRIM(se.name)) === LOWER(TRIM(spell.name)) (fallback
+//     for spells whose effect post-sync match missed — common for custom
+//     creature spells and prefix-variant effects).
+//
+// Returns a Map keyed by lowercase-trimmed spell name so the caller can
+// look up by either the display name or the foundry-resolved spell name.
+export async function getSpellEffectsForSpells(
+  spellRefs: Array<{ foundryId: string | null; name: string }>,
+): Promise<Map<string, SpellEffectRow>> {
+  const out = new Map<string, SpellEffectRow>()
+  if (spellRefs.length === 0) return out
+
+  const db = await getDb()
+
+  // Path A — by spell_id.
+  const ids = Array.from(
+    new Set(spellRefs.map((r) => r.foundryId).filter((v): v is string => !!v)),
+  )
+  let byId: SpellEffectRow[] = []
+  if (ids.length > 0) {
+    const ph = ids.map(() => '?').join(',')
+    byId = await db.select<SpellEffectRow[]>(
+      `${SELECT_WITH_LEVEL} WHERE se.spell_id IN (${ph})`,
+      ids,
+    )
+  }
+
+  // Path B — by name.
+  const names = Array.from(
+    new Set(spellRefs.map((r) => r.name.trim().toLowerCase()).filter(Boolean)),
+  )
+  let byName: SpellEffectRow[] = []
+  if (names.length > 0) {
+    const ph = names.map(() => '?').join(',')
+    byName = await db.select<SpellEffectRow[]>(
+      `${SELECT_WITH_LEVEL} WHERE LOWER(TRIM(se.name)) IN (${ph})`,
+      names,
+    )
+  }
+
+  // Build lookups: effect-by-spell-id and effect-by-name.
+  const byIdMap = new Map<string, SpellEffectRow>()
+  for (const eff of byId) {
+    if (eff.spell_id && !byIdMap.has(eff.spell_id)) byIdMap.set(eff.spell_id, eff)
+  }
+  const byNameMap = new Map<string, SpellEffectRow>()
+  for (const eff of byName) {
+    const key = eff.name.trim().toLowerCase()
+    if (!byNameMap.has(key)) byNameMap.set(key, eff)
+  }
+
+  for (const ref of spellRefs) {
+    const key = ref.name.trim().toLowerCase()
+    if (out.has(key)) continue
+    // Prefer id-linked effect, then name-linked.
+    const eff = (ref.foundryId && byIdMap.get(ref.foundryId)) || byNameMap.get(key)
+    if (eff) out.set(key, eff)
+  }
+
+  return out
+}
+
 export async function searchSpellEffects(query: string): Promise<SpellEffectRow[]> {
   const db = await getDb()
   return db.select<SpellEffectRow[]>(
