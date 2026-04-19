@@ -119,7 +119,16 @@ interface CreatureStatBlockProps {
 }
 
 export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
-  const handleRoll = useRoll(creature.name, encounterContext?.encounterId)
+  // v1.4.1 UAT BUG-7: tag this hook as an "attack" roll site so Sure Strike
+  // (RollTwice selector: attack-roll) surfaces a label+fortune formula in
+  // the toast. Non-attack rolls on the stat-block (saves, perception) run
+  // via separate useRoll calls in CombatantSavesBar / PCCombatCard.
+  const handleRoll = useRoll(
+    creature.name,
+    encounterContext?.encounterId,
+    encounterContext?.combatantId,
+    'attack',
+  )
 
   // Phase 39: build stat slug list for condition modifier computation
   const allStatSlugs = useMemo(
