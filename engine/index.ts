@@ -158,6 +158,11 @@ export {
   getDamageAdjustment,
   getXpLevelDelta,
 } from './encounter/weak-elite'
+export {
+  applyTierToStatBlock,
+  shiftDamageFormulaConstant,
+} from './encounter/apply-tier'
+export type { TierAdjustableStatBlock } from './encounter/apply-tier'
 
 // ── Spellcasting ────────────────────────────────────────────────────────────
 export { detectCasterProgression, getMaxRecommendedRank } from './spellcasting/caster-progression'

@@ -1,0 +1,183 @@
+import { describe, it, expect } from 'vitest'
+import {
+  applyTierToStatBlock,
+  shiftDamageFormulaConstant,
+  type TierAdjustableStatBlock,
+} from '../encounter/apply-tier'
+
+function makeBlock(overrides: Partial<TierAdjustableStatBlock> = {}): TierAdjustableStatBlock {
+  return {
+    ac: 20,
+    fort: 8,
+    ref: 6,
+    will: 10,
+    perception: 9,
+    strikes: [
+      {
+        name: 'Jaws',
+        modifier: 12,
+        damage: [{ formula: '2d8+4', type: 'piercing' }],
+        traits: [],
+      },
+    ],
+    skills: [
+      { name: 'Athletics', modifier: 10, calculated: false },
+      { name: 'Stealth', modifier: 4, calculated: false },
+    ],
+    ...overrides,
+  }
+}
+
+describe('shiftDamageFormulaConstant', () => {
+  it('delta 0 returns formula unchanged', () => {
+    expect(shiftDamageFormulaConstant('2d8+4', 0)).toBe('2d8+4')
+  })
+
+  it('dice+positive const, +2 delta → increases const', () => {
+    expect(shiftDamageFormulaConstant('2d8+4', 2)).toBe('2d8+6')
+  })
+
+  it('dice-only, +2 delta → appends +2', () => {
+    expect(shiftDamageFormulaConstant('1d6', 2)).toBe('1d6+2')
+  })
+
+  it('dice+negative const, +2 delta → 1d10-1 + 2 → 1d10+1', () => {
+    expect(shiftDamageFormulaConstant('1d10-1', 2)).toBe('1d10+1')
+  })
+
+  it('dice+positive const, -2 delta → decreases const', () => {
+    expect(shiftDamageFormulaConstant('2d8+4', -2)).toBe('2d8+2')
+  })
+
+  it('dice-only, -2 delta → clamps to dice-only (no negative constant)', () => {
+    expect(shiftDamageFormulaConstant('1d4', -2)).toBe('1d4')
+  })
+
+  it('dice+const, -2 delta, result becomes 0 → drops constant', () => {
+    expect(shiftDamageFormulaConstant('2d6+2', -2)).toBe('2d6')
+  })
+
+  it('dice+const, -4 delta, result becomes negative → clamps to dice-only', () => {
+    expect(shiftDamageFormulaConstant('2d6+2', -4)).toBe('2d6')
+  })
+
+  it('unparseable formula returns unchanged', () => {
+    expect(shiftDamageFormulaConstant('flat 3', 2)).toBe('flat 3')
+  })
+})
+
+describe('applyTierToStatBlock', () => {
+  it('normal tier returns input unchanged (same reference)', () => {
+    const block = makeBlock()
+    expect(applyTierToStatBlock(block, 'normal')).toBe(block)
+  })
+
+  it('elite: AC +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.ac).toBe(22)
+  })
+
+  it('elite: saves +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.fort).toBe(10)
+    expect(out.ref).toBe(8)
+    expect(out.will).toBe(12)
+  })
+
+  it('elite: perception +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.perception).toBe(11)
+  })
+
+  it('elite: skill mods +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.skills[0].modifier).toBe(12)
+    expect(out.skills[1].modifier).toBe(6)
+  })
+
+  it('elite: strike attack mod +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.strikes[0].modifier).toBe(14)
+  })
+
+  it('elite: strike damage constant +2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.strikes[0].damage[0].formula).toBe('2d8+6')
+  })
+
+  it('weak: AC -2, strike mod -2, damage -2', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'weak')
+    expect(out.ac).toBe(18)
+    expect(out.strikes[0].modifier).toBe(10)
+    expect(out.strikes[0].damage[0].formula).toBe('2d8+2')
+  })
+
+  it('weak: clamps damage when result would go negative', () => {
+    const block = makeBlock({
+      strikes: [
+        {
+          name: 'Puny Bite',
+          modifier: 3,
+          damage: [{ formula: '1d4', type: 'piercing' }],
+          traits: [],
+        },
+      ],
+    })
+    const out = applyTierToStatBlock(block, 'weak')
+    expect(out.strikes[0].damage[0].formula).toBe('1d4')
+  })
+
+  it('spell DC / class DC shift by ±2 when present', () => {
+    const block = makeBlock({ spellDC: 22, classDC: 24 })
+    const elite = applyTierToStatBlock(block, 'elite')
+    expect(elite.spellDC).toBe(24)
+    expect(elite.classDC).toBe(26)
+    const weak = applyTierToStatBlock(block, 'weak')
+    expect(weak.spellDC).toBe(20)
+    expect(weak.classDC).toBe(22)
+  })
+
+  it('undefined spellDC/classDC stays undefined', () => {
+    const out = applyTierToStatBlock(makeBlock(), 'elite')
+    expect(out.spellDC).toBeUndefined()
+    expect(out.classDC).toBeUndefined()
+  })
+
+  it('spellcasting attack/dc shift by ±2', () => {
+    const block = makeBlock({
+      spellcasting: [
+        { entryId: 'e1', attack: 14, dc: 24 },
+        { entryId: 'e2', attack: null, dc: 22 },
+      ],
+    })
+    const out = applyTierToStatBlock(block, 'elite')
+    expect(out.spellcasting?.[0].attack).toBe(16)
+    expect(out.spellcasting?.[0].dc).toBe(26)
+    expect(out.spellcasting?.[1].attack).toBeNull()
+    expect(out.spellcasting?.[1].dc).toBe(24)
+  })
+
+  it('additional damage entries on strikes are untouched', () => {
+    const block = makeBlock({
+      strikes: [
+        {
+          name: 'Fiery Bite',
+          modifier: 10,
+          damage: [{ formula: '2d8+4', type: 'piercing' }],
+          additionalDamage: [{ formula: '1d6', type: 'fire', label: 'persistent' }],
+          traits: [],
+        },
+      ],
+    })
+    const out = applyTierToStatBlock(block, 'elite')
+    expect(out.strikes[0].damage[0].formula).toBe('2d8+6')
+    expect(out.strikes[0].additionalDamage?.[0].formula).toBe('1d6')
+  })
+
+  it('does not mutate input', () => {
+    const block = makeBlock()
+    const original = JSON.parse(JSON.stringify(block))
+    applyTierToStatBlock(block, 'elite')
+    expect(block).toEqual(original)
+  })
+})
