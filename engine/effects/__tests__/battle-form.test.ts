@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseSpellEffectBattleForm,
   parseSpellEffectCreatureSize,
+  parseSpellEffectSizeShift,
 } from '../battle-form'
 
 describe('parseSpellEffectCreatureSize', () => {
@@ -99,5 +100,104 @@ describe('parseSpellEffectBattleForm', () => {
     ])
     const form = parseSpellEffectBattleForm(json, 'x', 'X')
     expect(form!.strikes).toBeUndefined()
+  })
+})
+
+describe('parseSpellEffectSizeShift — Enlarge-class (v1.4 UAT BUG-A)', () => {
+  // Real-world Foundry rules block from spell-effect-enlarge.json.
+  const enlargeRules = JSON.stringify([
+    {
+      key: 'ChoiceSet',
+      flag: 'enlarge',
+      choices: [
+        {
+          predicate: [{ gte: ['parent:level', 4] }],
+          value: { size: 'huge', damage: 4, reach: 15 },
+        },
+        {
+          predicate: [
+            {
+              or: [
+                { lte: ['parent:level', 3] },
+                { gte: ['parent:level', 6] },
+              ],
+            },
+          ],
+          value: { size: 'large', damage: 2, reach: 10 },
+        },
+      ],
+    },
+    {
+      key: 'CreatureSize',
+      value: '{item|flags.system.rulesSelections.enlarge.size}',
+      resizeEquipment: true,
+    },
+    {
+      key: 'FlatModifier',
+      selector: ['melee-strike-damage'],
+      type: 'status',
+      value: '{item|flags.system.rulesSelections.enlarge.damage}',
+    },
+  ])
+
+  it('level 2 → size large, +2 damage, resizeEquipment', () => {
+    const shift = parseSpellEffectSizeShift(enlargeRules, 2)
+    expect(shift).toEqual({
+      size: 'lg',
+      meleeDamageBonus: 2,
+      resizeEquipment: true,
+    })
+  })
+
+  it('level 4 → size huge, +4 damage (heightened branch)', () => {
+    const shift = parseSpellEffectSizeShift(enlargeRules, 4)
+    expect(shift).toEqual({
+      size: 'huge',
+      meleeDamageBonus: 4,
+      resizeEquipment: true,
+    })
+  })
+
+  it('level 6 → size large (2nd-rank branch re-selected via gte 6)', () => {
+    // At level 6 BOTH predicates match. First matching choice (huge) wins.
+    const shift = parseSpellEffectSizeShift(enlargeRules, 6)
+    expect(shift).toEqual({
+      size: 'huge',
+      meleeDamageBonus: 4,
+      resizeEquipment: true,
+    })
+  })
+
+  it('literal size rule without ChoiceSet still resolves', () => {
+    const json = JSON.stringify([
+      { key: 'CreatureSize', value: 'large', resizeEquipment: true },
+    ])
+    const shift = parseSpellEffectSizeShift(json, 1)
+    expect(shift).toEqual({
+      size: 'lg',
+      meleeDamageBonus: 0,
+      resizeEquipment: true,
+    })
+  })
+
+  it('numeric FlatModifier without CreatureSize still surfaces bonus', () => {
+    const json = JSON.stringify([
+      { key: 'FlatModifier', selector: ['melee-strike-damage'], value: 3 },
+    ])
+    const shift = parseSpellEffectSizeShift(json, 1)
+    expect(shift).toEqual({
+      size: 'med',
+      meleeDamageBonus: 3,
+      resizeEquipment: false,
+    })
+  })
+
+  it('returns null when no size/damage rules present', () => {
+    const json = JSON.stringify([{ key: 'FlatModifier', selector: 'ac', value: 1 }])
+    expect(parseSpellEffectSizeShift(json, 1)).toBeNull()
+  })
+
+  it('returns null on malformed JSON', () => {
+    expect(parseSpellEffectSizeShift('not json', 1)).toBeNull()
   })
 })

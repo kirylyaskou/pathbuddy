@@ -200,10 +200,12 @@ export type {
 export {
   parseSpellEffectCreatureSize,
   parseSpellEffectBattleForm,
+  parseSpellEffectSizeShift,
 } from './effects/battle-form'
 export type {
   CreatureSizeInput,
   BattleFormInput,
+  SpellEffectSizeShift,
 } from './effects/battle-form'
 export type { BattleFormStrikeOverride } from './effects/battle-form-types'
 

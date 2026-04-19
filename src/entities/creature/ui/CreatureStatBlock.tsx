@@ -29,8 +29,15 @@ import { useModifiedStats } from '../model/use-modified-stats'
 import { useCombatantStore, isNpc } from '@/entities/combatant'
 import { useBattleFormOverridesStore, useEffectStore } from '@/entities/spell-effect'
 import type { ActiveEffect } from '@/entities/spell-effect'
-import { parseSpellEffectAdjustStrikes, applyAdjustStrikes } from '@engine'
+import {
+  parseSpellEffectAdjustStrikes,
+  applyAdjustStrikes,
+  parseSpellEffectSizeShift,
+  nextDamageDieSize,
+} from '@engine'
+import type { DieFace } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
+import type { DisplaySize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
 import { highlightGameText } from '../lib/foundry-text'
 import { StatItem } from './StatItem'
@@ -44,6 +51,24 @@ import type { StatModifierResult } from '../model/use-modified-stats'
 // render. useShallow only checks referential/shallow equality; a new [] every
 // render would still be a new ref and re-trigger the render loop.
 const EMPTY_ACTIVE_EFFECTS: readonly ActiveEffect[] = []
+
+// Ordered PF2e sizes — used to compute "how many steps above native size" the
+// creature grew after Enlarge-class effects. Must match engine/types.ts ordering.
+const SIZE_ORDER = ['tiny', 'sm', 'med', 'lg', 'huge', 'grg'] as const
+type EngineSize = (typeof SIZE_ORDER)[number]
+
+const DISPLAY_TO_ENGINE_SIZE: Record<DisplaySize, EngineSize> = {
+  Tiny: 'tiny',
+  Small: 'sm',
+  Medium: 'med',
+  Large: 'lg',
+  Huge: 'huge',
+  Gargantuan: 'grg',
+}
+
+function sizeStepDiff(from: EngineSize, to: EngineSize): number {
+  return SIZE_ORDER.indexOf(to) - SIZE_ORDER.indexOf(from)
+}
 
 /** Renders a DC value (Spell DC / Class DC) with condition modifier tinting. */
 function DcDisplay({
@@ -144,6 +169,31 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
       ),
     [combatantEffects],
   )
+
+  // v1.4 UAT BUG-A: Enlarge-class size shift. Walk active effects, resolve each
+  // CreatureSize-rule (with ChoiceSet-fed dynamic values) against the effect's
+  // level, and accumulate the largest resulting size + its melee damage status
+  // bonus. Non-stacking: we take the largest size and keep the highest status
+  // bonus among contributing effects (status bonuses don't stack in PF2e — but
+  // taking the max is safe when there's only one source, which is the common
+  // case for Enlarge).
+  const sizeShift = useMemo(() => {
+    let topSize: EngineSize | null = null
+    let topDamage = 0
+    let anyResize = false
+    for (const eff of combatantEffects) {
+      const shift = parseSpellEffectSizeShift(eff.rulesJson, eff.level)
+      if (!shift) continue
+      if (!topSize || SIZE_ORDER.indexOf(shift.size) > SIZE_ORDER.indexOf(topSize)) {
+        topSize = shift.size
+      }
+      if (shift.meleeDamageBonus > topDamage) topDamage = shift.meleeDamageBonus
+      if (shift.resizeEquipment) anyResize = true
+    }
+    return topSize
+      ? { size: topSize, meleeDamageBonus: topDamage, resizeEquipment: anyResize }
+      : null
+  }, [combatantEffects])
 
   // FEAT-04: detect troops/swarms from traits — they use a specialized layout
   // (no Strikes, collective damage in Actions, troop HP segments rendered inline).
@@ -359,19 +409,62 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
 
                   // BUG-1: apply AdjustStrike to the first damage formula when
                   // active effects carry AdjustStrike / DamageDice rules.
-                  const effectiveDamage = adjustStrikeInputs.length > 0 && !battleFormStrikes
+                  // v1.4 UAT BUG-A: additionally honor Enlarge-class size shifts.
+                  // For melee strikes we step the damage die up once per size
+                  // step above the creature's native size (resizeEquipment) and
+                  // add any status bonus to the constant term of the formula.
+                  const nativeEngineSize = DISPLAY_TO_ENGINE_SIZE[creature.size] ?? 'med'
+                  const sizeDieSteps =
+                    sizeShift && sizeShift.resizeEquipment && !isRanged && !battleFormStrikes
+                      ? Math.max(0, sizeStepDiff(nativeEngineSize, sizeShift.size))
+                      : 0
+                  const meleeStatusBonus =
+                    sizeShift && !isRanged && !battleFormStrikes ? sizeShift.meleeDamageBonus : 0
+                  const hasAdjustOrSize =
+                    (adjustStrikeInputs.length > 0 || sizeDieSteps > 0 || meleeStatusBonus !== 0) &&
+                    !battleFormStrikes
+                  const effectiveDamage = hasAdjustOrSize
                     ? strike.damage.map((d, di) => {
                         if (di !== 0) return d
-                        const dieMatch = /^(\d+)(d\d+)/.exec(d.formula)
+                        const dieMatch = /^(\d+)(d\d+)([+\-]\d+)?/.exec(d.formula)
                         if (!dieMatch) return d
-                        const dieSize = dieMatch[2] as Parameters<typeof applyAdjustStrikes>[0]['dieSize']
+                        let dieSize = dieMatch[2] as DieFace
                         const strikeSlug = strike.name.toLowerCase().replace(/\s+/g, '-') + '-damage'
-                        const adjusted = applyAdjustStrikes(
-                          { selectors: ['strike-damage', strikeSlug], dieSize },
-                          adjustStrikeInputs,
-                        )
-                        if (adjusted.dieSize === dieSize) return d
-                        const newFormula = d.formula.replace(/d\d+/, adjusted.dieSize)
+                        // 1. AdjustStrike / DamageDice step-up/down/override.
+                        if (adjustStrikeInputs.length > 0) {
+                          const adjusted = applyAdjustStrikes(
+                            { selectors: ['strike-damage', strikeSlug], dieSize },
+                            adjustStrikeInputs,
+                          )
+                          dieSize = adjusted.dieSize
+                        }
+                        // 2. resizeEquipment — one step per size increase beyond native.
+                        for (let s = 0; s < sizeDieSteps; s++) {
+                          dieSize = nextDamageDieSize(dieSize, 1)
+                        }
+                        // 3. Apply status bonus to the constant term of the formula.
+                        let newFormula = d.formula
+                        if (dieSize !== (dieMatch[2] as DieFace)) {
+                          newFormula = newFormula.replace(/d\d+/, dieSize)
+                        }
+                        if (meleeStatusBonus !== 0) {
+                          const existingConst = dieMatch[3] ? parseInt(dieMatch[3], 10) : 0
+                          const total = existingConst + meleeStatusBonus
+                          const constRe = /([+\-]\d+)(?=\s|$|\s*\w)/
+                          if (dieMatch[3] && constRe.test(newFormula)) {
+                            newFormula = newFormula.replace(
+                              constRe,
+                              total >= 0 ? `+${total}` : `${total}`,
+                            )
+                          } else {
+                            // No existing constant — append one.
+                            newFormula = newFormula.replace(
+                              /^(\d+d\d+)/,
+                              `$1${total >= 0 ? '+' : ''}${total}`,
+                            )
+                          }
+                        }
+                        if (newFormula === d.formula) return d
                         return { ...d, formula: newFormula }
                       })
                     : strike.damage
