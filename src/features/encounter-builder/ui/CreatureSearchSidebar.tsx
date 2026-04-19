@@ -107,6 +107,7 @@ function customToCreatureRow(custom: CustomCreatureRow, stat: CreatureStatBlockD
     size: stat.size,
     source_pack: null,
     source_name: null,
+    source_adventure: null,
     raw_json: JSON.stringify(stat),
   }
 }

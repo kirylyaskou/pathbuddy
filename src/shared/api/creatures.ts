@@ -17,6 +17,9 @@ export interface CreatureRow {
   source_pack: string | null
   raw_json: string
   source_name: string | null
+  // 70-02: Paizo adventure of origin (beginner-box, sundered-waves, ...).
+  // NULL for iconics and pre-Phase 70 bestiary entries.
+  source_adventure: string | null
 }
 
 export async function fetchCreatures(
@@ -66,6 +69,9 @@ export interface CreatureFilters {
   rarity?: string | null
   traits?: string[]
   source?: string | null
+  // 70-04: adventure-scoped library filter. Special value `__iconics__` matches
+  // rows where `source_pack = 'iconics'`; otherwise matches by source_adventure.
+  sourceAdventure?: string | null
 }
 
 export async function searchCreaturesFiltered(
@@ -103,6 +109,15 @@ export async function searchCreaturesFiltered(
     conditions.push('COALESCE(e.source_name, e.source_pack) = ?')
     params.push(filters.source)
   }
+  // 70-04: Paizo library scope filter.
+  //   __iconics__ → rows whose source_pack = 'iconics'
+  //   <adventure> → rows whose source_adventure matches literally (pregens).
+  if (filters.sourceAdventure === '__iconics__') {
+    conditions.push("e.source_pack = 'iconics'")
+  } else if (filters.sourceAdventure) {
+    conditions.push('e.source_adventure = ?')
+    params.push(filters.sourceAdventure)
+  }
   if (filters.traits && filters.traits.length > 0) {
     for (const trait of filters.traits) {
       conditions.push("EXISTS (SELECT 1 FROM json_each(e.traits) WHERE value = ?)")
@@ -127,6 +142,45 @@ export async function fetchDistinctSources(): Promise<{ pack: string; name: stri
     pack: r.source_pack,
     name: r.source_name ?? r.source_pack,
   }))
+}
+
+// 70-04: returns the set of library-scope filter values distilled from
+// currently-synced entities. Shape: { value, label } so the UI can emit
+// the stable token on click while showing a humanised label.
+//   - `__iconics__` chip when any iconics row exists.
+//   - One chip per distinct source_adventure (e.g. beginner-box → PF Beginner Box).
+export interface LibrarySourceOption {
+  value: string
+  label: string
+}
+
+function adventureLabel(slug: string): string {
+  return (
+    'PF ' +
+    slug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  )
+}
+
+export async function fetchDistinctLibrarySources(): Promise<LibrarySourceOption[]> {
+  const db = await getDb()
+  const iconicsRows = await db.select<{ c: number }[]>(
+    "SELECT COUNT(*) as c FROM entities WHERE source_pack = 'iconics'"
+  )
+  const adventureRows = await db.select<{ slug: string }[]>(
+    `SELECT DISTINCT source_adventure as slug FROM entities
+     WHERE source_adventure IS NOT NULL ORDER BY source_adventure`
+  )
+  const out: LibrarySourceOption[] = []
+  if ((iconicsRows[0]?.c ?? 0) > 0) {
+    out.push({ value: '__iconics__', label: 'Iconics' })
+  }
+  for (const r of adventureRows) {
+    out.push({ value: r.slug, label: adventureLabel(r.slug) })
+  }
+  return out
 }
 
 export async function fetchDistinctTraits(): Promise<string[]> {
