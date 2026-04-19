@@ -55,6 +55,33 @@ const EMPTY_ACTIVE_EFFECTS: readonly ActiveEffect[] = []
 const SIZE_ORDER = ['tiny', 'sm', 'med', 'lg', 'huge', 'grg'] as const
 type EngineSize = (typeof SIZE_ORDER)[number]
 
+// v1.4.1 UAT BUG-4: compute a creature's base melee reach (feet) from its
+// display size so custom-creature strikes (which never populate strike.reach
+// at build time) still render the "Reach N ft" badge correctly. Mirrors the
+// size→reach mapping used by toCreatureStatBlockData for Foundry docs.
+function baseReachFromDisplaySize(size: string): number {
+  switch (size) {
+    case 'Tiny': return 0
+    case 'Small':
+    case 'Medium': return 5
+    case 'Large': return 10
+    case 'Huge': return 15
+    case 'Gargantuan': return 20
+    default: return 5
+  }
+}
+
+// Extract reach (feet) declared by weapon traits. Returns undefined when
+// traits carry no reach information — caller falls back to baseReach.
+function reachFromTraits(traits: string[], baseReach: number): number | undefined {
+  for (const t of traits) {
+    const m = /^reach-(\d+)$/.exec(t)
+    if (m) return parseInt(m[1], 10)
+  }
+  if (traits.includes('reach')) return baseReach + 5
+  return undefined
+}
+
 /** Renders a DC value (Spell DC / Class DC) with condition modifier tinting. */
 function DcDisplay({
   label,
@@ -547,35 +574,52 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                           ))}
                         </div>
                       )}
-                      {/* Weapon group + reach/range badges */}
-                      {(strike.group || typeof strike.reach === 'number' || typeof strike.range === 'number') && (
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          {strike.group && (
-                            <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-secondary/60">
-                              Group: {strike.group}
-                            </span>
-                          )}
-                          {typeof strike.range === 'number' && strike.range > 0 && (
-                            <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-secondary/60">
-                              Range {strike.range} ft
-                            </span>
-                          )}
-                          {typeof strike.reach === 'number' && strike.reach > 0 && !isRanged && (() => {
-                            // Apply Enlarge-class reach buff additively (per PF2e Player
-                            // Core pg. 329 + ground-truth spec). BattleForm strike
-                            // overrides already declare full strike shapes, so we skip
-                            // the buff when battleFormStrikes are in effect.
-                            const reachBuff =
-                              sizeShift && !battleFormStrikes ? sizeShift.reachBonus : 0
-                            const displayReach = strike.reach + reachBuff
-                            return (
+                      {/* Weapon group + reach/range badges.
+                          v1.4.1 UAT BUG-4: custom-creature strikes don't carry
+                          a `reach` field; fall back to reach derived from
+                          traits+creature size so the badge still shows for
+                          melee weapons like the Whip. */}
+                      {(() => {
+                        const effectiveBaseReach = baseReachFromDisplaySize(effectiveSize)
+                        const traitReach = reachFromTraits(strike.traits, effectiveBaseReach)
+                        const resolvedReach =
+                          typeof strike.reach === 'number'
+                            ? strike.reach
+                            : !isRanged
+                              ? (traitReach ?? effectiveBaseReach)
+                              : undefined
+                        const hasReach = typeof resolvedReach === 'number' && resolvedReach > 0 && !isRanged
+                        const hasRange = typeof strike.range === 'number' && strike.range > 0
+                        if (!strike.group && !hasReach && !hasRange) return null
+                        return (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {strike.group && (
                               <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-secondary/60">
-                                Reach {displayReach} ft
+                                Group: {strike.group}
                               </span>
-                            )
-                          })()}
-                        </div>
-                      )}
+                            )}
+                            {hasRange && (
+                              <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-secondary/60">
+                                Range {strike.range} ft
+                              </span>
+                            )}
+                            {hasReach && (() => {
+                              // Apply Enlarge-class reach buff additively (per PF2e
+                              // Player Core pg. 329). BattleForm strike overrides
+                              // already declare full strike shapes, so skip the
+                              // buff when battleFormStrikes are in effect.
+                              const reachBuff =
+                                sizeShift && !battleFormStrikes ? sizeShift.reachBonus : 0
+                              const displayReach = (resolvedReach as number) + reachBuff
+                              return (
+                                <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-secondary/60">
+                                  Reach {displayReach} ft
+                                </span>
+                              )
+                            })()}
+                          </div>
+                        )
+                      })()}
                       {strike.traits.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {strike.traits.map((trait) => (
