@@ -59,6 +59,19 @@ describe('buildPredicateContext', () => {
     expect(ctx.self.persistentDamage.has('acid')).toBe(true)
   })
 
+  // Round-5 regression (Acid Grip speed penalty): the in-app ConditionCombobox
+  // emits the short slug form `persistent-<type>` (no "-damage-" infix), but
+  // the canonical PF2e predicate is `self:condition:persistent-damage:<type>`.
+  // The context builder must populate `persistentDamage` for both slug shapes
+  // so the atom resolves against the short form that the UI actually stores.
+  it('persistent-<type> (UI short form) also populates persistentDamage', () => {
+    const ctx = ctxWith({
+      conditions: [{ slug: 'persistent-acid' }],
+    })
+    expect(ctx.self.conditions.has('persistent-acid')).toBe(true)
+    expect(ctx.self.persistentDamage.has('acid')).toBe(true)
+  })
+
   it('condition values default to 1 when omitted', () => {
     const ctx = ctxWith({ conditions: [{ slug: 'off-guard' }] })
     expect(ctx.self.conditionValues.get('off-guard')).toBe(1)
@@ -391,6 +404,17 @@ describe('PRED-04 regression — Acid Grip speed penalty', () => {
       conditions: [{ slug: 'persistent-damage-fire' }],
     })
     expect(evaluatePredicate(acidGripPredicate, ctx)).toBe(false)
+  })
+
+  // Round-5 regression: the in-app ConditionCombobox stores the short form
+  // `persistent-acid` (no "-damage-" infix). The Acid Grip rule predicate
+  // still reads `self:condition:persistent-damage:acid`, and the context
+  // builder must bridge the two so the speed penalty fires.
+  it('UI short slug persistent-acid also satisfies the Acid Grip predicate', () => {
+    const ctx = ctxWith({
+      conditions: [{ slug: 'persistent-acid' }],
+    })
+    expect(evaluatePredicate(acidGripPredicate, ctx)).toBe(true)
   })
 })
 

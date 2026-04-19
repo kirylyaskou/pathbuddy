@@ -86,10 +86,17 @@ export function slugifyEffectName(name: string): string {
  * Build the fact bag for a single actor from raw store snapshots.
  *
  * Persistent-damage conditions are split out: a condition with a slug that
- * starts with `persistent-damage-<type>` contributes the `<type>` to
- * `persistentDamage` while still appearing in `conditions` so both atom
- * shapes (`self:condition:persistent-damage:acid` and the raw condition slug)
- * resolve as the GM would expect.
+ * starts with `persistent-damage-<type>` OR `persistent-<type>` contributes
+ * the `<type>` to `persistentDamage` while still appearing in `conditions`
+ * so both atom shapes (`self:condition:persistent-damage:acid` and the raw
+ * condition slug) resolve as the GM would expect.
+ *
+ * NOTE: the app UI (ConditionCombobox) emits the short `persistent-<type>`
+ * form (`persistent-acid`, `persistent-fire`, …) while engine tests and
+ * some Foundry surfaces use the long `persistent-damage-<type>` form — we
+ * accept both so Acid Grip / Fireball style rules with the canonical PF2e
+ * predicate `self:condition:persistent-damage:<type>` resolve correctly no
+ * matter which slug shape produced the condition.
  */
 export function buildActorFacts(snapshot: RawActorSnapshot): PredicateActorFacts {
   const conditions = new Set<string>()
@@ -103,11 +110,18 @@ export function buildActorFacts(snapshot: RawActorSnapshot): PredicateActorFacts
     conditions.add(c.slug)
     conditionValues.set(c.slug, c.value ?? 1)
 
-    // "persistent-damage-acid" → persistentDamage has "acid".
-    // Foundry stores persistent-damage as one condition per type in our
-    // store (see ConditionManager + condition-bridge).
+    // Foundry long form: "persistent-damage-acid" → persistentDamage has "acid".
     if (c.slug.startsWith('persistent-damage-')) {
       const type = c.slug.slice('persistent-damage-'.length)
+      if (type) persistentDamage.add(type)
+      continue
+    }
+    // PathMaid short form (from ConditionCombobox): "persistent-acid" →
+    // persistentDamage has "acid". This path fires for the in-app UX that
+    // skips the "-damage-" infix. Keep the check last so we don't
+    // double-match the long form.
+    if (c.slug.startsWith('persistent-')) {
+      const type = c.slug.slice('persistent-'.length)
       if (type) persistentDamage.add(type)
     }
   }
