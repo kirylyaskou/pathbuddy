@@ -45,14 +45,26 @@ export async function searchSpellEffects(query: string): Promise<SpellEffectRow[
   )
 }
 
-// 61-09: context query unions three sources of relevance:
+// Strip the same display prefixes spell_effects.name was stripped of in
+// migration 0032. Used to canonicalize item names + custom spell names
+// before matching against spell_effects.name.
+function stripEffectPrefix(s: string): string {
+  return s.replace(/^(?:Spell Effect|Effect|Stance|Aura):\s*/i, '').trim()
+}
+
+// 61-11: context query unions three sources of relevance:
 //
 //   1. spell effects whose linked spell id appears in any combatant's
 //      creature_spell_lists (bestiary / monster spells)
 //   2. spell effects matching a spell name pulled from a custom creature's
-//      data_json blob (parsed in TS, since SQLite can't reach into JSON)
-//   3. equipment effects whose name matches an item on any combatant:
-//      base creature_items + non-removed encounter_combatant_items
+//      data_json blob (parsed in TS — SQLite can't reach into JSON).
+//      Matches both the bare name AND `<name> Heightened (+N)` variants
+//      to surface heightened-version effects (e.g. Thundering Dominance
+//      Heightened (+2)).
+//   3. equipment effects matching an item on any combatant — collected in
+//      TS so we can strip "Effect: ..."/"Spell Effect: ..."/etc. prefixes
+//      before the IN-list match (Foundry items often reference their
+//      effect-form by the prefixed name).
 //
 // Callers fall back to listSpellEffects when this returns empty.
 export async function getContextEffectsForEncounter(
@@ -60,67 +72,101 @@ export async function getContextEffectsForEncounter(
 ): Promise<SpellEffectRow[]> {
   const db = await getDb()
 
-  // Path 1 + 3 — pure SQL (bestiary spells + all-combatant items).
-  const sqlMatched = await db.select<SpellEffectRow[]>(
+  // Path 1 — bestiary spell effects via creature_spell_lists.
+  const bestiaryMatched = await db.select<SpellEffectRow[]>(
     `${SELECT_WITH_LEVEL}
-     WHERE
-       -- spell effects linked by spell id from a bestiary combatant's list
-       (se.spell_id IS NOT NULL AND se.spell_id IN (
-          SELECT DISTINCT csl.spell_foundry_id
-          FROM creature_spell_lists csl
-          JOIN encounter_combatants ec
-            ON ec.creature_ref = csl.creature_id
-          WHERE ec.encounter_id = ?
-            AND csl.spell_foundry_id IS NOT NULL
-       ))
-       -- OR: equipment effects matching an item on any combatant
-       OR se.name IN (
-          SELECT ci.item_name
-          FROM creature_items ci
-          JOIN encounter_combatants ec
-            ON ec.creature_ref = ci.creature_id
-          WHERE ec.encounter_id = ?
-          UNION
-          SELECT eci.item_name
-          FROM encounter_combatant_items eci
-          JOIN encounter_combatants ec
-            ON ec.id = eci.combatant_id
-          WHERE ec.encounter_id = ?
-            AND eci.is_removed = 0
-       )
-     ORDER BY se.name`,
-    [encounterId, encounterId, encounterId]
+     WHERE se.spell_id IS NOT NULL
+       AND se.spell_id IN (
+         SELECT DISTINCT csl.spell_foundry_id
+         FROM creature_spell_lists csl
+         JOIN encounter_combatants ec
+           ON ec.creature_ref = csl.creature_id
+         WHERE ec.encounter_id = ?
+           AND csl.spell_foundry_id IS NOT NULL
+       )`,
+    [encounterId]
   )
 
-  // Path 2 — custom creature spells live in data_json. Parse in TS and
-  // collect names; then fetch any spell-effect whose parent spell has that
-  // name. De-duplicate against sqlMatched.
-  const customSpellNames = await collectCustomCreatureSpellNames(encounterId)
-  if (customSpellNames.length === 0) {
-    return sqlMatched
+  // Path 3 — equipment effects via creature_items + encounter_combatant_items.
+  // Names are collected and prefix-stripped on the TS side so spell_effects.name
+  // (already stripped at sync time) can be matched directly.
+  const itemNames = await collectItemNamesForEncounter(encounterId)
+  let itemMatched: SpellEffectRow[] = []
+  if (itemNames.length > 0) {
+    const ph = itemNames.map(() => '?').join(',')
+    itemMatched = await db.select<SpellEffectRow[]>(
+      `${SELECT_WITH_LEVEL}
+       WHERE LOWER(TRIM(se.name)) IN (${ph})`,
+      itemNames.map((n) => n.toLowerCase().trim())
+    )
   }
 
-  const placeholders = customSpellNames.map(() => '?').join(',')
-  const customMatched = await db.select<SpellEffectRow[]>(
-    `${SELECT_WITH_LEVEL}
-     WHERE se.spell_id IN (
-       SELECT id FROM spells
-       WHERE LOWER(TRIM(name)) IN (${placeholders})
-     )
-     ORDER BY se.name`,
-    customSpellNames.map((n) => n.toLowerCase().trim())
-  )
+  // Path 2 — custom-creature spells.
+  const customSpellNames = await collectCustomCreatureSpellNames(encounterId)
+  let customMatched: SpellEffectRow[] = []
+  if (customSpellNames.length > 0) {
+    const lc = customSpellNames.map((n) => n.toLowerCase().trim())
+    const ph = lc.map(() => '?').join(',')
+    // Three-pronged match:
+    //  a) effects with spell_id linking to a spell whose name is in the list
+    //  b) effects whose own name equals one of the spell names
+    //     (covers Spell Effect: <name> after sync's prefix strip)
+    //  c) effects whose own name starts with `<spell name> Heightened`
+    //     — catches heightened variants like "Thundering Dominance Heightened (+2)"
+    //     whose spell_id stayed NULL because the post-sync name match didn't
+    //     handle the suffix.
+    const heightenLikes = lc.map((n) => `${n} heightened%`)
+    const heightenLikeClauses = heightenLikes.map(() => 'LOWER(TRIM(se.name)) LIKE ?').join(' OR ')
+    customMatched = await db.select<SpellEffectRow[]>(
+      `${SELECT_WITH_LEVEL}
+       WHERE se.spell_id IN (
+         SELECT id FROM spells WHERE LOWER(TRIM(name)) IN (${ph})
+       )
+       OR LOWER(TRIM(se.name)) IN (${ph})
+       OR (${heightenLikeClauses})`,
+      [...lc, ...lc, ...heightenLikes],
+    )
+  }
 
-  // Merge (sqlMatched + customMatched) dedup by id.
+  // Merge dedup by id.
   const seen = new Set<string>()
   const out: SpellEffectRow[] = []
-  for (const row of [...sqlMatched, ...customMatched]) {
+  for (const row of [...bestiaryMatched, ...itemMatched, ...customMatched]) {
     if (seen.has(row.id)) continue
     seen.add(row.id)
     out.push(row)
   }
   out.sort((a, b) => a.name.localeCompare(b.name))
   return out
+}
+
+// Internal — pulls item names for every combatant in the encounter,
+// from both the base creature_items inventory and per-encounter overrides
+// (excluding removed). Names are prefix-stripped so they line up with
+// the canonicalized spell_effects.name format.
+async function collectItemNamesForEncounter(encounterId: string): Promise<string[]> {
+  const db = await getDb()
+  const rows = await db.select<Array<{ item_name: string }>>(
+    `SELECT ci.item_name
+     FROM creature_items ci
+     JOIN encounter_combatants ec ON ec.creature_ref = ci.creature_id
+     WHERE ec.encounter_id = ?
+     UNION
+     SELECT eci.item_name
+     FROM encounter_combatant_items eci
+     JOIN encounter_combatants ec ON ec.id = eci.combatant_id
+     WHERE ec.encounter_id = ?
+       AND eci.is_removed = 0`,
+    [encounterId, encounterId],
+  )
+  const names = new Set<string>()
+  for (const r of rows) {
+    if (!r.item_name) continue
+    names.add(r.item_name)
+    const stripped = stripEffectPrefix(r.item_name)
+    if (stripped && stripped !== r.item_name) names.add(stripped)
+  }
+  return Array.from(names)
 }
 
 // Internal — pulls spell names from every custom creature whose id is

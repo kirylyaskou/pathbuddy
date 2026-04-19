@@ -92,28 +92,35 @@ const SELECT_WITH_LEVEL = `
   FROM spell_effects se
   LEFT JOIN spells s ON se.spell_id = s.id
 `
-const SQL_MATCHED = `${SELECT_WITH_LEVEL}
-WHERE
-  (se.spell_id IS NOT NULL AND se.spell_id IN (
-     SELECT DISTINCT csl.spell_foundry_id
-     FROM creature_spell_lists csl
-     JOIN encounter_combatants ec ON ec.creature_ref = csl.creature_id
-     WHERE ec.encounter_id = ?
-       AND csl.spell_foundry_id IS NOT NULL
-  ))
-  OR se.name IN (
-     SELECT ci.item_name
-     FROM creature_items ci
-     JOIN encounter_combatants ec ON ec.creature_ref = ci.creature_id
-     WHERE ec.encounter_id = ?
-     UNION
-     SELECT eci.item_name
-     FROM encounter_combatant_items eci
-     JOIN encounter_combatants ec ON ec.id = eci.combatant_id
-     WHERE ec.encounter_id = ?
-       AND eci.is_removed = 0
-  )
-ORDER BY se.name`
+// Path 1 — bestiary spells.
+const BESTIARY_SQL = `${SELECT_WITH_LEVEL}
+WHERE se.spell_id IS NOT NULL
+  AND se.spell_id IN (
+    SELECT DISTINCT csl.spell_foundry_id
+    FROM creature_spell_lists csl
+    JOIN encounter_combatants ec ON ec.creature_ref = csl.creature_id
+    WHERE ec.encounter_id = ?
+      AND csl.spell_foundry_id IS NOT NULL
+  )`
+
+// Path 3 — item names for the encounter (raw + prefix-stripped).
+const ITEM_NAMES_SQL = `
+SELECT ci.item_name FROM creature_items ci
+JOIN encounter_combatants ec ON ec.creature_ref = ci.creature_id
+WHERE ec.encounter_id = ?
+UNION
+SELECT eci.item_name FROM encounter_combatant_items eci
+JOIN encounter_combatants ec ON ec.id = eci.combatant_id
+WHERE ec.encounter_id = ?
+  AND eci.is_removed = 0
+`
+
+// Path 3 — match prefix-stripped names against spell_effects.name.
+function buildItemMatchedSql(nameCount: number): string {
+  const ph = Array(nameCount).fill('?').join(',')
+  return `${SELECT_WITH_LEVEL}
+WHERE LOWER(TRIM(se.name)) IN (${ph})`
+}
 
 const CUSTOM_NAMES_SQL = `
   SELECT cc.data_json
@@ -122,14 +129,20 @@ const CUSTOM_NAMES_SQL = `
   WHERE ec.encounter_id = ?
 `
 
+// Path 2 — three-pronged custom-spell match.
 function buildCustomMatchedSql(nameCount: number): string {
   const ph = Array(nameCount).fill('?').join(',')
+  const heighten = Array(nameCount).fill('LOWER(TRIM(se.name)) LIKE ?').join(' OR ')
   return `${SELECT_WITH_LEVEL}
 WHERE se.spell_id IN (
-  SELECT id FROM spells
-  WHERE LOWER(TRIM(name)) IN (${ph})
+  SELECT id FROM spells WHERE LOWER(TRIM(name)) IN (${ph})
 )
-ORDER BY se.name`
+OR LOWER(TRIM(se.name)) IN (${ph})
+OR (${heighten})`
+}
+
+function stripEffectPrefix(s: string): string {
+  return s.replace(/^(?:Spell Effect|Effect|Stance|Aura):\s*/i, '').trim()
 }
 
 // ── Test harness ────────────────────────────────────────────────────────────
@@ -243,6 +256,15 @@ describe('getContextEffectsForEncounter — integration against sql.js', () => {
         ('ci-1', 'goblin-001', 'Elixir of Life (Minor)', 'consumable', 0);
     `)
 
+    // Goblin also carries a Foundry-style "Effect: ..."-prefixed item — the
+    // common case where the inventory references the effect entity directly.
+    db.exec(`
+      INSERT INTO encounter_combatant_items
+        (id, encounter_id, combatant_id, item_name, item_type, is_removed)
+      VALUES
+        ('eci-prefix', 'enc-1', 'combatant-gob', 'Effect: Drakeheart Mutagen (Greater)', 'effect', 0);
+    `)
+
     // Custom creature — Abobus — with Thundering Dominance in data_json
     const abobusData = {
       name: 'Abobus',
@@ -281,47 +303,110 @@ describe('getContextEffectsForEncounter — integration against sql.js', () => {
     `)
   })
 
+  // Helper — runs the full pipeline (paths 1+2+3) the same way effects.ts does.
+  function runFullContextQuery(): EffectRow[] {
+    // Path 1
+    const bestiary = execQuery(db, BESTIARY_SQL, [ENCOUNTER_ID])
+
+    // Path 3 — collect raw item names + add prefix-stripped variants
+    const rawNames = (() => {
+      const stmt = db.prepare(ITEM_NAMES_SQL)
+      stmt.bind([ENCOUNTER_ID, ENCOUNTER_ID])
+      const out: string[] = []
+      while (stmt.step()) {
+        const r = stmt.getAsObject() as { item_name: string }
+        if (r.item_name) out.push(r.item_name)
+      }
+      stmt.free()
+      return out
+    })()
+    const itemNames = new Set<string>()
+    for (const n of rawNames) {
+      itemNames.add(n)
+      const s = stripEffectPrefix(n)
+      if (s && s !== n) itemNames.add(s)
+    }
+    let items: EffectRow[] = []
+    if (itemNames.size > 0) {
+      const arr = Array.from(itemNames)
+      items = execQuery(db, buildItemMatchedSql(arr.length), arr.map((n) => n.toLowerCase().trim()))
+    }
+
+    // Path 2 — custom creature spells with three-pronged match
+    const customNames = execCustomNames(db, ENCOUNTER_ID)
+    let custom: EffectRow[] = []
+    if (customNames.length > 0) {
+      const lc = customNames.map((n) => n.toLowerCase().trim())
+      const heighten = lc.map((n) => `${n} heightened%`)
+      custom = execQuery(db, buildCustomMatchedSql(lc.length), [...lc, ...lc, ...heighten])
+    }
+
+    const seen = new Set<string>()
+    const merged: EffectRow[] = []
+    for (const r of [...bestiary, ...items, ...custom]) {
+      if (seen.has(r.id)) continue
+      seen.add(r.id)
+      merged.push(r)
+    }
+    return merged.sort((a, b) => a.name.localeCompare(b.name))
+  }
+
   it('surfaces bestiary combatant spell effect (Bane on goblin)', () => {
-    const rows = execQuery(db, SQL_MATCHED, [ENCOUNTER_ID, ENCOUNTER_ID, ENCOUNTER_ID])
-    const ids = rows.map((r) => r.id)
-    expect(ids).toContain('se-bane')
+    const rows = runFullContextQuery()
+    expect(rows.map((r) => r.id)).toContain('se-bane')
   })
 
   it('surfaces equipment effect from a bestiary creature item (Elixir of Life on goblin)', () => {
-    const rows = execQuery(db, SQL_MATCHED, [ENCOUNTER_ID, ENCOUNTER_ID, ENCOUNTER_ID])
-    const ids = rows.map((r) => r.id)
-    expect(ids).toContain('se-elixir')
+    const rows = runFullContextQuery()
+    expect(rows.map((r) => r.id)).toContain('se-elixir')
   })
 
   it('surfaces equipment effect from encounter_combatant_items (Drakeheart on Abobus)', () => {
-    const rows = execQuery(db, SQL_MATCHED, [ENCOUNTER_ID, ENCOUNTER_ID, ENCOUNTER_ID])
+    const rows = runFullContextQuery()
     const row = rows.find((r) => r.id === 'se-drakeheart')
     expect(row).toBeDefined()
     expect(row!.category).toBe('alchemical')
   })
 
-  it('surfaces custom-creature spell effect via data_json (Thundering Dominance on Abobus)', () => {
-    const names = execCustomNames(db, ENCOUNTER_ID)
-    expect(names).toContain('Thundering Dominance')
+  it('strips "Effect: ..." prefix when matching item to spell_effects (regression: Drakeheart shows when item named "Effect: Drakeheart Mutagen (Greater)")', () => {
+    // The fixture also adds an "Effect: Drakeheart Mutagen (Greater)"-prefixed
+    // item to the goblin. Without prefix-stripping, the IN-list match would
+    // miss spell_effects.name = "Drakeheart Mutagen (Greater)".
+    const rows = runFullContextQuery()
+    const dh = rows.find((r) => r.id === 'se-drakeheart')
+    expect(dh).toBeDefined()
+  })
 
-    const sql = buildCustomMatchedSql(names.length)
-    const customRows = execQuery(
-      db,
-      sql,
-      names.map((n) => n.toLowerCase().trim()),
-    )
-    const ids = customRows.map((r) => r.id)
-    expect(ids).toContain('se-thundering')
+  it('surfaces custom-creature spell effect via data_json (Thundering Dominance on Abobus)', () => {
+    // The effect row is "Thundering Dominance Heightened (+2)" — its spell_id
+    // points to the spell. Path 2's first prong (spell_id IN spells with name)
+    // catches it.
+    const rows = runFullContextQuery()
+    expect(rows.map((r) => r.id)).toContain('se-thundering')
+  })
+
+  it('matches heightened-variant effect even when spell_id is NULL (regression)', () => {
+    // Plant a heightened-variant effect whose name carries the "(+N)" suffix
+    // and whose spell_id stayed NULL because sync's name match couldn't strip
+    // the suffix. Path 2's third prong (LOWER(name) LIKE 'spellname heightened%')
+    // should still surface it for a custom caster who knows the base spell.
+    db.exec(`
+      INSERT INTO spell_effects (id, name, spell_id, source_pack) VALUES
+        ('se-thund-orphan', 'Thundering Dominance Heightened (+5)', NULL, 'spell-effects');
+    `)
+    const rows = runFullContextQuery()
+    expect(rows.map((r) => r.id)).toContain('se-thund-orphan')
+    // Cleanup so other tests aren't affected by the orphan row.
+    db.exec(`DELETE FROM spell_effects WHERE id = 'se-thund-orphan';`)
   })
 
   it('filters out unrelated effects not tied to any combatant', () => {
-    const rows = execQuery(db, SQL_MATCHED, [ENCOUNTER_ID, ENCOUNTER_ID, ENCOUNTER_ID])
-    const ids = rows.map((r) => r.id)
-    expect(ids).not.toContain('se-unused')
+    const rows = runFullContextQuery()
+    expect(rows.map((r) => r.id)).not.toContain('se-unused')
   })
 
   it('equipment effects land in alchemical category, spell effects in spell', () => {
-    const rows = execQuery(db, SQL_MATCHED, [ENCOUNTER_ID, ENCOUNTER_ID, ENCOUNTER_ID])
+    const rows = runFullContextQuery()
     const bane = rows.find((r) => r.id === 'se-bane')!
     const drakeheart = rows.find((r) => r.id === 'se-drakeheart')!
     expect(bane.category).toBe('spell')
