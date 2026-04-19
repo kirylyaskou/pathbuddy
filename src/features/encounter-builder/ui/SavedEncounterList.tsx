@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, Upload } from 'lucide-react'
+import { Download, Plus, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { useEncounterStore } from '@/entities/encounter'
-import { ImportEncounterDialog } from '@/features/encounter-import'
+import { ImportEncounterDialog, exportEncounter } from '@/features/encounter-import'
 
 export function SavedEncounterList() {
   const encounters = useEncounterStore((s) => s.encounters)
@@ -33,6 +33,26 @@ export function SavedEncounterList() {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') handleCreate()
     if (e.key === 'Escape') { setIsCreating(false); setNewName('') }
+  }
+
+  // 69-04: download encounter as pathmaiden-v1 JSON. Tauri WebView honours the
+  // `<a download>` + object URL pattern the same way a browser would (same
+  // pattern used elsewhere for exports).
+  async function handleExport(id: string) {
+    try {
+      const { filename, content } = await exportEncounter(id)
+      const blob = new Blob([content], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('[export encounter] failed', err)
+    }
   }
 
   return (
@@ -105,6 +125,19 @@ export function SavedEncounterList() {
                 {enc.isRunning && (
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
                 )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-5 h-5 opacity-0 group-hover:opacity-100 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void handleExport(enc.id)
+                  }}
+                  title="Export encounter"
+                  aria-label="Export encounter"
+                >
+                  <Download className="w-3 h-3" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
