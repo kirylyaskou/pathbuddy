@@ -277,43 +277,28 @@ export function BestiarySearchPanel() {
                 </button>
               ))}
             </div>
-            {/* 70-04: Paizo library scope — horizontally scrolling chip row.
-                Hidden when no iconic/pregen rows were synced (empty array). */}
+            {/* 70-04 / v1.4.1 UAT BUG-8: Paizo library scope.
+                Previously a horizontally-scrolling chip row — the scroll
+                was ugly on narrow sidebars. Replaced with a shadcn Select
+                dropdown that uses the same values ('__all__' sentinel +
+                LibrarySourceOption.value tokens). */}
             {librarySources.length > 0 && (
-              <div
-                role="tablist"
-                aria-label="Source library filter"
-                className="flex items-center gap-1.5 overflow-x-auto"
+              <Select
+                value={sourceFilter ?? '__all__'}
+                onValueChange={(v) => setSourceFilter(v === '__all__' ? null : v)}
               >
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1 shrink-0">Source</span>
-                <button
-                  role="tab"
-                  aria-selected={sourceFilter === null}
-                  onClick={() => setSourceFilter(null)}
-                  className={`px-2 py-0.5 text-xs rounded transition-colors shrink-0 ${
-                    sourceFilter === null
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-accent/30'
-                  }`}
-                >
-                  All
-                </button>
-                {librarySources.map((opt) => (
-                  <button
-                    key={opt.value}
-                    role="tab"
-                    aria-selected={sourceFilter === opt.value}
-                    onClick={() => setSourceFilter(opt.value)}
-                    className={`px-2 py-0.5 text-xs rounded transition-colors shrink-0 ${
-                      sourceFilter === opt.value
-                        ? 'bg-accent text-accent-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-accent/30'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+                <SelectTrigger className="h-7 text-xs" aria-label="Source library filter">
+                  <SelectValue placeholder="All sources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All sources</SelectItem>
+                  {librarySources.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
           {/* Results */}

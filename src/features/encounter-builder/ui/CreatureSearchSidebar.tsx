@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { LevelBadge } from '@/shared/ui/level-badge'
 import { CreatureCard, StatBlockModal, toCreature } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
@@ -342,42 +349,25 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
             ))}
           </div>
         )}
-        {/* 70-04: Paizo library scope — parity with BestiarySearchPanel. */}
+        {/* 70-04 / v1.4.1 UAT BUG-8: Paizo library scope — shadcn Select
+            dropdown replaces the horizontally-scrolling chip row. */}
         {activeTab === 'creatures' && librarySources.length > 0 && (
-          <div
-            role="tablist"
-            aria-label="Source library filter"
-            className="flex items-center gap-1.5 overflow-x-auto"
+          <Select
+            value={sourceFilter ?? '__all__'}
+            onValueChange={(v) => setSourceFilter(v === '__all__' ? null : v)}
           >
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1 shrink-0">Source</span>
-            <button
-              role="tab"
-              aria-selected={sourceFilter === null}
-              onClick={() => setSourceFilter(null)}
-              className={`px-2 py-0.5 text-xs rounded transition-colors shrink-0 ${
-                sourceFilter === null
-                  ? 'bg-accent text-accent-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent/30'
-              }`}
-            >
-              All
-            </button>
-            {librarySources.map((opt) => (
-              <button
-                key={opt.value}
-                role="tab"
-                aria-selected={sourceFilter === opt.value}
-                onClick={() => setSourceFilter(opt.value)}
-                className={`px-2 py-0.5 text-xs rounded transition-colors shrink-0 ${
-                  sourceFilter === opt.value
-                    ? 'bg-accent text-accent-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-accent/30'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+            <SelectTrigger className="h-7 text-xs" aria-label="Source library filter">
+              <SelectValue placeholder="All sources" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All sources</SelectItem>
+              {librarySources.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
 

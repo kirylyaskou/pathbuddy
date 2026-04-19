@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { getAllCharacters, deleteCharacter } from '@/shared/api/characters'
 import type { CharacterRecord } from '@/shared/api/characters'
 import { useCombatantStore } from '@/entities/combatant/model/store'
@@ -123,26 +130,22 @@ export function CharactersPage() {
       </header>
 
       {chipOptions.length > 1 && (
-        <div
-          role="tablist"
-          aria-label="Character source filter"
-          className="px-4 pt-3 flex items-center gap-1.5 overflow-x-auto shrink-0"
-        >
-          {chipOptions.map((token) => (
-            <button
-              key={token}
-              role="tab"
-              aria-selected={sourceFilter === token}
-              onClick={() => setSourceFilter(token)}
-              className={`px-2.5 py-0.5 text-xs rounded transition-colors shrink-0 ${
-                sourceFilter === token
-                  ? 'bg-accent text-accent-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent/30'
-              }`}
-            >
-              {sourceChipLabel(token)}
-            </button>
-          ))}
+        // 70-04 / v1.4.1 UAT BUG-8: the scrolling chip row was awkward on
+        // narrow viewports. Replaced with a shadcn Select dropdown; values
+        // unchanged (USER_FILTER / '__iconics__' / adventure slug).
+        <div className="px-4 pt-3 shrink-0">
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="h-8 text-xs" aria-label="Character source filter">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {chipOptions.map((token) => (
+                <SelectItem key={token} value={token}>
+                  {sourceChipLabel(token)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
