@@ -364,22 +364,22 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                         <span className="font-semibold">{strike.name}</span>
                         {/* FEAT-11: MAP buttons — click to roll at that MAP and set the combatant's mapIndex */}
                         <div className="mt-1 flex items-center gap-1.5 text-xs">
-                          {[0, 1, 2].map((i) => {
-                            const mod = i === 0 ? modifiedMod : i === 1 ? map1 : map2
-                            const title = i === 0
+                          {[0, 1, 2].map((mapIdx) => {
+                            const mod = mapIdx === 0 ? modifiedMod : mapIdx === 1 ? map1 : map2
+                            const title = mapIdx === 0
                               ? `1st attack — Roll 1d20${formatModifier(mod)}`
-                              : i === 1
+                              : mapIdx === 1
                                 ? `2nd attack (${isAgile ? '-4' : '-5'} agile/normal) — Roll 1d20${formatModifier(mod)}`
                                 : `3rd attack (${isAgile ? '-8' : '-10'} agile/normal) — Roll 1d20${formatModifier(mod)}`
-                            const active = Boolean(mapCombatantId) && currentMapIndex === i
-                            return (
+                            const active = Boolean(mapCombatantId) && currentMapIndex === mapIdx
+                            const btn = (
                               <button
-                                key={i}
+                                key={mapIdx}
                                 type="button"
                                 title={title}
                                 onClick={() => {
-                                  handleRoll(formatRollFormula(mod), `${strike.name} attack${i > 0 ? ` (MAP ${i + 1})` : ''}`)
-                                  if (mapCombatantId) updateCombatantAction(mapCombatantId, { mapIndex: i })
+                                  handleRoll(formatRollFormula(mod), `${strike.name} attack${mapIdx > 0 ? ` (MAP ${mapIdx + 1})` : ''}`)
+                                  if (mapCombatantId) updateCombatantAction(mapCombatantId, { mapIndex: mapIdx })
                                 }}
                                 className={cn(
                                   'px-1.5 py-0.5 rounded font-mono transition-colors border',
@@ -391,6 +391,23 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                                 {formatModifier(mod)}
                               </button>
                             )
+                            // BUG-3: wrap 1st MAP button in ModifierTooltip to show
+                            // active/inactive spell-effect modifier breakdown.
+                            if (mapIdx === 0 && strikeModResult) {
+                              return (
+                                <ModifierTooltip
+                                  key={mapIdx}
+                                  modifiers={strikeModResult.modifiers}
+                                  netModifier={strikeNet}
+                                  finalDisplay={formatModifier(mod)}
+                                  inactiveModifiers={strikeModResult.inactiveModifiers}
+                                  showInactive
+                                >
+                                  {btn}
+                                </ModifierTooltip>
+                              )
+                            }
+                            return btn
                           })}
                         </div>
                       </div>
