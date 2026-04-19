@@ -146,6 +146,32 @@ function resolveSingleSelector(selector: string, statisticKeys: string[]): strin
       // TODO v1.4+: wire to PC character sheet when class-dc slug is added to PC stat universe.
       return []
 
+    // ── PF2e canonical: speed selectors ──────────────────────────────────
+    // Speed groups (fly, swim, climb, burrow, land) only exist on creatures
+    // that declare them; selector matching is by exact slug membership so
+    // an Acid Grip 'all-speeds' -10 applies to whatever speed slugs the
+    // creature has registered in its stat universe.
+    case 'all-speeds':
+    case 'speed':
+      return statisticKeys.filter(
+        (k) =>
+          k === 'land-speed' ||
+          k === 'fly-speed' ||
+          k === 'swim-speed' ||
+          k === 'climb-speed' ||
+          k === 'burrow-speed',
+      )
+    case 'land-speed':
+      return statisticKeys.filter((k) => k === 'land-speed')
+    case 'fly-speed':
+      return statisticKeys.filter((k) => k === 'fly-speed')
+    case 'swim-speed':
+      return statisticKeys.filter((k) => k === 'swim-speed')
+    case 'climb-speed':
+      return statisticKeys.filter((k) => k === 'climb-speed')
+    case 'burrow-speed':
+      return statisticKeys.filter((k) => k === 'burrow-speed')
+
     // ── PF2e canonical: damage ───────────────────────────────────────────
     case 'damage':
       // D-09: FlatModifier with selector:'damage' is intentionally ignored in v1.3.0.

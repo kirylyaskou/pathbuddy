@@ -130,17 +130,29 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
     'attack',
   )
 
-  // Phase 39: build stat slug list for condition modifier computation
+  // Phase 39: build stat slug list for condition modifier computation.
+  // v1.4.1 UAT BUG-6: append speed slugs the creature actually declares so
+  // effects with selector:'all-speeds' / 'land-speed' (Acid Grip, etc.) can
+  // resolve against them. Acid Grip's -10 status to all-speeds is predicate-
+  // gated on self:condition:persistent-damage:acid — use-modified-stats
+  // already splits active/inactive, so struck-out entries show in the
+  // tooltip until the persistent acid condition fires.
   const allStatSlugs = useMemo(
-    () => [
-      'ac', 'fortitude', 'reflex', 'will', 'perception',
-      'strike-attack',        // virtual: ranged + 'all'-selector conditions (frightened, sickened)
-      'melee-strike-attack',  // virtual: melee strikes — also receives enfeebled (str-based)
-      'spell-attack',         // virtual: spell attack roll — receives 'attack' selector effects (D-03)
-      'spell-dc',             // virtual: 'all'-selector conditions for core DC display
-      ...creature.skills.map((s) => s.name.toLowerCase()),
-    ],
-    [creature.skills],
+    () => {
+      const declaredSpeeds = Object.entries(creature.speeds)
+        .filter(([, v]) => typeof v === 'number' && (v as number) > 0)
+        .map(([type]) => `${type}-speed`)
+      return [
+        'ac', 'fortitude', 'reflex', 'will', 'perception',
+        'strike-attack',        // virtual: ranged + 'all'-selector conditions (frightened, sickened)
+        'melee-strike-attack',  // virtual: melee strikes — also receives enfeebled (str-based)
+        'spell-attack',         // virtual: spell attack roll — receives 'attack' selector effects (D-03)
+        'spell-dc',             // virtual: 'all'-selector conditions for core DC display
+        ...declaredSpeeds,
+        ...creature.skills.map((s) => s.name.toLowerCase()),
+      ]
+    },
+    [creature.skills, creature.speeds],
   )
   const modStats = useModifiedStats(encounterContext?.combatantId, allStatSlugs)
 
@@ -366,13 +378,43 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
           </>
         )}
 
-        {/* Speed */}
+        {/* Speed.
+            v1.4.1 UAT BUG-6: apply speed modifiers (active + inactive) via
+            ModifierTooltip so Acid Grip struck-out -10 surfaces before the
+            persistent acid condition fires, and drops to active once it
+            does. min floor = 5 feet per PF2e — never let speed drop below
+            a single Stride. */}
         <div className="p-4">
           <StatRow label="Speed">
-            {Object.entries(creature.speeds)
-              .filter(([, value]) => value)
-              .map(([type, value]) => (type === "land" ? `${value} feet` : `${type} ${value} feet`))
-              .join(", ")}
+            {(() => {
+              const entries = Object.entries(creature.speeds).filter(([, v]) => typeof v === 'number' && (v as number) > 0) as [string, number][]
+              if (entries.length === 0) return ''
+              const parts: React.ReactNode[] = []
+              entries.forEach(([type, value], idx) => {
+                const slug = `${type}-speed`
+                const modResult = modStats.get(slug)
+                const net = modResult?.netModifier ?? 0
+                const hasInactive = (modResult?.inactiveModifiers?.length ?? 0) > 0
+                const final = Math.max(5, value + net)
+                const text = type === 'land' ? `${final} feet` : `${type} ${final} feet`
+                const node = modResult && (net !== 0 || hasInactive)
+                  ? (
+                    <ModifierTooltip
+                      key={type}
+                      modifiers={modResult.modifiers}
+                      netModifier={net}
+                      finalDisplay={String(final)}
+                      inactiveModifiers={modResult.inactiveModifiers}
+                    >
+                      <span className={net < 0 ? 'text-pf-blood' : net > 0 ? 'text-pf-threat-low' : ''}>{text}</span>
+                    </ModifierTooltip>
+                  )
+                  : <span key={type}>{text}</span>
+                if (idx > 0) parts.push(<span key={`sep-${type}`}>, </span>)
+                parts.push(node)
+              })
+              return <>{parts}</>
+            })()}
           </StatRow>
         </div>
 
