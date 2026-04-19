@@ -7,10 +7,11 @@
 // numbers live in rules-engine computation at runtime rather than on disk.
 // Consequences for this adapter:
 //   - `system.abilities` ships as `null` on every iconic (observed: Amiri
-//     1/3/5, Ezren, Kyra, …). The concrete +mods a PC walks around with
-//     come from boost application at runtime, which we do NOT replicate.
-//     We default all scores to 10 (mod 0); `build.attributes.boosts` is
-//     preserved in `raw_json` for future, richer import passes.
+//     1/3/5, Ezren, Kyra, …). We reconstruct scores by replaying the
+//     boost arrays stored in ancestry.system.boosts, background.system.boosts,
+//     and system.build.attributes.boosts (free-boost block). Each selected
+//     boost adds +2 if the current score < 18, or +1 otherwise (PF2e rule).
+//     Flaws stored in ancestry.system.flaws each subtract 2.
 //   - `class` / `ancestry` are not top-level fields either; they live as
 //     items inside `items[]` with `type: "class"` / `type: "ancestry"`.
 //   - Equipment follows the same pattern: weapons/armor/consumables are
@@ -114,24 +115,93 @@ function defaultProficiencies(): PathbuilderProficiencies {
   }
 }
 
-function buildAbilities(raw: FoundryCharacter): PathbuilderAbilities {
+// Apply a single PF2e ability boost: +2 if score < 18, +1 if >= 18.
+function applyBoost(scores: PathbuilderAbilities, key: string): void {
+  const k = key as keyof PathbuilderAbilities
+  if (!(k in scores)) return
+  scores[k] = scores[k] < 18 ? scores[k] + 2 : scores[k] + 1
+}
+
+// Apply a single PF2e ability flaw: -2.
+function applyFlaw(scores: PathbuilderAbilities, key: string): void {
+  const k = key as keyof PathbuilderAbilities
+  if (!(k in scores)) return
+  scores[k] = scores[k] - 2
+}
+
+// Collect selected values from a Foundry boost/flaw map
+// (shape: { "0": { selected: "str", value: [...] }, … }).
+function collectSelected(boostMap: unknown): string[] {
+  if (!boostMap || typeof boostMap !== 'object') return []
+  const result: string[] = []
+  for (const entry of Object.values(boostMap as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object') continue
+    const selected = (entry as Record<string, unknown>).selected
+    if (typeof selected === 'string' && selected) {
+      result.push(selected)
+    }
+  }
+  return result
+}
+
+function buildAbilities(raw: FoundryCharacter, items: FoundryItem[]): PathbuilderAbilities {
   const abilities = getPath(raw.system, ['abilities']) as
     | Record<string, unknown>
     | null
     | undefined
-  // Foundry frequently serializes `abilities: null` — fall back to defaults.
-  if (!abilities || typeof abilities !== 'object') return defaultAbilities()
+
+  // Fast path: abilities present (non-null). Read .mod directly.
+  if (abilities && typeof abilities === 'object') {
+    const out = defaultAbilities()
+    for (const key of Object.keys(out) as Array<keyof PathbuilderAbilities>) {
+      const entry = abilities[key] as Record<string, unknown> | undefined
+      if (!entry || typeof entry !== 'object') continue
+      // .mod is the computed ability modifier; score = mod*2 + 10.
+      const mod = entry.mod
+      if (typeof mod === 'number' && Number.isFinite(mod)) {
+        out[key] = 10 + mod * 2
+      }
+    }
+    return out
+  }
+
+  // Slow path: abilities === null (all Foundry iconics). Replay boost arrays.
+  // BUG-7 fix: reconstruct scores from ancestry boosts/flaws + background
+  // boosts + system.build.attributes.boosts (free class/level boosts).
   const out = defaultAbilities()
-  for (const key of Object.keys(out) as Array<keyof PathbuilderAbilities>) {
-    const entry = abilities[key] as Record<string, unknown> | undefined
-    if (!entry || typeof entry !== 'object') continue
-    // D-70-03 reads `.mod`; translate back to a score with `mod*2 + 10` so
-    // engine math that expects Pathbuilder-style scores stays intact.
-    const mod = entry.mod
-    if (typeof mod === 'number' && Number.isFinite(mod)) {
-      out[key] = 10 + mod * 2
+
+  // 1. Ancestry boosts and flaws.
+  const ancestryItem = items.find((it) => it?.type === 'ancestry')
+  const ancestryBoosts = collectSelected(
+    getPath(ancestryItem?.system, ['boosts'])
+  )
+  const ancestryFlaws = collectSelected(
+    getPath(ancestryItem?.system, ['flaws'])
+  )
+  for (const b of ancestryBoosts) applyBoost(out, b)
+  for (const f of ancestryFlaws) applyFlaw(out, f)
+
+  // 2. Background boosts.
+  const backgroundItem = items.find((it) => it?.type === 'background')
+  const bgBoosts = collectSelected(getPath(backgroundItem?.system, ['boosts']))
+  for (const b of bgBoosts) applyBoost(out, b)
+
+  // 3. Free-boost block: system.build.attributes.boosts is a map keyed by
+  //    level index (e.g. "1" = level-1 free ability score increases).
+  //    Each value is an array of boosted stat strings (not a selected map).
+  const buildBoostMap = getPath(raw.system, ['build', 'attributes', 'boosts'])
+  if (buildBoostMap && typeof buildBoostMap === 'object') {
+    for (const val of Object.values(
+      buildBoostMap as Record<string, unknown>
+    )) {
+      if (Array.isArray(val)) {
+        for (const stat of val) {
+          if (typeof stat === 'string') applyBoost(out, stat)
+        }
+      }
     }
   }
+
   return out
 }
 
@@ -245,7 +315,7 @@ export function buildPathbuilderFromFoundryPC(
     age,
     deity,
     level,
-    abilities: buildAbilities(doc),
+    abilities: buildAbilities(doc, items),
     attributes: defaultAttributes(),
     proficiencies: defaultProficiencies(),
     lores: [],

@@ -37,7 +37,6 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
     onRemoveSpell,
     onCastPrepared,
     onCastSpontaneous,
-    hasLinkedEffectForAdded,
     onOpenSpellSearch,
     filteredRanks: filteredRanksProp,
     onSelectSlotLevel,
@@ -208,11 +207,9 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
               {visibleSpells.map((spell, i) => {
                 const slotKey = takeSlotKey(spell.name)
                 const cast = isPrepared && preparedCasts.has(`${rank}:${slotKey}`)
-                // Phase 68 D-68-01: hide the Cast flame when the spell has no
-                // linked spell_effects row. `undefined` = unknown → show (builder
-                // and legacy callers that never precomputed the flag).
-                const hasLink = spell.hasLinkedEffect !== false
-                const showCastButton = !isEdit && rank > 0 && hasLink && (!!onCastPrepared || !!onCastSpontaneous)
+                // BUG-4 fix: Flame always visible in combat (rank > 0). If no
+                // linked effect exists, openPicker falls back to slot-only consume.
+                const showCastButton = !isEdit && rank > 0 && (!!onCastPrepared || !!onCastSpontaneous)
                 const canSpontCast = isSpontaneous && used < totalSlots
                 return (
                   <div key={`def-${i}`} className="flex items-center gap-1 group">
@@ -270,10 +267,9 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
               {added.map((name, i) => {
                 const slotKey = takeSlotKey(name)
                 const cast = isPrepared && preparedCasts.has(`${rank}:${slotKey}`)
-                // Phase 68 D-68-01: gate Flame for added spells via the caller-
-                // provided lookup. `undefined` = unknown → show (legacy behavior).
-                const hasLink = (hasLinkedEffectForAdded?.(name) ?? true) !== false
-                const showCastButton = !isEdit && rank > 0 && hasLink && (!!onCastPrepared || !!onCastSpontaneous)
+                // BUG-4 fix: Flame always visible in combat (rank > 0). If no
+                // linked effect exists, openPicker falls back to slot-only consume.
+                const showCastButton = !isEdit && rank > 0 && (!!onCastPrepared || !!onCastSpontaneous)
                 const canSpontCast = isSpontaneous && used < totalSlots
                 return (
                   <div key={`add-${i}`} className="flex items-center gap-1 group">
