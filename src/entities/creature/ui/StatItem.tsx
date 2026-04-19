@@ -45,7 +45,13 @@ export function StatItem({ label, value, modifier, highlight, colorClass, showDc
   return (
     <div className="px-4">
       <p className="text-[clamp(0.55rem,1.8cqw,0.75rem)] text-muted-foreground mb-1">{label}</p>
-      <ModifierTooltip modifiers={modResult?.modifiers ?? []} netModifier={netMod} finalDisplay={`${displayValue}${dc}`}>
+      <ModifierTooltip
+        modifiers={modResult?.modifiers ?? []}
+        netModifier={netMod}
+        finalDisplay={`${displayValue}${dc}`}
+        inactiveModifiers={modResult?.inactiveModifiers}
+        showInactive
+      >
         {valueEl}
       </ModifierTooltip>
     </div>
