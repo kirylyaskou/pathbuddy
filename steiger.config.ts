@@ -19,4 +19,18 @@ export default defineConfig([
       'fsd/insignificant-slice': 'off',
     },
   },
+  {
+    // Phase 67 (SPELLCAST-U-01..02): SpellcastingBlock lives in entities/ for
+    // historic reasons (consumed by CreatureStatBlock) but must plug into the
+    // shared `features/spellcasting-editor` — CONTEXT.md D-67-01/03 sanctions
+    // this entities → features edge. Custom creature builder is the second
+    // caller; FSD cross-slice rule fires for intentional feature composition.
+    files: [
+      'src/entities/creature/ui/SpellcastingBlock.tsx',
+      'src/features/custom-creature-builder/ui/tabs/SpellcastingTab.tsx',
+    ],
+    rules: {
+      'fsd/forbidden-imports': 'off',
+    },
+  },
 ])

@@ -9,14 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { X, Plus, Search } from 'lucide-react'
+import { X, Plus } from 'lucide-react'
 import type { SpellcastingSection } from '@/entities/spell'
 import type { BuilderTabsProps } from '../BuilderTabs'
 import { BenchmarkHint } from '../BenchmarkHint'
 import { SpellSearchDialog } from '@/entities/creature'
+import { SpellcastingEditor } from '@/features/spellcasting-editor'
 
 const TRADITIONS = ['arcane', 'divine', 'occult', 'primal'] as const
 const CAST_TYPES = ['prepared', 'spontaneous', 'focus', 'innate'] as const
+
+// Builder binds to local section state — no live combat context, so these are
+// always empty / no-ops. Declared at module scope to keep referential equality
+// stable across renders and avoid shared-editor re-renders.
+const EMPTY_USED_SLOTS: Record<number, number> = {}
+const EMPTY_SLOT_DELTAS: Record<number, number> = {}
+const EMPTY_PREPARED_CASTS: Set<string> = new Set()
+const EMPTY_REMOVED_SPELLS: Set<string> = new Set()
+const EMPTY_ADDED_BY_RANK: Record<number, string[]> = {}
 
 function newEntry(): SpellcastingSection {
   return {
@@ -80,10 +90,20 @@ interface EditorProps {
 }
 
 function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorProps) {
-  const [addRankInput, setAddRankInput] = useState(1)
+  const [spellDialogOpen, setSpellDialogOpen] = useState(false)
+  const [spellDialogRank, setSpellDialogRank] = useState(0)
 
-  function addRank() {
-    const rank = Math.max(0, Math.min(10, addRankInput))
+  // Ensure a rank bucket exists for the target rank; return its index.
+  function ensureRank(rank: number): { ranks: SpellcastingSection['spellsByRank']; idx: number } {
+    const existing = entry.spellsByRank.findIndex((r) => r.rank === rank)
+    if (existing >= 0) return { ranks: entry.spellsByRank, idx: existing }
+    const nextRanks = [...entry.spellsByRank, { rank, slots: 0, spells: [] }].sort(
+      (a, b) => a.rank - b.rank,
+    )
+    return { ranks: nextRanks, idx: nextRanks.findIndex((r) => r.rank === rank) }
+  }
+
+  function handleAddRank(rank: number) {
     if (entry.spellsByRank.some((r) => r.rank === rank)) return
     onChange({
       ...entry,
@@ -93,36 +113,48 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
     })
   }
 
-  function updateRank(
-    rankIdx: number,
-    patch: Partial<SpellcastingSection['spellsByRank'][number]>,
-  ) {
+  function handleSlotDelta(rank: number, delta: 1 | -1) {
+    const { ranks, idx } = ensureRank(rank)
+    const cur = ranks[idx]
+    const nextSlots = Math.max(0, cur.slots + delta)
     onChange({
       ...entry,
-      spellsByRank: entry.spellsByRank.map((r, i) => (i === rankIdx ? { ...r, ...patch } : r)),
+      spellsByRank: ranks.map((r, i) => (i === idx ? { ...r, slots: nextSlots } : r)),
     })
   }
 
-  function removeRank(rankIdx: number) {
+  function handleAddSpell(name: string, rank: number, foundryId?: string | null) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const { ranks, idx } = ensureRank(rank)
+    const cur = ranks[idx]
     onChange({
       ...entry,
-      spellsByRank: entry.spellsByRank.filter((_, i) => i !== rankIdx),
+      spellsByRank: ranks.map((r, i) =>
+        i === idx
+          ? {
+            ...r,
+            spells: [
+              ...cur.spells,
+              { name: trimmed, foundryId: foundryId ?? null, entryId: entry.entryId },
+            ],
+          }
+          : r,
+      ),
     })
   }
 
-  function addSpell(rankIdx: number, name: string, foundryId: string | null) {
-    const t = name.trim()
-    if (!t) return
-    const rankEntry = entry.spellsByRank[rankIdx]
-    updateRank(rankIdx, {
-      spells: [...rankEntry.spells, { name: t, foundryId, entryId: entry.entryId }],
-    })
-  }
-
-  function removeSpell(rankIdx: number, spellIdx: number) {
-    const rankEntry = entry.spellsByRank[rankIdx]
-    updateRank(rankIdx, {
-      spells: rankEntry.spells.filter((_, i) => i !== spellIdx),
+  function handleRemoveSpell(name: string, rank: number, _isDefault: boolean) {
+    const idx = entry.spellsByRank.findIndex((r) => r.rank === rank)
+    if (idx < 0) return
+    const cur = entry.spellsByRank[idx]
+    const spellIdx = cur.spells.findIndex((s) => s.name === name)
+    if (spellIdx < 0) return
+    onChange({
+      ...entry,
+      spellsByRank: entry.spellsByRank.map((r, i) =>
+        i === idx ? { ...r, spells: r.spells.filter((_, si) => si !== spellIdx) } : r,
+      ),
     })
   }
 
@@ -218,127 +250,34 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Label>Ranks</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={0}
-              max={10}
-              className="font-mono w-20"
-              value={addRankInput}
-              onChange={(e) => setAddRankInput(Number(e.target.value))}
-            />
-            <Button size="sm" variant="outline" onClick={addRank}>
-              <Plus className="w-3 h-3 mr-1" />
-              Add rank
-            </Button>
-          </div>
-        </div>
-        {entry.spellsByRank.length === 0 && (
-          <p className="text-xs text-muted-foreground">No ranks added.</p>
-        )}
-        {entry.spellsByRank.map((rankEntry, ri) => (
-          <RankEditor
-            key={`${rankEntry.rank}-${ri}`}
-            rankEntry={rankEntry}
-            tradition={entry.tradition}
-            onSlotsChange={(n) => updateRank(ri, { slots: n })}
-            onAddSpell={(name, foundryId) => addSpell(ri, name, foundryId)}
-            onRemoveSpell={(si) => removeSpell(ri, si)}
-            onRemoveRank={() => removeRank(ri)}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface RankEditorProps {
-  rankEntry: SpellcastingSection['spellsByRank'][number]
-  /** Default tradition used to pre-filter SpellSearchDialog when opened. */
-  tradition: string
-  onSlotsChange: (n: number) => void
-  onAddSpell: (name: string, foundryId: string | null) => void
-  onRemoveSpell: (idx: number) => void
-  onRemoveRank: () => void
-}
-
-function RankEditor({
-  rankEntry,
-  tradition,
-  onSlotsChange,
-  onAddSpell,
-  onRemoveSpell,
-  onRemoveRank,
-}: RankEditorProps) {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const label = rankEntry.rank === 0 ? 'Cantrips' : `Rank ${rankEntry.rank}`
-
-  return (
-    <div className="space-y-2 p-2 rounded bg-secondary/20 border border-border/40">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium w-20">{label}</span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Slots</span>
-        <Input
-          type="number"
-          min={0}
-          className="font-mono w-16"
-          value={rankEntry.slots}
-          onChange={(e) => onSlotsChange(Number(e.target.value))}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          className="ml-auto"
-          onClick={() => setDialogOpen(true)}
-        >
-          <Search className="w-3 h-3 mr-1" />
-          Add spell…
-        </Button>
-        <button
-          type="button"
-          aria-label="Remove rank"
-          onClick={onRemoveRank}
-          className="p-1 text-muted-foreground hover:text-destructive"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      {rankEntry.spells.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {rankEntry.spells.map((s, si) => (
-            <span
-              key={`${s.name}-${si}`}
-              className="inline-flex items-center gap-1 text-xs rounded bg-secondary/50 border border-border/50 px-2 py-0.5"
-            >
-              {s.name}
-              {s.foundryId === null && (
-                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70" title="Free-form entry, no resolved spell data">
-                  manual
-                </span>
-              )}
-              <button
-                type="button"
-                aria-label={`Remove ${s.name}`}
-                onClick={() => onRemoveSpell(si)}
-                className="hover:text-destructive"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-      <SpellSearchDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultRank={rankEntry.rank}
-        defaultTradition={tradition}
-        onAdd={(name, _rank, foundryId) => {
-          onAddSpell(name, foundryId)
+      {/* Shared editor — always edit-mode. No live combat context, so cast
+          callbacks + rank-pill filter are omitted; the editor then renders
+          every rank, slot +/- controls, and the "Add rank N" footer. */}
+      <SpellcastingEditor
+        entry={entry}
+        creatureLevel={level}
+        mode="edit"
+        usedSlots={EMPTY_USED_SLOTS}
+        slotDeltas={EMPTY_SLOT_DELTAS}
+        preparedCasts={EMPTY_PREPARED_CASTS}
+        removedSpells={EMPTY_REMOVED_SPELLS}
+        addedByRank={EMPTY_ADDED_BY_RANK}
+        onSlotDelta={handleSlotDelta}
+        onAddRank={handleAddRank}
+        onAddSpell={handleAddSpell}
+        onRemoveSpell={handleRemoveSpell}
+        onOpenSpellSearch={(rank) => {
+          setSpellDialogRank(rank)
+          setSpellDialogOpen(true)
         }}
+      />
+
+      <SpellSearchDialog
+        open={spellDialogOpen}
+        onOpenChange={setSpellDialogOpen}
+        defaultRank={spellDialogRank}
+        defaultTradition={entry.tradition}
+        onAdd={(name, rank, foundryId) => handleAddSpell(name, rank, foundryId)}
       />
     </div>
   )
