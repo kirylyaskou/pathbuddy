@@ -5,6 +5,10 @@ import { useCombatTrackerStore, clearAllManagers } from '@/features/combat-track
 import { useEncounterTabsStore } from '../model/encounter-tabs-store'
 import { clearTurnSnapshot } from '../lib/turn-manager'
 import { useCombatantStore } from '@/entities/combatant'
+import {
+  useBattleFormOverridesStore,
+  useRollOptionsStore,
+} from '@/entities/spell-effect'
 import { useShallow } from 'zustand/react/shallow'
 
 export function CombatControls() {
@@ -48,6 +52,9 @@ export function CombatControls() {
     endCombat()
     clearAllManagers()
     clearAllCombatants()
+    // 65-04 / 65-01: drop session-only effect scaffolding on encounter end.
+    useBattleFormOverridesStore.getState().clearAll()
+    useRollOptionsStore.getState().clearAll()
   }
 
   const showStart = !isRunning || !activeTabIsStarted

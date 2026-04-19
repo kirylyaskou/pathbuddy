@@ -26,6 +26,8 @@ import {
 import { stripHtml } from '@/shared/lib/html'
 import { useModifiedStats } from '../model/use-modified-stats'
 import { useCombatantStore, isNpc } from '@/entities/combatant'
+import { useBattleFormOverridesStore } from '@/entities/spell-effect'
+import { mapSize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
 import { highlightGameText } from '../lib/foundry-text'
 import { StatItem } from './StatItem'
@@ -98,6 +100,18 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   const updateCombatantAction = useCombatantStore((s) => s.updateCombatant)
   const currentMapIndex = mapCombatant && isNpc(mapCombatant) ? mapCombatant.mapIndex ?? 0 : 0
 
+  // 65-04: BattleForm / CreatureSize overrides. Read-only — effect apply/remove
+  // mutates the store; this is the single display-side consumer. Engine size
+  // tokens ('lg', 'huge', …) are mapped into the UI's DisplaySize form before
+  // the render tree sees them, keeping TraitList's Size contract intact.
+  const sizeOverride = useBattleFormOverridesStore((s) =>
+    mapCombatantId ? s.creatureSizeOverrides[mapCombatantId]?.size : undefined,
+  )
+  const battleFormAcOverride = useBattleFormOverridesStore((s) =>
+    mapCombatantId ? s.battleFormOverrides[mapCombatantId]?.ac : undefined,
+  )
+  const effectiveSize = sizeOverride ? mapSize(sizeOverride) : creature.size
+
   // FEAT-04: detect troops/swarms from traits — they use a specialized layout
   // (no Strikes, collective damage in Actions, troop HP segments rendered inline).
   const traitsLower = useMemo(
@@ -159,12 +173,12 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
               <h2 className="text-xl font-bold tracking-tight">{creature.name}</h2>
             </div>
             <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
-              {creature.size} {creature.type}
+              {effectiveSize} {creature.type}
             </p>
             <TraitList
               traits={creature.traits}
               rarity={creature.rarity}
-              size={creature.size}
+              size={effectiveSize}
               className="mt-2"
             />
           </div>
@@ -178,7 +192,7 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
             <StatItem label="HP" value={creature.hp} highlight />
             <StatItem
               label={(mapCombatant && isNpc(mapCombatant) && mapCombatant.shieldRaised) ? 'AC*' : 'AC'}
-              value={creature.ac + ((mapCombatant && isNpc(mapCombatant) && mapCombatant.shieldRaised) ? derivedShieldAcBonus : 0)}
+              value={(battleFormAcOverride ?? creature.ac) + ((mapCombatant && isNpc(mapCombatant) && mapCombatant.shieldRaised) ? derivedShieldAcBonus : 0)}
               colorClass="text-pf-gold"
               modResult={modStats.get('ac')}
             />

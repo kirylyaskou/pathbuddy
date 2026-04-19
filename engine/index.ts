@@ -193,6 +193,16 @@ export type {
   StrikeDamage,
 } from './effects/adjust-strike'
 
+export {
+  parseSpellEffectCreatureSize,
+  parseSpellEffectBattleForm,
+} from './effects/battle-form'
+export type {
+  CreatureSizeInput,
+  BattleFormInput,
+} from './effects/battle-form'
+export type { BattleFormStrikeOverride } from './effects/battle-form-types'
+
 // -- Dice ────────────────────────────────────────────────────────────────────
 export { parseFormula, rollDice, heightenFormula } from './dice/dice'
 export type { Roll, DiceEntry, ParsedFormula } from './dice/dice'
