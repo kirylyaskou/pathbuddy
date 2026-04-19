@@ -181,11 +181,11 @@ export type {
   SpellEffectRollTwice,
 } from './effects/spell-effect-modifiers'
 
-export { applyFortuneToRoll } from './effects/fortune'
+export { planFortuneRoll } from './effects/fortune'
 export type {
   RollContext,
   FortuneInputs,
-  FortuneResult,
+  FortuneRollPlan,
 } from './effects/fortune'
 
 export {
@@ -257,7 +257,13 @@ export type {
 
 // -- Dice ────────────────────────────────────────────────────────────────────
 export { parseFormula, rollDice, heightenFormula } from './dice/dice'
-export type { Roll, DiceEntry, ParsedFormula } from './dice/dice'
+export type {
+  Roll,
+  DiceEntry,
+  ParsedFormula,
+  FortuneRollDisplay,
+  FortuneRollEntry,
+} from './dice/dice'
 
 // ── PC ────────────────────────────────────────────────────────────────────────
 export type {

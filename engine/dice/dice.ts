@@ -18,6 +18,39 @@ export interface Roll {
   timestamp: number           // Date.now()
   /** 65-05: optional roll-time notes attached by Note rule elements. */
   notes?: string[]
+  /**
+   * v1.4.1 UAT BUG-B: when a fortune / misfortune effect rolls the d20 twice
+   * independently, the primary Roll carries the CHOSEN result (higher for
+   * fortune, lower for misfortune) and this field describes the pair so the
+   * UI can render "Roll 1: …  Roll 2: …  ← chosen".
+   *
+   * Each entry is a fully self-contained d20 outcome: its own die value, its
+   * own modifier-adjusted total, and its own crit/fumble eligibility (a nat
+   * 20 on either roll is still a crit candidate per PF2e).
+   *
+   * Omitted for normal single rolls to keep the legacy toast unchanged.
+   */
+  fortune?: FortuneRollDisplay
+}
+
+/**
+ * v1.4.1 UAT BUG-B: dual-roll representation for fortune / misfortune. The
+ * engine guarantees `rolls.length === 2`; the chosen index is 0 or 1.
+ */
+export interface FortuneRollDisplay {
+  kind: 'fortune' | 'misfortune'
+  rolls: [FortuneRollEntry, FortuneRollEntry]
+  /** Index (0 or 1) of the chosen roll per the fortune/misfortune rule. */
+  chosen: 0 | 1
+}
+
+export interface FortuneRollEntry {
+  /** The d20 face rolled (1–20). */
+  d20: number
+  /** Flat modifier portion applied to this roll. */
+  modifier: number
+  /** `d20 + modifier`. */
+  total: number
 }
 
 export interface ParsedFormula {
