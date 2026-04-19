@@ -33,8 +33,10 @@ import {
   parseSpellEffectAdjustStrikes,
   applyAdjustStrikes,
   parseSpellEffectSizeShift,
+  parseBaseSpeedRules,
+  resolveBaseSpeedValue,
 } from '@engine'
-import type { DieFace } from '@engine'
+import type { DieFace, SpeedType } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
 import { highlightGameText } from '../lib/foundry-text'
@@ -213,6 +215,33 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   // TODO: wire `size` into `useBattleFormOverridesStore` so the Size badge
   // reflects the shift. Currently no runtime writer to that store exists —
   // tracked as a follow-up to this fix (see .planning/debug/v140-uat-failures).
+  // v1.4.1 UAT BUG-5: aggregate BaseSpeed rules from active effects. Each
+  // rule contributes a speed type (fly / swim / climb / burrow / land);
+  // when the same type is declared multiple times we take the max so
+  // Elemental Motion → air (landSpeed) + another fly source stays
+  // consistent with PF2e's status-bonus stacking rules.
+  const effectSpeeds = useMemo(() => {
+    const landSpeedFeet =
+      typeof creature.speeds.land === 'number' ? (creature.speeds.land as number) : 0
+    const byType: Partial<Record<SpeedType, number>> = {}
+    for (const eff of combatantEffects) {
+      const rules = parseBaseSpeedRules(eff.rulesJson)
+      for (const r of rules) {
+        // Predicate-gated BaseSpeed (Elemental Motion) is intentionally
+        // skipped here — evaluating @choice options from ChoiceSet is a
+        // separate concern. Unconditional rules (Fly, Angelic Wings) still
+        // surface the extra movement type in the speed list.
+        if (r.predicate && r.predicate.length > 0) continue
+        const resolved =
+          resolveBaseSpeedValue(r.rawValue, landSpeedFeet) ?? landSpeedFeet
+        if (!(r.type in byType) || resolved > (byType[r.type] ?? 0)) {
+          byType[r.type] = resolved
+        }
+      }
+    }
+    return byType
+  }, [combatantEffects, creature.speeds])
+
   const sizeShift = useMemo(() => {
     let topSize: EngineSize | null = null
     let topDamage = 0
@@ -383,11 +412,25 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
             ModifierTooltip so Acid Grip struck-out -10 surfaces before the
             persistent acid condition fires, and drops to active once it
             does. min floor = 5 feet per PF2e — never let speed drop below
-            a single Stride. */}
+            a single Stride.
+            v1.4.1 UAT BUG-5: merge BaseSpeed contributions from active
+            effects (Fly, Adapt Self, Angelic Wings, …). Effect-provided
+            speeds that don't exist on the base creature get appended;
+            ones that do get the max of base + effect (extra speed from an
+            effect never reduces an existing higher base speed). */}
         <div className="p-4">
           <StatRow label="Speed">
             {(() => {
-              const entries = Object.entries(creature.speeds).filter(([, v]) => typeof v === 'number' && (v as number) > 0) as [string, number][]
+              // Merge base creature speeds with effect-granted BaseSpeed entries.
+              const merged: Record<string, number> = {}
+              for (const [type, value] of Object.entries(creature.speeds)) {
+                if (typeof value === 'number' && value > 0) merged[type] = value
+              }
+              for (const [type, value] of Object.entries(effectSpeeds)) {
+                if (typeof value !== 'number' || value <= 0) continue
+                merged[type] = Math.max(merged[type] ?? 0, value)
+              }
+              const entries = Object.entries(merged) as [string, number][]
               if (entries.length === 0) return ''
               const parts: React.ReactNode[] = []
               entries.forEach(([type, value], idx) => {

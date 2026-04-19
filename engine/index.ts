@@ -207,6 +207,13 @@ export type {
   BattleFormInput,
   SpellEffectSizeShift,
 } from './effects/battle-form'
+
+// v1.4.1 UAT BUG-5: BaseSpeed rule parser + land-speed-aware resolver.
+export {
+  parseBaseSpeedRules,
+  resolveBaseSpeedValue,
+} from './effects/base-speed'
+export type { BaseSpeedInput, SpeedType } from './effects/base-speed'
 export type { BattleFormStrikeOverride } from './effects/battle-form-types'
 
 export {
