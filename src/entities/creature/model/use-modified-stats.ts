@@ -13,11 +13,22 @@ import {
   StatisticModifier,
   CONDITION_EFFECTS,
   parseSpellEffectModifiers,
+  buildPredicateContext,
+  evaluatePredicate,
+  resolveSelector,
 } from '@engine'
-import type { ConditionInput, StatModifierResult, ConditionModifierEffect } from '@engine'
+import type {
+  ConditionInput,
+  StatModifierResult,
+  ConditionModifierEffect,
+  InactiveModifier,
+  SpellEffectModifierInput,
+  PredicateContext,
+  PredicateTerm,
+} from '@engine'
 
 // Re-export so Plan 02 only needs one import for both
-export type { StatModifierResult }
+export type { StatModifierResult, InactiveModifier }
 
 // ─── useModifiedStats ─────────────────────────────────────────────────────────
 
@@ -79,27 +90,128 @@ export function useModifiedStats(
     [rawEffects],
   )
 
+  // 66-03: Build the predicate-evaluation context from the same store
+  // snapshots. Target-aware atoms fall out of scope here (target-aware flow
+  // is driven by the Cast→Apply pipeline in Phase 68) so only `self:*` atoms
+  // resolve for now; `target:*` atoms evaluate to `false` without warning.
+  const predicateContext = useMemo<PredicateContext>(
+    () =>
+      buildPredicateContext({
+        conditions: rawConditions.map((c) => ({ slug: c.slug, value: c.value })),
+        effects: rawEffects.map((e) => ({ effectName: e.effectName })),
+      }),
+    [rawConditions, rawEffects],
+  )
+
+  // 66-03: Split spell-effect modifiers into active (predicate passed) and
+  // inactive (predicate failed) buckets. Only active ones feed into the
+  // stacking-rule engine; inactive entries are surfaced separately so the
+  // tooltip can render them struck-out with a `requires: <atom>` hint.
+  const { activeSpellModifiers, inactiveSpellModifiers } = useMemo(() => {
+    const active: SpellEffectModifierInput[] = []
+    const inactive: Array<SpellEffectModifierInput & { requires: string }> = []
+    for (const m of spellEffectModifiers) {
+      if (!m.predicate || m.predicate.length === 0) {
+        active.push(m)
+        continue
+      }
+      const predTerms = m.predicate as PredicateTerm[]
+      if (evaluatePredicate(predTerms, predicateContext)) {
+        active.push(m)
+      } else {
+        inactive.push({ ...m, requires: summarisePredicate(predTerms) })
+      }
+    }
+    return { activeSpellModifiers: active, inactiveSpellModifiers: inactive }
+  }, [spellEffectModifiers, predicateContext])
+
   // Use joined key for stable memo dependency (avoids array reference churn)
   const slugsKey = statSlugs.join(',')
 
   return useMemo(() => {
     const result = new Map<string, StatModifierResult>()
-    if (!combatantId || (conditions.length === 0 && spellEffectModifiers.length === 0)) return result
+    if (
+      !combatantId ||
+      (conditions.length === 0 &&
+        activeSpellModifiers.length === 0 &&
+        inactiveSpellModifiers.length === 0)
+    ) {
+      return result
+    }
 
     for (const statSlug of statSlugs) {
       const mod = computeStatModifier(
         conditions,
         statSlug,
         statSlugs,
-        spellEffectModifiers.length > 0 ? spellEffectModifiers : undefined,
+        activeSpellModifiers.length > 0 ? activeSpellModifiers : undefined,
       )
-      if (mod.netModifier !== 0) {
-        result.set(statSlug, mod)
+
+      // Collect inactive modifiers whose selector targets this stat so the
+      // tooltip can display them. An entry is "applicable but gated" only if
+      // the selector would have resolved to statSlug.
+      const inactiveForStat: InactiveModifier[] = []
+      for (const im of inactiveSpellModifiers) {
+        const targetSlugs = resolveSelector(im.selector, statSlugs)
+        if (!targetSlugs.includes(statSlug)) continue
+        inactiveForStat.push({
+          slug: `effect:${im.effectId}:${statSlug}:inactive`,
+          label: im.effectName,
+          modifier: im.value,
+          requires: im.requires,
+        })
+      }
+
+      if (mod.netModifier !== 0 || inactiveForStat.length > 0) {
+        result.set(statSlug, {
+          ...mod,
+          inactiveModifiers: inactiveForStat.length > 0 ? inactiveForStat : undefined,
+        })
       }
     }
 
     return result
-  }, [combatantId, conditions, spellEffectModifiers, slugsKey])
+  }, [combatantId, conditions, activeSpellModifiers, inactiveSpellModifiers, slugsKey])
+}
+
+// ─── Predicate Summary Helper ─────────────────────────────────────────────────
+// Collapse a predicate tree into a short human-readable atom string for the
+// tooltip ("requires: persistent-damage:acid"). Keeps the UI readable without
+// dumping the full DSL. Only the first terminal atom is shown when the tree
+// is nested; the full tree is logged via dev tools if a power-user cares.
+
+function summarisePredicate(predicate: PredicateTerm[]): string {
+  const first = firstAtom(predicate)
+  if (!first) return 'unknown'
+  // Strip redundant `self:` prefix for compactness.
+  return first.replace(/^self:/, '')
+}
+
+function firstAtom(terms: PredicateTerm[] | undefined): string | null {
+  if (!terms) return null
+  for (const t of terms) {
+    if (typeof t === 'string') return t
+    if (t && typeof t === 'object') {
+      const nested =
+        (t.and as PredicateTerm[] | undefined) ??
+        (t.or as PredicateTerm[] | undefined) ??
+        (t.all as PredicateTerm[] | undefined) ??
+        (t.any as PredicateTerm[] | undefined) ??
+        (t.some as PredicateTerm[] | undefined) ??
+        (t.nand as PredicateTerm[] | undefined) ??
+        (t.nor as PredicateTerm[] | undefined)
+      if (nested) {
+        const inner = firstAtom(nested)
+        if (inner) return inner
+      }
+      if (typeof t.not === 'string') return `not:${t.not}`
+      if (t.not && typeof t.not === 'object') {
+        const inner = firstAtom([t.not])
+        if (inner) return `not:${inner}`
+      }
+    }
+  }
+  return null
 }
 
 // ─── resolveSpellModifiers ────────────────────────────────────────────────────

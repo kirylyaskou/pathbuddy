@@ -31,6 +31,29 @@ export interface ConditionInput {
 export interface StatModifierResult {
   netModifier: number // sum of enabled modifiers (negative = penalty, positive = bonus)
   modifiers: Modifier[] // enabled modifiers only, for tooltip breakdown
+  /**
+   * 66-03: Modifiers excluded by a predicate evaluation (rule was applicable
+   * to this stat but its predicate returned false). Rendered in the tooltip
+   * with strike-through + a "requires: <atom>" hint so the GM sees *why* the
+   * modifier didn't apply. Populated by the hook layer — engine-level
+   * computeStatModifier never writes to it.
+   */
+  inactiveModifiers?: InactiveModifier[]
+}
+
+/**
+ * A modifier that was parsed and would normally have applied to this stat
+ * but is currently disabled by a predicate. Rendered by ModifierTooltip.
+ */
+export interface InactiveModifier {
+  /** Stable key for React lists (matches the would-be Modifier.slug). */
+  slug: string
+  /** Human label — typically the parent effect name. */
+  label: string
+  /** Raw modifier value (shown struck-out in the tooltip). */
+  modifier: number
+  /** Compact atom summary shown under the label, e.g. "persistent-damage:acid". */
+  requires: string
 }
 
 // ─── Core Function ────────────────────────────────────────────────────────────

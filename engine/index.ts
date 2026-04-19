@@ -162,7 +162,11 @@ export { Statistic } from './statistics/statistic'
 export { resolveSelector } from './statistics/selector-resolver'
 export { CreatureStatistics, buildAttackModifierSets } from './statistics/creature-statistics'
 export { computeStatModifier } from './statistics/compute-stat-modifiers'
-export type { ConditionInput, StatModifierResult } from './statistics/compute-stat-modifiers'
+export type {
+  ConditionInput,
+  StatModifierResult,
+  InactiveModifier,
+} from './statistics/compute-stat-modifiers'
 
 // ── Spell Effects ──────────────────────────────────────────────────────────
 export {
