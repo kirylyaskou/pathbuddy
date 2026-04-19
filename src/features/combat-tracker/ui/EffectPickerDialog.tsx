@@ -218,11 +218,11 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
 
 function WelcomeState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-8 px-4 text-center">
+    <div className="flex flex-col min-h-full items-center justify-center gap-3 py-8 px-4 text-center">
       <img
         src="/mascot/placeholder_maid.png"
         alt="Pathmaid greeter"
-        className="h-44 min-h-full w-auto drop-shadow-lg"
+        className="h-56 min-h-full w-auto drop-shadow-lg"
       />
       <div className="space-y-1">
         <p className="text-sm font-semibold">Pick a category or search</p>
@@ -236,11 +236,11 @@ function WelcomeState() {
 
 function EmptyState({ isSearching, tabLabel }: { isSearching: boolean; tabLabel: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-8 px-4 text-center">
+    <div className="flex flex-col min-h-full items-center justify-center gap-3 py-8 px-4 text-center">
       <img
         src="/mascot/placeholder_maid.png"
         alt="No effects here"
-        className="h-40  min-h-full w-auto opacity-90 drop-shadow-lg"
+        className="h-56  min-h-full w-auto opacity-90 drop-shadow-lg"
       />
       <div className="space-y-1">
         <p className="text-sm font-semibold">

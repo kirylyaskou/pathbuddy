@@ -2,19 +2,49 @@ import type { ImportFormat, ParsedEncounter, ParsedCombatant } from './types'
 
 // 64-01: format detection + parsing. Pure functions; no DB access.
 
+// Dashboard combatant fields. Note that hp / level / perception arrive as
+// nested {value, max, modifications, note} objects, not bare numbers.
+interface DashboardHpField {
+  value?: number
+  max?: number
+}
+interface DashboardCombatant {
+  name?: string
+  displayName?: string
+  originalCreature?: {
+    name?: string
+    level?: number | DashboardHpField
+    hp?: number | DashboardHpField
+    type?: string
+    hazardType?: string
+  }
+  type?: string
+  level?: number | DashboardHpField
+  hp?: number | DashboardHpField
+  initiative?: number
+}
 interface DashboardEntry {
   name?: string
-  combatants?: Array<{
-    name?: string
-    displayName?: string
-    originalCreature?: { name?: string; level?: number; hp?: number; hazardType?: string }
-    type?: string
-    level?: number
-    hp?: number
-    initiative?: number
-  }>
+  combatants?: DashboardCombatant[]
   partyLevel?: number
   partySize?: number
+}
+
+function asNumber(v: unknown): number | undefined {
+  if (typeof v === 'number') return v
+  if (v && typeof v === 'object' && 'value' in (v as object)) {
+    const x = (v as DashboardHpField).value
+    if (typeof x === 'number') return x
+  }
+  return undefined
+}
+function asMax(v: unknown): number | undefined {
+  if (typeof v === 'number') return v
+  if (v && typeof v === 'object' && 'max' in (v as object)) {
+    const x = (v as DashboardHpField).max
+    if (typeof x === 'number') return x
+  }
+  return undefined
 }
 
 interface PathmaidenExport {
@@ -58,17 +88,35 @@ export function parseDashboard(json: unknown): ParsedEncounter[] {
     if (!entry || typeof entry !== 'object') continue
     const combatants: ParsedCombatant[] = []
     for (const c of entry.combatants ?? []) {
-      const rawName = c.originalCreature?.name ?? c.displayName ?? c.name
-      if (!rawName || typeof rawName !== 'string') continue
-      const typeStr = (c.type ?? '').toLowerCase()
+      // Local moniker takes priority for displayName ("Огрек"). Fall back to
+      // originalCreature.name when no local name is set.
+      const localName = (typeof c.name === 'string' && c.name) ? c.name : undefined
+      const origName = (typeof c.originalCreature?.name === 'string' && c.originalCreature.name)
+        ? c.originalCreature.name
+        : undefined
+      const explicitDisplay =
+        (typeof c.displayName === 'string' && c.displayName) ? c.displayName : undefined
+      const displayName = explicitDisplay ?? localName ?? origName
+      if (!displayName) continue
+
+      // Lookup against bestiary uses the canonical (originalCreature) name when
+      // present, falling back to the local name.
+      const lookupName = origName ?? localName ?? displayName
+
+      const localType = (c.type ?? '').toLowerCase()
+      const origType = (c.originalCreature?.type ?? '').toLowerCase()
       const isHazard =
-        typeStr === 'hazard' ||
-        (c.originalCreature?.hazardType != null && typeStr !== 'creature')
+        localType === 'hazard' ||
+        origType === 'hazard' ||
+        (c.originalCreature?.hazardType != null && localType !== 'creature')
+
       combatants.push({
-        name: rawName,
-        level: c.originalCreature?.level ?? c.level,
+        displayName,
+        lookupName,
+        level: asNumber(c.originalCreature?.level) ?? asNumber(c.level),
         isHazard,
-        hp: c.hp ?? c.originalCreature?.hp,
+        hp: asNumber(c.hp) ?? asNumber(c.originalCreature?.hp),
+        hpMax: asMax(c.hp) ?? asMax(c.originalCreature?.hp),
         initiative: c.initiative,
       })
     }
@@ -91,7 +139,8 @@ export function parsePathmaiden(json: unknown): ParsedEncounter[] {
   for (const c of enc.combatants ?? []) {
     if (!c?.name || typeof c.name !== 'string') continue
     combatants.push({
-      name: c.name,
+      displayName: c.name,
+      lookupName: c.name,
       level: c.level,
       isHazard: c.isHazard === true,
       weakEliteTier: c.weakEliteTier,

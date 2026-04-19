@@ -3,16 +3,27 @@
 export type ImportFormat = 'dashboard' | 'pathmaiden' | 'unknown'
 
 export interface ParsedCombatant {
-  /** Raw display name from the source file — used for name matching + fallback display. */
-  name: string
-  /** If the source declares creature level; omitted when absent. */
+  /** What appears in the initiative list — preserves the GM's local moniker
+   *  (e.g. "Огрек" for an Urnak Lostwind reskin). Falls back to lookupName
+   *  when the source has no separate display name. */
+  displayName: string
+  /** Used by the matcher to find the underlying bestiary/custom/hazard row.
+   *  In Dashboard format this is `originalCreature.name`. In Pathmaiden
+   *  format it equals `displayName`. */
+  lookupName: string
+  /** Bestiary level if the source declares one (used as fallback when match returns no level). */
   level?: number
   /** Dashboard source may classify entries as "hazard" vs "Creature". */
   isHazard: boolean
   /** Pathmaiden export preserves weak/elite tiering. Dashboard doesn't expose it. */
   weakEliteTier?: 'normal' | 'weak' | 'elite'
-  /** Optional HP overrides. If omitted, commit layer uses matched bestiary HP. */
+  /** Current HP from the source. Extracted from `hp.value` when source uses
+   *  the Dashboard `{value, max, modifications, note}` shape; otherwise the
+   *  raw number. */
   hp?: number
+  /** Max HP from the source (Dashboard `hp.max`). When omitted, commit layer
+   *  falls back to matched bestiary HP. */
+  hpMax?: number
   initiative?: number
 }
 

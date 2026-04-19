@@ -46,19 +46,19 @@ export async function commitMatchedEncounter(
       continue
     }
     const isHazard = mc.match.status === 'hazard'
-    const hp = mc.parsed.hp != null
-      ? mc.parsed.hp
-      : mc.match.status === 'custom'
-        ? 0
-        : mc.match.hp ?? 0
+    // Prefer source-declared HP; fall back to matched bestiary HP. maxHp tracks
+    // separately when the source provides it (Dashboard hp.max).
+    const sourceMatchedHp = mc.match.status === 'custom' ? 0 : (mc.match.hp ?? 0)
+    const maxHp = mc.parsed.hpMax ?? sourceMatchedHp
+    const hp = mc.parsed.hp ?? maxHp
     rows.push({
       id: crypto.randomUUID(),
       encounterId,
       creatureRef: mc.match.status === 'hazard' ? '' : mc.match.id,
-      displayName: mc.parsed.name,
+      displayName: mc.parsed.displayName,
       initiative: mc.parsed.initiative ?? 0,
       hp,
-      maxHp: hp,
+      maxHp,
       tempHp: 0,
       isNPC: !isHazard,
       weakEliteTier: (mc.parsed.weakEliteTier ?? 'normal'),

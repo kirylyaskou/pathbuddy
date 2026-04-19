@@ -56,13 +56,16 @@ async function matchHazardByName(
 }
 
 export async function matchCombatant(c: ParsedCombatant): Promise<MatchStatus> {
-  if (!c.name || !c.name.trim()) return { status: 'skipped', reason: 'missing-name' }
+  // 64-fix: lookup uses lookupName (originalCreature.name in Dashboard format),
+  // not displayName (which carries the GM's local moniker like "Огрек").
+  const name = c.lookupName ?? c.displayName
+  if (!name || !name.trim()) return { status: 'skipped', reason: 'missing-name' }
   if (c.isHazard) {
-    const hit = await matchHazardByName(c.name)
+    const hit = await matchHazardByName(name)
     if (hit) return { status: 'hazard', id: hit.id, level: hit.level, hp: hit.hp ?? 0 }
     return { status: 'skipped', reason: 'no-match' }
   }
-  const bestiary = await matchCreatureByName(c.name)
+  const bestiary = await matchCreatureByName(name)
   if (bestiary) {
     return {
       status: 'bestiary',
@@ -71,7 +74,7 @@ export async function matchCombatant(c: ParsedCombatant): Promise<MatchStatus> {
       hp: bestiary.hp ?? 0,
     }
   }
-  const custom = await matchCustomCreatureByName(c.name)
+  const custom = await matchCustomCreatureByName(name)
   if (custom) return { status: 'custom', id: custom.id, level: custom.level }
   return { status: 'skipped', reason: 'no-match' }
 }

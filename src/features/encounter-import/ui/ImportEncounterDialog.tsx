@@ -148,7 +148,7 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
             <input
               ref={inputRef}
               type="file"
-              accept="application/json,.json"
+              accept="application/json,.json,.pfdashencounters"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]
@@ -236,7 +236,12 @@ function CombatantMatchRow({ matched }: { matched: MatchedEncounter['combatants'
         {badge.icon}
         {badge.label}
       </span>
-      <span className="flex-1 truncate">{parsed.name}</span>
+      <span className="flex-1 truncate">{parsed.displayName}</span>
+      {parsed.lookupName !== parsed.displayName && (
+        <span className="text-[10px] text-muted-foreground/70 font-mono truncate" title="Bestiary lookup name">
+          ({parsed.lookupName})
+        </span>
+      )}
       {parsed.level != null && (
         <span className="text-muted-foreground font-mono">L{parsed.level}</span>
       )}
