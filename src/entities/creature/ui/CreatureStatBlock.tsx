@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useShallow } from 'zustand/react/shallow'
 import { useRoll } from '@/shared/hooks'
 import { formatModifier, formatRollFormula } from '@/shared/lib/format'
 import { damageTypeColor } from '@/shared/lib/damage-colors'
@@ -27,6 +28,7 @@ import { stripHtml } from '@/shared/lib/html'
 import { useModifiedStats } from '../model/use-modified-stats'
 import { useCombatantStore, isNpc } from '@/entities/combatant'
 import { useBattleFormOverridesStore, useEffectStore } from '@/entities/spell-effect'
+import type { ActiveEffect } from '@/entities/spell-effect'
 import { parseSpellEffectAdjustStrikes, applyAdjustStrikes } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
@@ -36,6 +38,12 @@ import { SpellcastingBlock } from './SpellcastingBlock'
 import { EquipmentBlock } from './EquipmentBlock'
 
 import type { StatModifierResult } from '../model/use-modified-stats'
+
+// Module-level stable empty array — used as fallback in the useEffectStore selector
+// so that "no combatant id" / "no active effects" never produces a fresh [] per
+// render. useShallow only checks referential/shallow equality; a new [] every
+// render would still be a new ref and re-trigger the render loop.
+const EMPTY_ACTIVE_EFFECTS: readonly ActiveEffect[] = []
 
 /** Renders a DC value (Spell DC / Class DC) with condition modifier tinting. */
 function DcDisplay({
@@ -118,14 +126,24 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   const effectiveSize = sizeOverride ? mapSize(sizeOverride) : creature.size
 
   // BUG-1: AdjustStrike — collect inputs from active effects for this combatant.
-  const adjustStrikeInputs = useEffectStore((s) => {
-    if (!mapCombatantId) return []
-    return s.activeEffects
-      .filter((e) => e.combatantId === mapCombatantId)
-      .flatMap((e) =>
+  // Select only the raw effects for this combatant; use useShallow so equal-content
+  // arrays share referential identity and don't retrigger the render. Derivation
+  // (parseSpellEffectAdjustStrikes) happens in a useMemo below, so the returned
+  // inputs array is also stable across renders.
+  const combatantEffects = useEffectStore(
+    useShallow((s) =>
+      mapCombatantId
+        ? s.activeEffects.filter((e) => e.combatantId === mapCombatantId)
+        : EMPTY_ACTIVE_EFFECTS,
+    ),
+  )
+  const adjustStrikeInputs = useMemo(
+    () =>
+      combatantEffects.flatMap((e) =>
         parseSpellEffectAdjustStrikes(e.rulesJson, e.effectId, e.effectName),
-      )
-  })
+      ),
+    [combatantEffects],
+  )
 
   // FEAT-04: detect troops/swarms from traits — they use a specialized layout
   // (no Strikes, collective damage in Actions, troop HP segments rendered inline).
