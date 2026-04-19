@@ -26,7 +26,8 @@ import {
 import { stripHtml } from '@/shared/lib/html'
 import { useModifiedStats } from '../model/use-modified-stats'
 import { useCombatantStore, isNpc } from '@/entities/combatant'
-import { useBattleFormOverridesStore } from '@/entities/spell-effect'
+import { useBattleFormOverridesStore, useEffectStore } from '@/entities/spell-effect'
+import { parseSpellEffectAdjustStrikes, applyAdjustStrikes } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
 import { highlightGameText } from '../lib/foundry-text'
@@ -110,7 +111,21 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   const battleFormAcOverride = useBattleFormOverridesStore((s) =>
     mapCombatantId ? s.battleFormOverrides[mapCombatantId]?.ac : undefined,
   )
+  // BUG-1: BattleForm strike overrides — replaces creature.strikes when present.
+  const battleFormStrikes = useBattleFormOverridesStore((s) =>
+    mapCombatantId ? s.battleFormOverrides[mapCombatantId]?.strikes : undefined,
+  )
   const effectiveSize = sizeOverride ? mapSize(sizeOverride) : creature.size
+
+  // BUG-1: AdjustStrike — collect inputs from active effects for this combatant.
+  const adjustStrikeInputs = useEffectStore((s) => {
+    if (!mapCombatantId) return []
+    return s.activeEffects
+      .filter((e) => e.combatantId === mapCombatantId)
+      .flatMap((e) =>
+        parseSpellEffectAdjustStrikes(e.rulesJson, e.effectId, e.effectName),
+      )
+  })
 
   // FEAT-04: detect troops/swarms from traits — they use a specialized layout
   // (no Strikes, collective damage in Actions, troop HP segments rendered inline).
@@ -296,7 +311,19 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
             <SectionHeader>Strikes</SectionHeader>
             <CollapsibleContent>
               <div className="px-4 py-3 space-y-3">
-                {creature.strikes.map((strike, i) => {
+                {/* BUG-1: use BattleForm strike overrides when present, otherwise
+                    fall back to creature.strikes with AdjustStrike applied. */}
+                {(battleFormStrikes
+                  ? battleFormStrikes.map((bfs) => ({
+                      name: bfs.name,
+                      modifier: 0,
+                      traits: [] as string[],
+                      group: undefined as string | undefined,
+                      additionalDamage: undefined as { formula: string; type: string; label?: string }[] | undefined,
+                      damage: [{ formula: `${bfs.diceNumber ?? 1}${bfs.dieSize}`, type: bfs.damageType ?? '' }],
+                    }))
+                  : creature.strikes
+                ).map((strike, i) => {
                   const isAgile = strike.traits.includes('agile')
                   const isRanged = strike.traits.includes('ranged') || strike.traits.some((t) => /^range\s/i.test(t))
                   // Melee strikes pick up str-based condition penalties (enfeebled) via virtual slug.
@@ -311,6 +338,25 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                         .filter((m) => m.slug.startsWith('enfeebled:'))
                         .reduce((s, m) => s + m.modifier, 0) ?? 0)
                     : 0
+
+                  // BUG-1: apply AdjustStrike to the first damage formula when
+                  // active effects carry AdjustStrike / DamageDice rules.
+                  const effectiveDamage = adjustStrikeInputs.length > 0 && !battleFormStrikes
+                    ? strike.damage.map((d, di) => {
+                        if (di !== 0) return d
+                        const dieMatch = /^(\d+)(d\d+)/.exec(d.formula)
+                        if (!dieMatch) return d
+                        const dieSize = dieMatch[2] as Parameters<typeof applyAdjustStrikes>[0]['dieSize']
+                        const strikeSlug = strike.name.toLowerCase().replace(/\s+/g, '-') + '-damage'
+                        const adjusted = applyAdjustStrikes(
+                          { selectors: ['strike-damage', strikeSlug], dieSize },
+                          adjustStrikeInputs,
+                        )
+                        if (adjusted.dieSize === dieSize) return d
+                        const newFormula = d.formula.replace(/d\d+/, adjusted.dieSize)
+                        return { ...d, formula: newFormula }
+                      })
+                    : strike.damage
                   return (
                     <div key={i} className="p-3 rounded-md bg-secondary/50">
                       <div className="flex items-center gap-2">
@@ -348,11 +394,11 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
                           })}
                         </div>
                       </div>
-                      {/* Main damage */}
-                      {strike.damage.length > 0 && (
+                      {/* Main damage — uses effectiveDamage which has AdjustStrike applied */}
+                      {effectiveDamage.length > 0 && (
                         <div className="mt-1 text-sm">
                           <span className="font-semibold">Damage </span>
-                          {strike.damage.map((d, di) => (
+                          {effectiveDamage.map((d, di) => (
                             <span key={di}>
                               {di > 0 && <span className="text-muted-foreground"> plus </span>}
                               <ClickableFormula formula={d.formula} label={`${strike.name} damage`} source={creature.name} combatId={encounterContext?.encounterId} />
