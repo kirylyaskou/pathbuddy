@@ -22,6 +22,29 @@ export async function initDatabase(): Promise<void> {
   return initPromise
 }
 
+/**
+ * Gracefully shut down the SQLite connection before a destructive process
+ * transition (Windows NSIS installer writes over pathmaid.db; if tauri-plugin-sql
+ * still holds the WAL lock the installer fails with "Failed to kill" — Tauri bug
+ * #12309). Called as the first step of downloadAndInstallUpdate so the Rust side
+ * releases the file handle before the new binary tries to overwrite it.
+ *
+ * Silent-fail: if close() throws we log and continue — blocking the update
+ * because DB close misbehaved is worse than attempting install with a warning.
+ * `initPromise` is reset in `finally` so that if the user stays in the app after
+ * an install failure, the next query triggers a fresh init.
+ */
+export async function closeDatabase(): Promise<void> {
+  try {
+    const db = await getDb()
+    await db.close()
+  } catch (e) {
+    console.warn('[db] close failed (non-fatal):', e)
+  } finally {
+    initPromise = null
+  }
+}
+
 export async function getSyncMetadata(
   key: string
 ): Promise<string | null> {
