@@ -19,7 +19,8 @@
 - ✅ **v1.0.0 — PC Import (Pathbuilder 2e)** — Phases 42-46 (complete 2026-04-07)
 - ✅ **v1.1.0 — PathMaid Day-One Patch** — Phases 47-54 (complete 2026-04-10)
 - ✅ **v1.2.1 — Spell Effects + Custom Creatures** — Phases 56-59 (shipped 2026-04-17)
-- 🚧 **v1.3.0 — Encounter Import + Combat UX Refinement** — Phases 60-64 (in progress)
+- ✅ **v1.3.0 — Encounter Import + Combat UX Refinement** — Phases 60-64 (shipped 2026-04-19)
+- ✅ **v1.4.0 — Effects Deep Dive + PC Library + UX Unification** — Phases 65-70 (shipped 2026-04-20)
 
 ## Phases
 
@@ -866,7 +867,11 @@ Full details: `.planning/milestones/v1.1.0-ROADMAP.md`
 
 Archived — see `.planning/milestones/v1.2.1-ROADMAP.md`
 
-### 🚧 v1.3.0 — Encounter Import + Combat UX Refinement
+### v1.3.0 — Encounter Import + Combat UX Refinement (SHIPPED 2026-04-19)
+
+Archived — see `.planning/milestones/v1.3.0-ROADMAP.md`
+
+<details><summary>v1.3.0 phase details</summary>
 
 **Milestone Goal:** Encounter import, combat entry flow, effect/spellcasting UX polish, rules engine regressions
 
@@ -888,6 +893,104 @@ Archived — see `.planning/milestones/v1.2.1-ROADMAP.md`
 Plans:
 - [ ] 60-01-PLAN.md — Selector-resolver canonical cases (attack/all-saves/skill-check/spell-attack/class-dc/damage) + spell-attack virtual slug в UI
 
+</details>
+
+### v1.4.0 — Effects Deep Dive + PC Library + UX Unification (SHIPPED 2026-04-20)
+
+Archived — see `.planning/milestones/v1.4.0-ROADMAP.md`
+
+<details><summary>v1.4.0 phase details</summary>
+
+**Milestone Goal:** Вывести движок эффектов PF2e за пределы FlatModifier/Resistance — поддержка RollOption/AdjustStrike/BattleForm/Note/GrantItem + predicate evaluator для условных модификаторов. Унифицировать Spellcasting UI между combat detail и custom creature builder. Cast→Target→Apply flow с multi-target. Paizo iconics + adventure pregens как готовые PC/NPC. Encounter export в Pathmaiden JSON.
+
+- [ ] **Phase 65: Rule Engine Expansion** — RollOption / AdjustStrike / BattleForm / Note / GrantItem + pack coverage audit
+- [ ] **Phase 66: Predicate Evaluator** — DSL parser + state bridge + integration into modifier pipeline (Acid Grip regression)
+- [ ] **Phase 67: Spellcasting UX Unification** — Shared SpellcastingEditor component used by combat detail and custom creature builder
+- [ ] **Phase 68: Cast → Target → Apply Flow** — Cast button, target picker with allegiance, multi-target, applies parent effect + consumes slot
+- [ ] **Phase 69: Encounter Export** — .pathmaiden JSON download from /encounters page + round-trip re-import
+- [ ] **Phase 70: Paizo Library Import** — Iconics + adventure pregens synced as both NPC and PC, with source filter in pickers
+
+### Phase 65: Rule Engine Expansion
+**Goal**: Effects beyond FlatModifier/Resistance apply mechanically — RollOption/AdjustStrike/BattleForm/Note/GrantItem rule types are implemented in the engine pipeline, and every rule type present in the 3 allow-listed packs has engine support or is explicitly logged as ignored
+**Depends on**: Nothing (engine work, no cross-phase deps inside v1.4)
+**Requirements**: RULE-01, RULE-02, RULE-03, RULE-04, RULE-05, RULE-06
+**Success Criteria** (what must be TRUE):
+  1. Apply Sure Strike to a combatant → the next Strike roll uses fortune (2d20 keep highest); apply Assurance → the next skill check resolves to the flat DC value
+  2. Apply Enlarge → the combatant's damage tooltip shows one step up on a selected damage die AND the combatant's size badge increments one category
+  3. Apply an effect carrying a Note rule → the RollResultToast shows the note text attached to matching rolls
+  4. Apply Rage (GrantItem parent) → the granted sub-effect appears in the Effects section automatically and its modifiers stack correctly
+  5. An audit report lists every rule type found across spell-effects / equipment-effects / boons-and-curses packs with counts and "supported | ignored" status
+**Plans**: TBD
+
+### Phase 66: Predicate Evaluator
+**Goal**: Conditional modifiers fire only when their predicate holds against live combatant state — the DSL parser, state bridge, and modifier pipeline integration all work end-to-end
+**Depends on**: Phase 65 (extends the modifier pipeline rule-types now emit into)
+**Requirements**: PRED-01, PRED-02, PRED-03, PRED-04
+**Success Criteria** (what must be TRUE):
+  1. Predicates with nested {and,or,not} combinators and self:/target:/item: atoms parse without crashes and evaluate deterministically
+  2. For any combatant, the state bridge exposes live facts — active conditions (with values), effect slugs, creature traits, persistent-damage types — that predicates can query
+  3. A FlatModifier with an unmet predicate is absent from the net-total; the modifier tooltip shows "inactive — requires X" with the specific failing atom
+  4. Acid Grip regression: applying persistent acid damage to the target live-enables its -10 speed penalty; removing persistent acid live-disables it without resetting the effect
+**Plans**: TBD
+
+### Phase 67: Spellcasting UX Unification
+**Goal**: Spellcasting editing lives in one component used by two callsites — combat detail (DB-backed) and custom creature builder (reducer-backed) — with no persistence branching inside the shared code
+**Depends on**: Nothing (UI refactor, independent of rule-engine work)
+**Requirements**: SPELLCAST-U-01, SPELLCAST-U-02
+**Success Criteria** (what must be TRUE):
+  1. features/spellcasting-editor/ exports one SpellcastingEditor component that renders slot editor + spell list editor + rank editor
+  2. CombatantDetail spellcasting section uses the shared component and persists edits through encounter_slot_overrides and encounter_combatant_spells unchanged
+  3. Custom Creature Builder SpellcastingTab uses the same component and persists edits through the existing reducer — no duplicate UI code remains
+  4. The shared component receives all persistence via props/callbacks; grep for encounter_ or creatureReducer inside features/spellcasting-editor/ returns nothing
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 68: Cast → Target → Apply Flow
+**Goal**: Casting a spell that carries a linked effect becomes a single GM action — click Cast, pick target(s), effect is applied and the slot is consumed
+**Depends on**: Phase 67 (hosts the Cast button on the unified spellcasting surface)
+**Requirements**: APPLY-01, APPLY-02, APPLY-03, APPLY-04
+**Success Criteria** (what must be TRUE):
+  1. In CombatantDetail, spell rows with a linked spell_effects row render a Cast button; spell rows without linked effects do not
+  2. Clicking Cast opens a target picker listing current-encounter combatants grouped as PCs / NPC allies / NPC enemies relative to the caster, with a sensible default (buffs → allies, debuffs → enemies) and manual override
+  3. For a 3-action Heal (or any spell whose metadata declares target count >1) the picker switches to checkbox mode honoring the declared max; single-target spells stay single-select
+  4. Committing the selection applies the parent effect to each chosen target via the existing applyEffectToCombatant path and consumes the caster's slot via the existing used_count / prepared-cast plumbing
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 69: Encounter Export
+**Goal**: Any saved encounter can be downloaded as a shareable .pathmaiden JSON and re-imported losslessly in another install
+**Depends on**: Nothing (parser shipped in v1.3 Phase 64)
+**Requirements**: EXPORT-01, EXPORT-02
+**Success Criteria** (what must be TRUE):
+  1. Each encounter card on /encounters page has an Export action that downloads a .pathmaiden file conforming to the pathmaiden-v1 schema
+  2. Re-importing the exported file via the existing Import button reconstructs the combatant list (bestiary / custom / hazard) matched by name with correct display names, HP, initiative, and weak/elite tiering
+**Plans**: TBD
+
+### Phase 70: Paizo Library Import
+**Goal**: Paizo iconics and adventure pregens are available as both pre-built NPCs and importable PCs, discoverable in the sidebar and character picker with a source filter
+**Depends on**: Nothing (sync-pipeline extension, independent of everything else)
+**Requirements**: LIBRARY-01, LIBRARY-02, LIBRARY-03, LIBRARY-04
+**Success Criteria** (what must be TRUE):
+  1. After sync, the Bestiary contains the full set of iconics (Amiri, Ezren, Feiya, Harsk, Kyra, Lem, Lini, Merisiel, Sajan, …) with full stat blocks, AND the Characters page shows the same iconics as PCs with PCSheet rendering without crashes
+  2. After sync, each paizo-pregens/<adventure>/ subfolder appears as both NPC entries in the Bestiary and PC records on Characters page, tagged with their adventure source
+  3. CreatureSearchSidebar and the character picker both surface iconics/pregens alongside bestiary/custom entries, with a source filter chip that narrows to iconics only or to a single adventure's pregens
+  4. Imported PC data preserves class / level / ancestry / feats / equipment / spells where the JSON provides them; missing fields fall back to safe defaults and PCSheet renders without crashes
+**Plans**: TBD
+**UI hint**: yes
+
+</details>
+
+### v1.4.0 Progress (COMPLETE)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 65. Rule Engine Expansion | 1/1 | Complete | 2026-04-19 |
+| 66. Predicate Evaluator | 1/1 | Complete | 2026-04-19 |
+| 67. Spellcasting UX Unification | 1/1 | Complete | 2026-04-19 |
+| 68. Cast → Target → Apply Flow | 1/1 | Complete | 2026-04-19 |
+| 69. Encounter Export | 1/1 | Complete | 2026-04-19 |
+| 70. Paizo Library Import | 1/1 | Complete | 2026-04-19 |
+
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-18 — v1.3.0 roadmap added (phases 60-64)*
+*Last updated: 2026-04-20 — v1.4.0 shipped, archived to milestones/v1.4.0-ROADMAP.md*
