@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { User, Skull } from 'lucide-react'
 import { Separator } from '@/shared/ui/separator'
-import { useCombatantStore } from '@/entities/combatant'
+import { useCombatantStore, isNpc } from '@/entities/combatant'
 import { useShallow } from 'zustand/react/shallow'
 import { fetchCreatureStatBlockData } from '@/entities/creature'
 import type { CreatureStatBlockData } from '@/entities/creature'
+import { applyTierToStatBlock } from '@engine'
 import { HpControls } from './HpControls'
 import { ConditionSection } from './ConditionSection'
 import { EffectsSection } from './EffectsSection'
@@ -30,6 +31,20 @@ export function CombatantDetail({ combatantId }: CombatantDetailProps) {
     })
     return () => { cancelled = true }
   }, [combatant?.creatureRef, combatant?.kind])
+
+  // v1.4.1 UAT BUG-A: CombatantDetail's bottom pane (HpControls → CombatantSavesBar,
+  // useHideAction) read `creature.ac / .fort / .ref / .will / .perception / .skills`
+  // directly and ignored the combatant's Weak/Elite tier. CombatPage applies
+  // applyTierToStatBlock only to the right-pane CreatureStatBlock, so the two
+  // panes disagreed on every numeric stat for non-normal tiers. Apply the same
+  // engine helper here against the NPC tier (PC and hazard combatants never
+  // carry a tier). HP is deliberately skipped by applyTierToStatBlock — the
+  // combatant row already bakes the HP delta at add-time, so double-applying
+  // would compound the adjustment.
+  const tierAdjustedCreature = useMemo(() => {
+    if (!creature || !combatant || !isNpc(combatant)) return creature
+    return applyTierToStatBlock(creature, combatant.weakEliteTier ?? 'normal')
+  }, [creature, combatant])
 
   if (!combatant) {
     return (
@@ -67,7 +82,7 @@ export function CombatantDetail({ combatantId }: CombatantDetailProps) {
         iwrImmunities={combatant.kind === 'npc' ? combatant.iwrImmunities : undefined}
         iwrWeaknesses={combatant.kind === 'npc' ? combatant.iwrWeaknesses : undefined}
         iwrResistances={combatant.kind === 'npc' ? combatant.iwrResistances : undefined}
-        creature={creature}
+        creature={tierAdjustedCreature}
       />
 
       <Separator />
