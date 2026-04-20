@@ -7,6 +7,7 @@ interface UpdaterState {
   update: UpdateInfo | null
   progress: { received: number; total: number | null } | null
   error: string | null
+  toastShown: boolean
 
   setChecking: () => void
   setAvailable: (update: UpdateInfo) => void
@@ -15,6 +16,7 @@ interface UpdaterState {
   setUpToDate: () => void
   setError: (message: string) => void
   reset: () => void
+  markToastShown: () => void
 }
 
 export const useUpdaterStore = create<UpdaterState>()(immer((set) => ({
@@ -22,6 +24,7 @@ export const useUpdaterStore = create<UpdaterState>()(immer((set) => ({
   update: null,
   progress: null,
   error: null,
+  toastShown: false,
 
   setChecking: () =>
     set((state) => {
@@ -60,5 +63,10 @@ export const useUpdaterStore = create<UpdaterState>()(immer((set) => ({
       state.update = null
       state.progress = null
       state.error = null
+      // NB: toastShown intentionally NOT reset — session-scoped per D-15
+    }),
+  markToastShown: () =>
+    set((state) => {
+      state.toastShown = true
     }),
 })))
