@@ -157,7 +157,12 @@ export function UpdateDialog() {
         )}
 
         {status === 'error' && !isCrossDeviceError && error && (
-          <p className="text-sm text-destructive">Ошибка: {error}</p>
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">Ошибка: {error}</p>
+            <p className="text-sm text-muted-foreground">
+              Если обновление не применилось, перезапустите приложение вручную — база данных была временно закрыта для установки.
+            </p>
+          </div>
         )}
 
         <DialogFooter>

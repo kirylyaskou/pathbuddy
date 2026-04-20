@@ -1,5 +1,6 @@
 import { check, type Update, type DownloadEvent } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
+import { closeDatabase } from './db'
 
 // --- Types (public API — API-01, API-02) ---
 
@@ -101,6 +102,12 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
 export async function downloadAndInstallUpdate(
   onProgress: (e: ProgressEvent) => void,
 ): Promise<void> {
+  // D-04: Close SQLite before any update activity. The Windows NSIS installer
+  // cannot overwrite pathmaid.db while tauri-plugin-sql holds the WAL lock
+  // (Tauri bug #12309 "Failed to kill"). closeDatabase() silent-fails — if
+  // close() throws we'd rather attempt the install than block it.
+  await closeDatabase()
+
   const update = await check()
   if (!update) throw new UpdateInstallError('Update no longer available')
 
