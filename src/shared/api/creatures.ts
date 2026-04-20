@@ -44,6 +44,28 @@ export async function fetchCreatureById(
   return rows.length > 0 ? rows[0] : null
 }
 
+/**
+ * Phase 71 — Use Pregen (NPC mode). Finds the entities-row twin of a
+ * characters-table pregen so the custom-creature builder can reuse
+ * `toCreatureStatBlockData` on it. Scoped to the Paizo library packs so a
+ * user-created NPC with the same name never leaks into the picker flow.
+ * Returns the first match (names are unique inside iconics/pregens).
+ */
+export async function fetchPregenCreatureByName(
+  name: string
+): Promise<CreatureRow | null> {
+  const db = await getDb()
+  const rows = await db.select<CreatureRow[]>(
+    `SELECT * FROM entities
+     WHERE name = ?
+       AND type = 'npc'
+       AND source_pack IN ('iconics', 'paizo-pregens')
+     LIMIT 1`,
+    [name]
+  )
+  return rows.length > 0 ? rows[0] : null
+}
+
 export async function searchCreatures(
   query: string,
   limit = 50

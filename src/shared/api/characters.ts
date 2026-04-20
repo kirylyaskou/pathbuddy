@@ -190,3 +190,80 @@ export async function updateCharacterNotes(id: string, notes: string): Promise<v
   const db = await getDb()
   await db.execute(`UPDATE characters SET notes = ? WHERE id = ?`, [notes, id])
 }
+
+/**
+ * Phase 71 — Use Pregen. Returns every character row sourced from a Paizo
+ * library pack (iconics or a pregen adventure). User-imported rows
+ * (`source_adventure IS NULL`) are excluded so the picker only shows the
+ * catalogue, never the GM's own imports.
+ */
+export async function getPregenCharacters(): Promise<CharacterRecord[]> {
+  const db = await getDb()
+  const rows = await db.select<CharacterRow[]>(
+    `SELECT id, name, class, level, ancestry, raw_json, notes, created_at, source_adventure, raw_foundry_json
+     FROM characters
+     WHERE source_adventure IS NOT NULL
+     ORDER BY name ASC`,
+    []
+  )
+  return rows.map(rowToRecord)
+}
+
+/**
+ * Phase 71 — Use Pregen. Duplicates a pregen character row into a new
+ * user-owned PC. The original pregen stays untouched so re-running sync
+ * does not stomp the user's copy.
+ *
+ * Collision handling: the `characters` table has `UNIQUE(name)`. When a
+ * row with the same name already exists we append " (copy)", then
+ * " (copy 2)", " (copy 3)", …, until we find a free slot.
+ *
+ * Returns the id of the newly inserted row.
+ */
+export async function duplicatePregenAsUserCharacter(
+  pregen: CharacterRecord
+): Promise<{ id: string; name: string }> {
+  const db = await getDb()
+  // Find a unique name by appending " (copy)" / " (copy N)".
+  const existing = await db.select<{ name: string }[]>(
+    `SELECT name FROM characters WHERE name = ? OR name LIKE ?`,
+    [pregen.name, `${pregen.name} (copy%`]
+  )
+  const taken = new Set(existing.map((r) => r.name))
+  let candidate = pregen.name
+  if (taken.has(candidate)) {
+    candidate = `${pregen.name} (copy)`
+    let n = 2
+    while (taken.has(candidate)) {
+      candidate = `${pregen.name} (copy ${n})`
+      n++
+    }
+  }
+
+  // Rewrite the embedded PathbuilderBuild.name so the sheet and combat
+  // tracker display the duplicated name consistently. Fall back to the raw
+  // JSON on parse failure — the row stays usable even if name drift occurs.
+  let rawJson = pregen.rawJson
+  try {
+    const parsed = JSON.parse(pregen.rawJson) as { name?: string }
+    parsed.name = candidate
+    rawJson = JSON.stringify(parsed)
+  } catch {
+    // keep original rawJson
+  }
+
+  const id = crypto.randomUUID()
+  await db.execute(
+    `INSERT INTO characters (id, name, class, level, ancestry, raw_json, notes, created_at, source_adventure, raw_foundry_json)
+     VALUES (?, ?, ?, ?, ?, ?, '', datetime('now'), NULL, NULL)`,
+    [
+      id,
+      candidate,
+      pregen.class,
+      pregen.level,
+      pregen.ancestry,
+      rawJson,
+    ]
+  )
+  return { id, name: candidate }
+}
