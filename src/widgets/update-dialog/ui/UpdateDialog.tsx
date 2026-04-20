@@ -9,7 +9,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui/button'
 import { Progress } from '@/shared/ui/progress'
-import { useUpdaterStore } from '@/shared/model/updater-store'
+import { useUpdaterStore } from '@/shared/model'
 import {
   downloadAndInstallUpdate,
   isDarwin,

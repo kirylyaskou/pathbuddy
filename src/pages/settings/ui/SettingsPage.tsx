@@ -1,12 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
-import { syncFoundryData, importLocalPacks, getSyncMetadata } from '@/shared/api'
+import {
+  syncFoundryData,
+  importLocalPacks,
+  getSyncMetadata,
+  checkForUpdate,
+  isDarwin,
+  openReleasesPage,
+} from '@/shared/api'
+import { useUpdaterStore } from '@/shared/model'
 import { useCombatTrackerStore } from '@/features/combat-tracker'
 import { Button } from '@/shared/ui/button'
 import { Progress } from '@/shared/ui/progress'
 import { Separator } from '@/shared/ui/separator'
 import { MascotHex } from '@/shared/ui/mascot-hex'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import { Download, RefreshCw, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useShallow } from 'zustand/react/shallow'
+import { getVersion } from '@tauri-apps/api/app'
 
 export function SettingsPage() {
   const [syncing, setSyncing] = useState(false)
@@ -17,6 +27,63 @@ export function SettingsPage() {
   } | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [entityCount, setEntityCount] = useState<string | null>(null)
+
+  // --- Updater section state ---
+  const [currentVersion, setCurrentVersion] = useState<string>('—')
+  const darwin = isDarwin() // sync — safe in render, no useEffect needed
+
+  useEffect(() => {
+    getVersion()
+      .then(setCurrentVersion)
+      .catch(() => setCurrentVersion('неизвестно'))
+  }, [])
+
+  const { updaterStatus, updaterError } = useUpdaterStore(
+    useShallow((s) => ({
+      updaterStatus: s.status,
+      updaterError: s.error,
+    })),
+  )
+
+  const handleCheckForUpdate = async () => {
+    const store = useUpdaterStore.getState()
+    store.setChecking()
+    try {
+      const update = await checkForUpdate()
+      if (update) {
+        store.setAvailable(update)
+      } else {
+        store.setUpToDate()
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      store.setError(msg)
+      toast.error(`Проверка обновлений: ${msg}`)
+    }
+  }
+
+  const statusLine = (
+    s: typeof updaterStatus,
+    err: string | null,
+  ): string => {
+    switch (s) {
+      case 'checking':
+        return 'Проверяем...'
+      case 'available':
+        return 'Обновление доступно — см. диалог'
+      case 'downloading':
+        return 'Скачиваем...'
+      case 'installing':
+        return 'Устанавливаем...'
+      case 'uptodate':
+        return 'Актуальная версия'
+      case 'error':
+        return `Ошибка: ${err ?? 'неизвестно'}`
+      case 'idle':
+      default:
+        return ''
+    }
+  }
 
   const loadSyncStatus = useCallback(async () => {
     try {
@@ -160,6 +227,46 @@ export function SettingsPage() {
             ? `Last synced: ${formatDate(lastSync)} — ${Number(entityCount).toLocaleString()} entities`
             : 'No data imported yet. Run a sync to load entities.'}
         </p>
+      </section>
+
+      <Separator className="my-6" />
+
+      <section>
+        <h2 className="text-xl font-semibold text-foreground">Обновления</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Текущая версия: {currentVersion}
+        </p>
+        <div className="mt-4">
+          {darwin ? (
+            <Button variant="outline" onClick={openReleasesPage}>
+              <Download className="mr-2 h-4 w-4" />
+              Открыть страницу релиза
+            </Button>
+          ) : (
+            <Button
+              onClick={handleCheckForUpdate}
+              disabled={updaterStatus === 'checking'}
+            >
+              {updaterStatus === 'checking' ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Проверить обновления
+            </Button>
+          )}
+        </div>
+        {darwin ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Автообновление недоступно — проверяйте страницу релиза вручную.
+          </p>
+        ) : (
+          updaterStatus !== 'idle' && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {statusLine(updaterStatus, updaterError)}
+            </p>
+          )
+        )}
       </section>
     </div>
     </>
