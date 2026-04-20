@@ -37,7 +37,10 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVDNjVEMzRDNEExMTFBNzgKUldSNEdoRktUTk5sN0dnQk8zYmxrL3VTbVd3YXJVekt5ZkJEUnlsdGdYZmtnaWd0Zk44M29RTmsK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVDNjVEMzRDNEExMTFBNzgKUldSNEdoRktUTk5sN0dnQk8zYmxrL3VTbVd3YXJVekt5ZkJEUnlsdGdYZmtnaWd0Zk44M29RTmsK",
+      "endpoints": [
+        "https://github.com/kirylyaskou/PathMaid/releases/latest/download/latest.json"
+      ]
     }
   }
 }
