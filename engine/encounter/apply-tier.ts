@@ -11,11 +11,15 @@ import { getStatAdjustment, getDamageAdjustment } from './weak-elite'
  *   - "1d6"        -> "1d6+2"    (delta=+2)
  *   - "2d8+4"      -> "2d8+6"    (delta=+2)
  *   - "1d10-1"     -> "1d10+1"   (delta=+2)
- *   - "1d4"        -> "1d4"      (delta=-2, clamped to no-op when result < 1 dice+const)
+ *   - "2d6+1"      -> "2d6-1"    (delta=-2, Weak tier on a +1 STR weapon)
+ *   - "1d6"        -> "1d6-2"    (delta=-2, dice-only Weak weapon)
  *
- * Negative totals are clamped so we never emit "NdM-3" etc. The minimum
- * post-adjustment constant is 0 (dice-only) — PF2e never reports negative
- * damage; an unavoidable floor of 1 is enforced at roll time, not here.
+ * Negative totals are preserved verbatim in the displayed formula — PF2e's
+ * minimum-1-damage floor is enforced by the dice roller at roll time (per
+ * Player Core pg. 443 "Minimum Damage"), not by hiding the constant. Showing
+ * "2d6-1" is the expected UAT behaviour for a Weak-tier Dogslicer (v1.4.1
+ * Round-5 BUG-B regression): clamping it back to "2d6" would silently
+ * under-report the adjustment.
  *
  * If the formula can't be parsed (e.g. "flat 3", "2d6 + 1d4"), the original
  * string is returned untouched. Strike-damage is split into multiple entries
@@ -32,8 +36,10 @@ export function shiftDamageFormulaConstant(formula: string, delta: number): stri
   const rest = tail ?? ''
   if (total === 0) return `${dice}${rest}`
   if (total > 0) return `${dice}+${total}${rest}`
-  // Clamp: PF2e damage never goes negative. Treat as dice-only.
-  return `${dice}${rest}`
+  // Negative: preserve the sign so the displayed formula matches the tier
+  // adjustment. The dice roller applies PF2e's min-1 damage floor at roll
+  // time; hiding the negative constant here would under-report the penalty.
+  return `${dice}${total}${rest}`
 }
 
 // ─── Stat block transformer ───────────────────────────────────────────────────

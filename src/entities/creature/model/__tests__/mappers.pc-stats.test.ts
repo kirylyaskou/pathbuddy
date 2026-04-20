@@ -9,8 +9,10 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import type { CreatureRow } from '@/shared/api'
 import { toCreature, toCreatureStatBlockData } from '../mappers'
+import { applyTierToStatBlock } from '@engine'
 
 const AMIRI_L1_PATH = 'D:/parse_data/PAKS/pf2e/packs/pf2e/iconics/amiri/amiri-level-1.json'
+const FUMBUS_L5_PATH = 'D:/parse_data/PAKS/pf2e/packs/pf2e/iconics/fumbus/fumbus-level-5.json'
 
 function makeRow(rawJson: string): CreatureRow {
   return {
@@ -176,5 +178,87 @@ describe('toCreature — iconic-as-NPC combat add-path (BUG-2)', () => {
     expect(c.hp).toBe(20)
     expect(c.ac).toBe(16)
     expect(c.fort).toBe(5)
+  })
+})
+
+// v1.4.1 UAT Round-5 BUG-B regression — Fumbus L5 Dogslicer damage.
+// Both the bestiary preview path (StatBlockModal → fetchCreatureStatBlockData)
+// and the combat pane path (useCombatDetailLoader → fetchCreatureStatBlockData)
+// must surface the same strike damage formula before tier adjustment. For
+// Fumbus L5, Dogslicer has STR 12 (+1 mod) + striking rune (dice 1→2) and
+// must parse to "2d6+1" — never bare "2d6". applyTierToStatBlock then
+// shifts the constant: weak → "2d6-1", normal → "2d6+1", elite → "2d6+3".
+describe('toCreatureStatBlockData — Fumbus L5 Dogslicer damage (BUG-B regression)', () => {
+  it('derives Dogslicer damage as 2d6+1 for normal tier', () => {
+    if (!existsSync(FUMBUS_L5_PATH)) {
+      console.warn('[bug-b-r5] Fumbus L5 fixture missing, skipping.')
+      return
+    }
+    const rawJson = readFileSync(FUMBUS_L5_PATH, 'utf-8')
+    const row: CreatureRow = {
+      id: 'test-fumbus',
+      name: 'Fumbus (Level 5)',
+      type: 'npc',
+      level: null,
+      hp: null,
+      ac: null,
+      fort: null,
+      ref: null,
+      will: null,
+      perception: null,
+      traits: null,
+      rarity: null,
+      size: null,
+      source_pack: 'iconics',
+      raw_json: rawJson,
+      source_name: null,
+      source_adventure: '__iconics__',
+    }
+    const sb = toCreatureStatBlockData(row)
+
+    const dogslicer = sb.strikes.find((s) => s.name === 'Dogslicer')
+    expect(dogslicer, 'Dogslicer strike missing from derived strikes').toBeDefined()
+    if (!dogslicer) return
+
+    // Bestiary-preview path (normal tier) — exactly the "+1" that went
+    // missing in the reported UAT screenshot.
+    expect(dogslicer.damage.length).toBeGreaterThan(0)
+    expect(dogslicer.damage[0].formula).toBe('2d6+1')
+    expect(dogslicer.damage[0].type).toBe('slashing')
+  })
+
+  it('applyTierToStatBlock shifts Dogslicer damage constant for weak/elite tiers', () => {
+    if (!existsSync(FUMBUS_L5_PATH)) {
+      console.warn('[bug-b-r5] Fumbus L5 fixture missing, skipping.')
+      return
+    }
+    const rawJson = readFileSync(FUMBUS_L5_PATH, 'utf-8')
+    const row: CreatureRow = {
+      id: 'test-fumbus',
+      name: 'Fumbus (Level 5)',
+      type: 'npc',
+      level: null,
+      hp: null,
+      ac: null,
+      fort: null,
+      ref: null,
+      will: null,
+      perception: null,
+      traits: null,
+      rarity: null,
+      size: null,
+      source_pack: 'iconics',
+      raw_json: rawJson,
+      source_name: null,
+      source_adventure: '__iconics__',
+    }
+    const sb = toCreatureStatBlockData(row)
+
+    const elite = applyTierToStatBlock(sb, 'elite')
+    const weak = applyTierToStatBlock(sb, 'weak')
+    const eliteDogslicer = elite.strikes.find((s) => s.name === 'Dogslicer')
+    const weakDogslicer = weak.strikes.find((s) => s.name === 'Dogslicer')
+    expect(eliteDogslicer?.damage[0].formula).toBe('2d6+3')
+    expect(weakDogslicer?.damage[0].formula).toBe('2d6-1')
   })
 })

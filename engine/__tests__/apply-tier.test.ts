@@ -49,16 +49,23 @@ describe('shiftDamageFormulaConstant', () => {
     expect(shiftDamageFormulaConstant('2d8+4', -2)).toBe('2d8+2')
   })
 
-  it('dice-only, -2 delta → clamps to dice-only (no negative constant)', () => {
-    expect(shiftDamageFormulaConstant('1d4', -2)).toBe('1d4')
+  // v1.4.1 UAT Round-5 BUG-B: negative constants are now preserved verbatim
+  // so the displayed Weak-tier formula matches the tier adjustment. The
+  // dice roller enforces PF2e's min-1 damage floor at roll time.
+  it('dice-only, -2 delta → emits negative constant', () => {
+    expect(shiftDamageFormulaConstant('1d4', -2)).toBe('1d4-2')
   })
 
   it('dice+const, -2 delta, result becomes 0 → drops constant', () => {
     expect(shiftDamageFormulaConstant('2d6+2', -2)).toBe('2d6')
   })
 
-  it('dice+const, -4 delta, result becomes negative → clamps to dice-only', () => {
-    expect(shiftDamageFormulaConstant('2d6+2', -4)).toBe('2d6')
+  it('dice+const, -4 delta, result becomes negative → emits negative constant', () => {
+    expect(shiftDamageFormulaConstant('2d6+2', -4)).toBe('2d6-2')
+  })
+
+  it('dice+positive const, -2 delta, result goes below 0 → preserves sign', () => {
+    expect(shiftDamageFormulaConstant('2d6+1', -2)).toBe('2d6-1')
   })
 
   it('unparseable formula returns unchanged', () => {
@@ -112,7 +119,11 @@ describe('applyTierToStatBlock', () => {
     expect(out.strikes[0].damage[0].formula).toBe('2d8+2')
   })
 
-  it('weak: clamps damage when result would go negative', () => {
+  // v1.4.1 UAT Round-5 BUG-B: Weak-tier damage preserves the negative
+  // constant rather than silently clamping — the dice roller enforces the
+  // PF2e min-1 floor at roll time. Showing "1d4" would under-report the
+  // tier adjustment to the GM.
+  it('weak: emits negative damage constant when starting dice-only', () => {
     const block = makeBlock({
       strikes: [
         {
@@ -124,7 +135,24 @@ describe('applyTierToStatBlock', () => {
       ],
     })
     const out = applyTierToStatBlock(block, 'weak')
-    expect(out.strikes[0].damage[0].formula).toBe('1d4')
+    expect(out.strikes[0].damage[0].formula).toBe('1d4-2')
+  })
+
+  it('weak: shifts a +1 damage constant to -1 (Fumbus Dogslicer regression)', () => {
+    const block = makeBlock({
+      strikes: [
+        {
+          name: 'Dogslicer',
+          modifier: 4,
+          damage: [{ formula: '2d6+1', type: 'slashing' }],
+          traits: ['agile', 'finesse'],
+        },
+      ],
+    })
+    const weak = applyTierToStatBlock(block, 'weak')
+    expect(weak.strikes[0].damage[0].formula).toBe('2d6-1')
+    const elite = applyTierToStatBlock(block, 'elite')
+    expect(elite.strikes[0].damage[0].formula).toBe('2d6+3')
   })
 
   it('spell DC / class DC shift by ±2 when present', () => {
