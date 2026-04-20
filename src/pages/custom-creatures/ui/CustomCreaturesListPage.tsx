@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Hammer, Plus, Copy as CloneIcon } from 'lucide-react'
+import { Hammer, Plus, Copy as CloneIcon, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/ui/button'
 import { SearchInput } from '@/shared/ui/search-input'
@@ -19,10 +19,14 @@ import {
   createCustomCreature,
   deleteCustomCreature,
 } from '@/shared/api/custom-creatures'
+import { fetchPregenCreatureByName } from '@/shared/api/creatures'
 import type { CustomCreatureRow } from '@/entities/creature/model/custom-creature-types'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
+import { toCreatureStatBlockData } from '@/entities/creature/model/mappers'
 import { PATHS } from '@/shared/routes'
 import { CloneFromBestiaryDialog } from '@/features/custom-creature-builder/ui/CloneFromBestiaryDialog'
+import { PregenPickerDialog } from '@/features/pregen-picker'
+import type { CharacterRecord } from '@/shared/api'
 import { CustomCreatureListRow } from './CustomCreatureListRow'
 
 export function CustomCreaturesListPage() {
@@ -33,6 +37,7 @@ export function CustomCreaturesListPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [cloneOpen, setCloneOpen] = useState(false)
+  const [pregenOpen, setPregenOpen] = useState(false)
 
   // Debounce search 200ms (UI-SPEC micro-interactions)
   useEffect(() => {
@@ -86,6 +91,31 @@ export function CustomCreaturesListPage() {
     }
   }
 
+  async function handlePregenPicked(pregen: CharacterRecord) {
+    try {
+      // Pregens live in BOTH the characters table (iconic PC flow) and the
+      // entities table (routed as type='npc' by sync). The custom-creature
+      // builder's data model is CreatureStatBlockData, so we pull from
+      // entities via name lookup and reuse the same mapper the Clone-from-
+      // Bestiary flow uses. Pitfall 8 parity: force source='custom'.
+      const entityRow = await fetchPregenCreatureByName(pregen.name)
+      if (!entityRow) {
+        toast.error(
+          `No bestiary twin found for ${pregen.name}. Run sync to refresh Paizo data.`,
+        )
+        return
+      }
+      const mapped = toCreatureStatBlockData(entityRow)
+      const normalized: CreatureStatBlockData = { ...mapped, source: 'custom' }
+      const id = await createCustomCreature(normalized, 'foundry_clone')
+      toast(`Cloned ${pregen.name} as new custom creature`)
+      await reload()
+      navigate(PATHS.CUSTOM_CREATURE_EDIT(id))
+    } catch (e) {
+      toast.error(`Failed to clone pregen: ${(e as Error).message}`)
+    }
+  }
+
   async function confirmDelete() {
     if (!deleteTarget) return
     try {
@@ -104,6 +134,10 @@ export function CustomCreaturesListPage() {
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <h1 className="text-base font-semibold">Custom Creatures</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPregenOpen(true)}>
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+            Use Pregen
+          </Button>
           <Button variant="outline" size="sm" onClick={handleCloneFromBestiary}>
             <CloneIcon className="w-3.5 h-3.5 mr-1.5" />
             Clone from Bestiary
@@ -194,6 +228,14 @@ export function CustomCreaturesListPage() {
         open={cloneOpen}
         onOpenChange={setCloneOpen}
         onClone={handleCloneSelected}
+      />
+
+      {/* Use Pregen picker — clones an iconic/pregen into custom_creatures */}
+      <PregenPickerDialog
+        open={pregenOpen}
+        onOpenChange={setPregenOpen}
+        mode="npc"
+        onPick={handlePregenPicked}
       />
     </div>
   )
