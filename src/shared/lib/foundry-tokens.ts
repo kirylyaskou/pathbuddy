@@ -18,12 +18,21 @@ export function resolveFoundryTokens(text: string): string {
     slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   )
   // @Damage[2d6[fire], 1d4[bleed]] → "2d6 fire plus 1d4 bleed"
-  text = text.replace(/@Damage\[([^\]]*)\]/g, (_, inner: string) =>
-    inner.split(/,\s*/).map((p: string) => {
+  // @Damage[(@item.rank+1)d8[acid]|options:area-damage] → "(rank+1)d8 acid"
+  // Handles ONE level of nested brackets in the damage-type tag. The outer
+  // regex is balanced for `[type]` inside the content.
+  text = text.replace(/@Damage\[((?:[^[\]]|\[[^\]]*\])*)\]/g, (_, inner: string) => {
+    // Strip Foundry option flags like `|options:area-damage` — they're
+    // metadata, not human text.
+    const cleaned = inner.replace(/\|options?:[^|]+/g, '')
+    return cleaned.split(/,\s*/).map((p: string) => {
       const m = p.trim().match(/^(.+?)\[(.+?)\]$/)
-      return m ? `${m[1]} ${m[2]}` : p.trim()
+      if (!m) return p.trim()
+      // Clean up Foundry formula scaffolding: @item.rank+1 → rank+1 etc.
+      const formula = m[1].replace(/@item\./g, '')
+      return `${formula} ${m[2]}`
     }).join(' plus ')
-  )
+  })
   // @Check[type:perception|dc:20] → "DC 20 Perception check"
   // @Check[will|dc:17]             → "DC 17 Will check" (Foundry positional)
   // @Check[dc:25]                  → "DC 25"            (no type)
@@ -51,9 +60,22 @@ export function resolveFoundryTokens(text: string): string {
   // already had a manual " check" suffix after the token.
   text = text.replace(/\bcheck\s+check\b/gi, 'check')
   // @Template[type:cone|distance:15] → "15-foot cone"
+  // @Template[cone|distance:30]      → "30-foot cone"  (Foundry positional)
+  // @Template[burst|distance:15]     → "15-foot burst"
   text = text.replace(/@Template\[([^\]]+)\]/g, (_, inner: string) => {
-    const params = Object.fromEntries(inner.split('|').map((p: string) => p.split(':')))
-    return `${params.distance ?? '?'}-foot ${params.type ?? 'area'}`
+    const segments = inner.split('|')
+    const params: Record<string, string> = {}
+    let positionalType: string | undefined
+    for (const seg of segments) {
+      if (seg.includes(':')) {
+        const [k, v] = seg.split(':')
+        params[k] = v
+      } else if (!positionalType && seg) {
+        positionalType = seg
+      }
+    }
+    const type = params.type ?? positionalType ?? 'area'
+    return `${params.distance ?? '?'}-foot ${type}`
   })
   // [[/act slug]] → readable action name
   text = text.replace(/\[\[\/act\s+([^#\s\]]*)[^\]]*\]\]/g, (_, slug: string) => {

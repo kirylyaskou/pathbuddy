@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { getSpellById } from '@/shared/api'
 import type { SpellRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
-import { stripHtml } from '@/shared/lib/html'
+import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { SafeHtml } from '@/shared/lib/safe-html'
 import { useContentTranslation } from '@/shared/i18n'
 import { TRADITION_COLORS, actionCostLabel, rankLabel, parseDamageDisplay, parseAreaDisplay } from '../lib/helpers'
@@ -115,13 +115,16 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
                 </div>
               )}
 
-              {/* Description — RU translation overrides EN when available */}
+              {/* Description — RU translation overrides EN when available.
+                  EN path uses sanitizeFoundryText so @Check/@Damage/@Template
+                  tokens resolve to readable text (was stripHtml, which left
+                  raw tokens visible for spells like Shadow Blast). */}
               {translation ? (
                 <SafeHtml html={translation.textLoc} className="text-[13px]" />
               ) : (
                 spell.description && (
-                  <p className="text-[13px] text-foreground/80 leading-relaxed">
-                    {stripHtml(spell.description)}
+                  <p className="text-[13px] text-foreground/80 leading-relaxed whitespace-pre-line">
+                    {sanitizeFoundryText(spell.description)}
                   </p>
                 )
               )}
