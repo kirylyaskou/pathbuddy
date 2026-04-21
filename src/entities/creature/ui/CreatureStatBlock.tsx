@@ -122,45 +122,70 @@ interface CreatureStatBlockProps {
   encounterContext?: EncounterContext
 }
 
-export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
-  // v1.5.1: RU content translation override. When a bundled pf2.ru
-  // translation exists for this monster, render the Russian HTML stat
-  // block in place of the structured EN one. Early-return here so the
-  // rest of the component (hooks, memoized classifiers) is skipped on
-  // the RU branch — saves a lot of work since the SafeHtml body is the
-  // full stat block rendered as HTML.
-  //
-  // Rules of hooks: useContentTranslation MUST be called unconditionally
-  // before any early-return. Subsequent hooks only run on the EN branch,
-  // which is fine because the RU branch renders a completely different
-  // subtree and the function reference changes per locale.
+/**
+ * v1.5.1: Wrapper that dispatches to the localized or English renderer
+ * based on bundled pf2.ru translations. The dispatch-by-component pattern
+ * (rather than early-return inside the main component) keeps each branch
+ * on its own hook-call sequence and avoids a Rules-of-Hooks violation —
+ * `CreatureStatBlockEN` calls ~15+ hooks that would be skipped when the
+ * RU translation lights up.
+ */
+export function CreatureStatBlock(props: CreatureStatBlockProps) {
   const { data: translation } = useContentTranslation(
     'monster',
-    creature.name,
-    creature.level,
+    props.creature.name,
+    props.creature.level,
   )
   if (translation) {
     return (
-      <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
-        <CardHeader className="-mt-6 pb-2 stat-block-header border-b border-primary/20">
-          <div className="flex items-start gap-4">
-            <LevelBadge level={creature.level} size="lg" />
-            <div className="flex-1">
-              <h2 className="text-xl font-bold tracking-tight">{translation.nameLoc}</h2>
-              {translation.traitsLoc && (
-                <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
-                  {translation.traitsLoc}
-                </p>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-3 text-sm">
-          <SafeHtml html={translation.textLoc} />
-        </CardContent>
-      </Card>
+      <CreatureStatBlockRU
+        creature={props.creature}
+        className={props.className}
+        nameLoc={translation.nameLoc}
+        traitsLoc={translation.traitsLoc}
+        textLoc={translation.textLoc}
+      />
     )
   }
+  return <CreatureStatBlockEN {...props} />
+}
+
+function CreatureStatBlockRU({
+  creature,
+  className,
+  nameLoc,
+  traitsLoc,
+  textLoc,
+}: {
+  creature: CreatureStatBlockData
+  className?: string
+  nameLoc: string
+  traitsLoc: string | null
+  textLoc: string
+}) {
+  return (
+    <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
+      <CardHeader className="-mt-6 pb-2 stat-block-header border-b border-primary/20">
+        <div className="flex items-start gap-4">
+          <LevelBadge level={creature.level} size="lg" />
+          <div className="flex-1">
+            <h2 className="text-xl font-bold tracking-tight">{nameLoc}</h2>
+            {traitsLoc && (
+              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
+                {traitsLoc}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-3 text-sm">
+        <SafeHtml html={textLoc} />
+      </CardContent>
+    </Card>
+  )
+}
+
+function CreatureStatBlockEN({ creature, className, encounterContext }: CreatureStatBlockProps) {
 
   // v1.4.1 UAT BUG-7: tag this hook as an "attack" roll site so Sure Strike
   // (RollTwice selector: attack-roll) surfaces a label+fortune formula in
