@@ -4,7 +4,6 @@ import { getFeatByName } from '@/shared/api'
 import type { FeatEntityRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
-import { SafeHtml } from '@/shared/lib/safe-html'
 import { useContentTranslation } from '@/shared/i18n'
 import { ActionIcon } from '@/shared/ui/action-icon'
 
@@ -120,14 +119,10 @@ export function FeatInlineCard({ featName, typeLabel, level, note }: FeatInlineC
             </div>
           )}
           {note && <p className="text-xs text-muted-foreground italic">{note}</p>}
-          {translation ? (
-            <SafeHtml html={translation.textLoc} className="text-sm" />
-          ) : (
-            description && (
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                {sanitizeFoundryText(description)}
-              </p>
-            )
+          {description && (
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {sanitizeFoundryText(description)}
+            </p>
           )}
         </div>
       </CollapsibleContent>

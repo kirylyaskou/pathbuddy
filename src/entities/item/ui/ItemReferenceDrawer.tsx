@@ -6,7 +6,6 @@ import type { ItemRow } from '@/shared/api'
 import { formatPrice, ITEM_TYPE_LABELS, ITEM_TYPE_COLORS, RARITY_COLORS } from '@/entities/item'
 import { cn } from '@/shared/lib/utils'
 import { stripHtml } from '@/shared/lib/html'
-import { SafeHtml } from '@/shared/lib/safe-html'
 import { useContentTranslation } from '@/shared/i18n'
 import { ClickableFormula } from '@/shared/ui/clickable-formula'
 import { SpellInlineCard } from '@/entities/spell'
@@ -152,15 +151,12 @@ export function ItemReferenceDrawer({ itemId, onClose, extraActions }: ItemRefer
                 </div>
               )}
 
-              {/* Description — RU translation overrides EN when available */}
-              {translation ? (
-                <SafeHtml html={translation.textLoc} className="text-[13px]" />
-              ) : (
-                item.description && (
-                  <p className="text-[13px] text-foreground/80 leading-relaxed">
-                    {stripHtml(item.description)}
-                  </p>
-                )
+              {/* Description — RU overlay is name-only for v1.5.1; rus_text
+                  blob ignored pending field-level translation spec. */}
+              {item.description && (
+                <p className="text-[13px] text-foreground/80 leading-relaxed">
+                  {stripHtml(item.description)}
+                </p>
               )}
 
               {/* Linked Spell */}

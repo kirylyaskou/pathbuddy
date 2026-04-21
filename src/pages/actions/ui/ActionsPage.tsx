@@ -5,7 +5,6 @@ import { getAllActions } from '@/shared/api'
 import type { ActionRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
-import { SafeHtml } from '@/shared/lib/safe-html'
 import { useContentTranslation } from '@/shared/i18n'
 import { parseJsonArray } from '@/shared/lib/json'
 import { logError } from '@/shared/lib/error'
@@ -92,17 +91,13 @@ function ActionCard({ action, expanded, onToggle }: {
         </div>
       )}
 
-      {/* Expanded detail — RU translation overrides EN when available */}
+      {/* Expanded detail — RU overlay is name-only for v1.5.1 */}
       {expanded && (
         <div className="px-3 pb-3 border-t border-border/30 pt-2 space-y-2">
-          {translation ? (
-            <SafeHtml html={translation.textLoc} className="text-xs" />
-          ) : (
-            action.description && (
-              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">
-                {sanitize(action.description)}
-              </p>
-            )
+          {action.description && (
+            <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">
+              {sanitize(action.description)}
+            </p>
           )}
           {action.source_book && (
             <p className="text-[10px] text-muted-foreground/60 italic">{action.source_book}</p>

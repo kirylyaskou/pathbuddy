@@ -43,7 +43,6 @@ import { highlightGameText } from '../lib/foundry-text'
 import { StatItem } from './StatItem'
 import { SpellcastingBlock } from './SpellcastingBlock'
 import { EquipmentBlock } from './EquipmentBlock'
-import { SafeHtml } from '@/shared/lib/safe-html'
 import { useContentTranslation } from '@/shared/i18n'
 
 import type { StatModifierResult } from '../model/use-modified-stats'
@@ -122,70 +121,18 @@ interface CreatureStatBlockProps {
   encounterContext?: EncounterContext
 }
 
-/**
- * v1.5.1: Wrapper that dispatches to the localized or English renderer
- * based on bundled pf2.ru translations. The dispatch-by-component pattern
- * (rather than early-return inside the main component) keeps each branch
- * on its own hook-call sequence and avoids a Rules-of-Hooks violation —
- * `CreatureStatBlockEN` calls ~15+ hooks that would be skipped when the
- * RU translation lights up.
- */
-export function CreatureStatBlock(props: CreatureStatBlockProps) {
+export function CreatureStatBlock({ creature, className, encounterContext }: CreatureStatBlockProps) {
+  // v1.5.1: RU content translation overlay. When a bundled pf2.ru
+  // translation exists we override the display name and the trait pills
+  // (traitsLoc is comma-separated and already includes rarity/size labels,
+  // so auto-rendered rarity/size pills are disabled to avoid duplicates).
+  // All numeric stats, interactive formulas, ability cards, spellcasting
+  // blocks, and skills stay English — keeps the structured UI intact.
   const { data: translation } = useContentTranslation(
     'monster',
-    props.creature.name,
-    props.creature.level,
+    creature.name,
+    creature.level,
   )
-  if (translation) {
-    return (
-      <CreatureStatBlockRU
-        creature={props.creature}
-        className={props.className}
-        nameLoc={translation.nameLoc}
-        traitsLoc={translation.traitsLoc}
-        textLoc={translation.textLoc}
-      />
-    )
-  }
-  return <CreatureStatBlockEN {...props} />
-}
-
-function CreatureStatBlockRU({
-  creature,
-  className,
-  nameLoc,
-  traitsLoc,
-  textLoc,
-}: {
-  creature: CreatureStatBlockData
-  className?: string
-  nameLoc: string
-  traitsLoc: string | null
-  textLoc: string
-}) {
-  return (
-    <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
-      <CardHeader className="-mt-6 pb-2 stat-block-header border-b border-primary/20">
-        <div className="flex items-start gap-4">
-          <LevelBadge level={creature.level} size="lg" />
-          <div className="flex-1">
-            <h2 className="text-xl font-bold tracking-tight">{nameLoc}</h2>
-            {traitsLoc && (
-              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
-                {traitsLoc}
-              </p>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-3 text-sm">
-        <SafeHtml html={textLoc} />
-      </CardContent>
-    </Card>
-  )
-}
-
-function CreatureStatBlockEN({ creature, className, encounterContext }: CreatureStatBlockProps) {
 
   // v1.4.1 UAT BUG-7: tag this hook as an "attack" roll site so Sure Strike
   // (RollTwice selector: attack-roll) surfaces a label+fortune formula in
@@ -388,17 +335,31 @@ function CreatureStatBlockEN({ creature, className, encounterContext }: Creature
           <LevelBadge level={creature.level} size="lg" />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold tracking-tight">{creature.name}</h2>
+              <h2 className="text-xl font-bold tracking-tight">
+                {translation?.nameLoc ?? creature.name}
+              </h2>
             </div>
             <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
               {effectiveSize} {creature.type}
             </p>
-            <TraitList
-              traits={creature.traits}
-              rarity={creature.rarity}
-              size={effectiveSize}
-              className="mt-2"
-            />
+            {translation?.traitsLoc ? (
+              // Translated traits string already carries rarity + size labels
+              // (e.g. "Необычный, Средний, Демон, Бестия, Нечестивый") — split
+              // into a pill list; disable auto rarity/size to avoid duplicates.
+              <TraitList
+                traits={translation.traitsLoc.split(/,\s*/).filter(Boolean)}
+                showRarity={false}
+                showSize={false}
+                className="mt-2"
+              />
+            ) : (
+              <TraitList
+                traits={creature.traits}
+                rarity={creature.rarity}
+                size={effectiveSize}
+                className="mt-2"
+              />
+            )}
           </div>
         </div>
       </CardHeader>
