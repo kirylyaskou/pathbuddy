@@ -59,3 +59,5 @@ i18n.on('languageChanged', (lng) => {
 
 export { i18n }
 export * from './config'
+export type { TranslationKind } from './pf2e-content'
+export { loadContentTranslations } from './pf2e-content'
