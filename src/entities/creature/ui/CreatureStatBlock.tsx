@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useMemo, useCallback } from "react"
 import { useShallow } from 'zustand/react/shallow'
 import { useRoll } from '@/shared/hooks'
-import { formatModifier, formatRollFormula } from '@/shared/lib/format'
+import { formatRollFormula } from '@/shared/lib/format'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
 import { cn } from "@/shared/lib/utils"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
@@ -10,12 +10,10 @@ import {
   Collapsible,
   CollapsibleContent,
 } from "@/shared/ui/collapsible"
-import { Swords, Shield as ShieldIcon, Sparkles } from "lucide-react"
 import { SectionHeader } from "@/shared/ui/section-header"
 import { StatRow } from "@/shared/ui/stat-row"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
-import { AbilityCard } from "@/shared/ui/ability-card"
 import type { CreatureStatBlockData } from '../model/types'
 import {
   normalizeImmunities,
@@ -37,12 +35,13 @@ import {
 import type { SpeedType } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
 import { classifyAbilities } from '../model/classify-abilities'
-import { highlightGameText } from '../lib/foundry-text'
 import { StatItem } from './StatItem'
 import { SpellcastingBlock } from './SpellcastingBlock'
 import { EquipmentBlock } from './EquipmentBlock'
 import { CreatureSpeedLine } from './CreatureSpeedLine'
 import { CreatureStrikesSection } from './CreatureStrikesSection'
+import { CreatureAbilitiesSection } from './CreatureAbilitiesSection'
+import { CreatureSkillsLine } from './CreatureSkillsLine'
 import { useEffectiveStrikes, type EffectiveStrike } from '../model/use-effective-strikes'
 
 import type { StatModifierResult } from '../model/use-modified-stats'
@@ -316,16 +315,6 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
     [creature.abilities, isSpecialFormation, troopDefenses],
   )
 
-  const [actionTab, setActionTab] = useState<'offensive' | 'defensive' | 'other'>('offensive')
-
-  // Auto-select the first non-empty tab so the initial view shows content.
-  useEffect(() => {
-    if (actionTab === 'offensive' && classifiedAbilities.offensive.length === 0) {
-      if (classifiedAbilities.defensive.length > 0) setActionTab('defensive')
-      else if (classifiedAbilities.other.length > 0) setActionTab('other')
-    }
-  }, [classifiedAbilities.offensive.length, classifiedAbilities.defensive.length, classifiedAbilities.other.length])
-console.log(creature)
   return (
     <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
       {/* Header - Grimdark */}
@@ -484,94 +473,9 @@ console.log(creature)
 
         <Separator />
 
-        {/* Abilities — FEAT-03b: Offensive/Defensive/Other tabs + Reactions sub-section */}
         {creature.abilities.length > 0 && (
           <>
-            <Collapsible defaultOpen>
-              <SectionHeader>Abilities</SectionHeader>
-              <CollapsibleContent>
-                <div className="px-4 py-3 space-y-3">
-                  {/* Tab selector — hide tabs with 0 abilities */}
-                  <div className="flex flex-wrap gap-1">
-                    {([
-                      { id: 'offensive', label: 'Offensive', icon: Swords, count: classifiedAbilities.offensive.length },
-                      { id: 'defensive', label: 'Defensive', icon: ShieldIcon, count: classifiedAbilities.defensive.length },
-                      { id: 'other', label: 'Other', icon: Sparkles, count: classifiedAbilities.other.length },
-                    ] as const).filter(({ count }) => count > 0).map(({ id, label, icon: Icon, count }) => (
-                      <button
-                        key={id}
-                        onClick={() => setActionTab(id)}
-                        className={cn(
-                          'flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors',
-                          actionTab === id
-                            ? 'bg-primary/20 text-primary border border-primary/30'
-                            : 'hover:bg-muted/50 border border-transparent',
-                        )}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {label}
-                        <span className="text-muted-foreground">({count})</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Active tab content — single item full-width, multiple items auto-fill grid */}
-                  {classifiedAbilities[actionTab].length === 1 ? (
-                    <AbilityCard
-                      name={classifiedAbilities[actionTab][0].name}
-                      actionCost={classifiedAbilities[actionTab][0].actionCost !== 0 ? classifiedAbilities[actionTab][0].actionCost : undefined}
-                      traits={classifiedAbilities[actionTab][0].traits}
-                    >
-                      <p className="text-sm text-foreground/80 leading-relaxed">
-                        {highlightGameText(classifiedAbilities[actionTab][0].description, (f) => handleRoll(f, classifiedAbilities[actionTab][0].name))}
-                      </p>
-                    </AbilityCard>
-                  ) : (
-                    <div
-                      className="grid gap-2 items-start"
-                      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-                    >
-                      {classifiedAbilities[actionTab].map((ability, i) => (
-                        <AbilityCard
-                          key={`${actionTab}-${i}`}
-                          name={ability.name}
-                          actionCost={ability.actionCost !== 0 ? ability.actionCost : undefined}
-                          traits={ability.traits}
-                        >
-                          <p className="text-sm text-foreground/80 leading-relaxed">
-                            {highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}
-                          </p>
-                        </AbilityCard>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Reactions sub-section (D-16: Offensive → Defensive → Reactions → Spells) */}
-                  {classifiedAbilities.reactions.length > 0 && (
-                    <div className="pt-2 border-t border-border/30">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Reactions</p>
-                      <div
-                        className="grid gap-2 items-start"
-                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-                      >
-                        {classifiedAbilities.reactions.map((ability, i) => (
-                          <AbilityCard
-                            key={`react-${i}`}
-                            name={ability.name}
-                            actionCost="reaction"
-                            traits={ability.traits}
-                          >
-                            <p className="text-sm text-foreground/80 leading-relaxed">
-                              {highlightGameText(ability.description, (f) => handleRoll(f, ability.name))}
-                            </p>
-                          </AbilityCard>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            <CreatureAbilitiesSection classified={classifiedAbilities} onRoll={handleRoll} />
             <Separator />
           </>
         )}
@@ -603,43 +507,11 @@ console.log(creature)
           </>
         )}
 
-        {/* Skills — all 17 standard skills in Collapsible */}
         <Collapsible defaultOpen>
           <SectionHeader>Skills</SectionHeader>
           <CollapsibleContent>
             <div className="px-4 pb-4 pt-2">
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {creature.skills.map((skill) => {
-                  const skillMod = modStats.get(skill.name.toLowerCase())
-                  const net = skillMod?.netModifier ?? 0
-                  const finalMod = skill.modifier + net
-                  const btnColor = net < 0
-                    ? 'text-pf-blood decoration-pf-blood/50'
-                    : net > 0
-                      ? 'text-pf-threat-low decoration-pf-threat-low/50'
-                      : 'text-primary decoration-primary/50'
-                  const btn = (
-                    <button
-                      onClick={() => handleRoll(formatRollFormula(finalMod), `${skill.name} check`)}
-                      title={`Roll ${skill.name} check`}
-                      className={cn(
-                        'font-mono font-bold cursor-pointer underline decoration-dotted underline-offset-2 hover:text-pf-gold transition-colors duration-100',
-                        btnColor,
-                      )}
-                    >
-                      {finalMod >= 0 ? '+' : ''}{finalMod}
-                    </button>
-                  )
-                  return (
-                    <span key={skill.name} className={skill.calculated ? 'opacity-40' : ''}>
-                      <span className="text-muted-foreground">{skill.name}</span>{' '}
-                      <ModifierTooltip modifiers={skillMod?.modifiers ?? []} netModifier={net} finalDisplay={formatModifier(finalMod)}>
-                        {btn}
-                      </ModifierTooltip>
-                    </span>
-                  )
-                })}
-              </div>
+              <CreatureSkillsLine skills={creature.skills} modStats={modStats} onRoll={handleRoll} />
             </div>
           </CollapsibleContent>
         </Collapsible>
