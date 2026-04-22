@@ -35,6 +35,7 @@ import {
   parseSpellEffectSizeShift,
   parseBaseSpeedRules,
   resolveBaseSpeedValue,
+  getRecallKnowledgeInfo,
 } from '@engine'
 import type { DieFace, SpeedType } from '@engine'
 import { mapSize } from '@/shared/lib/size-map'
@@ -83,6 +84,10 @@ function reachFromTraits(traits: string[], baseReach: number): number | undefine
   if (traits.includes('reach')) return baseReach + 5
   return undefined
 }
+
+// Capitalize the first character of a string; returns empty string unchanged.
+const capitalize = (s: string): string =>
+  s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1)
 
 /** Renders a DC value (Spell DC / Class DC) with condition modifier tinting. */
 function DcDisplay({
@@ -272,6 +277,18 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
   )
   const isTroop = traitsLower.includes('troop')
   const isSwarm = traitsLower.includes('swarm')
+
+  // Recall Knowledge DC + skill, computed from level/rarity/type/traits per CRB Table 10-5.
+  const recallKnowledge = useMemo(
+    () =>
+      getRecallKnowledgeInfo({
+        level: creature.level,
+        rarity: creature.rarity,
+        type: creature.type,
+        traits: creature.traits,
+      }),
+    [creature.level, creature.rarity, creature.type, creature.traits],
+  )
   const isSpecialFormation = isTroop || isSwarm
 
   // FEAT-03a: hide Strikes section when the creature has none (troops/swarms also skip)
@@ -338,6 +355,19 @@ export function CreatureStatBlock({ creature, className, encounterContext }: Cre
       </CardHeader>
 
       <CardContent className="p-0">
+        {/* Recall Knowledge — displayed between trait list and core stats, matching AoN header-area placement */}
+        <div className="px-4 pt-2 pb-1">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground/80">
+              Recall Knowledge DC {recallKnowledge.dc}
+            </span>
+            {creature.type.length > 0 && (
+              <>{' • '}{capitalize(creature.type)}</>
+            )}
+            {' '}({capitalize(recallKnowledge.skill)})
+          </p>
+        </div>
+
         {/* Core Stats */}
         <div className="pb-4 bg-card [@container-type:inline-size]">
           <div className="flex flex-nowrap overflow-hidden">
