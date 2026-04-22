@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { LevelBadge } from '@/shared/ui/level-badge'
-import { CreatureCard, StatBlockModal, toCreature } from '@/entities/creature'
+import { StatBlockModal, toCreature, BestiaryResultRow } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
 import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
@@ -20,7 +20,7 @@ import type { CreatureRow, HazardRow, EncounterStagingRow, LibrarySourceOption }
 import { useEncounterBuilderStore } from '../model/store'
 import { useCombatantStore } from '@/entities/combatant'
 import type { NpcCombatant, StagingCombatant } from '@/entities/combatant'
-import { getHpAdjustment, getStatAdjustment } from '@engine'
+import { getHpAdjustment } from '@engine'
 import { logErrorWithToast } from '@/shared/lib/error'
 
 function stagingToRows(encounterId: string, staging: StagingCombatant[]): EncounterStagingRow[] {
@@ -265,6 +265,29 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
     [onAddCreature, addCreatureToDraft, selectedTier]
   )
 
+  const handleAddToStaging = useCallback(
+    (row: CreatureRow) => {
+      if (!encounterId) return
+      const creature = toCreature(row)
+      const adjustedHp = Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level))
+      const combatant: NpcCombatant = {
+        id: crypto.randomUUID(),
+        kind: 'npc',
+        creatureRef: row.id,
+        displayName: creature.name,
+        initiative: 0,
+        hp: adjustedHp,
+        maxHp: adjustedHp,
+        tempHp: 0,
+        level: creature.level,
+      }
+      useCombatantStore.getState().addStagingCombatant(combatant)
+      const staging = useCombatantStore.getState().stagingCombatants
+      saveEncounterStagingCombatants(encounterId, stagingToRows(encounterId, staging))
+        .catch(logErrorWithToast('staging-save'))
+    },
+    [encounterId, selectedTier]
+  )
   const handleAddHazard = useCallback(
     (hazard: HazardRow) => {
       if (onAddHazard) {
@@ -378,104 +401,29 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
               )}
               {/* Custom creatures — gold left-border accent + "custom" chip overlay
                   distinguishes them from bestiary entries at a glance. */}
-              {customFiltered.map((row) => {
-                const creature = toCreature(row)
-                const hpDelta = getHpAdjustment(selectedTier, creature.level)
-                const statDelta = getStatAdjustment(selectedTier)
-                return (
-                  <DraggableCreatureRow key={`custom-${row.id}`} row={row} tier={selectedTier}>
-                    <div className="relative">
-                      <span
-                        className="absolute top-1.5 right-1.5 z-10 text-[10px] px-1.5 py-0.5 rounded bg-pf-gold/15 text-pf-gold border border-pf-gold/30 pointer-events-none uppercase tracking-wider"
-                      >
-                        custom
-                      </span>
-                      <CreatureCard
-                        creature={creature}
-                        compact
-                        className="border-l-2 border-l-pf-gold"
-                        onAdd={() => handleAddCreature(row)}
-                        onAddToStaging={encounterId ? () => {
-                          const combatant: NpcCombatant = {
-                            id: crypto.randomUUID(),
-                            kind: 'npc',
-                            creatureRef: row.id,
-                            displayName: creature.name,
-                            initiative: 0,
-                            hp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                            maxHp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                            tempHp: 0,
-                            level: creature.level,
-                          }
-                          useCombatantStore.getState().addStagingCombatant(combatant)
-                          const staging = useCombatantStore.getState().stagingCombatants
-                          saveEncounterStagingCombatants(encounterId, stagingToRows(encounterId, staging))
-                            .catch(logErrorWithToast('staging-save'))
-                        } : undefined}
-                        onClick={() => setStatBlockCreatureId(row.id)}
-                      />
-                    </div>
-                    {hpDelta !== 0 && (
-                      <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-1">
-                        HP: {creature.hp} → {Math.max(1, creature.hp + hpDelta)}{' '}
-                        <span className={hpDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({hpDelta > 0 ? '+' : ''}{hpDelta})
-                        </span>
-                        {' | '}AC: {creature.ac} → {creature.ac + statDelta}{' '}
-                        <span className={statDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({statDelta > 0 ? '+' : ''}{statDelta})
-                        </span>
-                      </p>
-                    )}
-                  </DraggableCreatureRow>
-                )
-              })}
-              {creatureResults.map((row) => {
-                const creature = toCreature(row)
-                const hpDelta = getHpAdjustment(selectedTier, creature.level)
-                const statDelta = getStatAdjustment(selectedTier)
-                return (
-                  <DraggableCreatureRow key={row.id} row={row} tier={selectedTier}>
-                    <div>
-                      <CreatureCard
-                        creature={creature}
-                        compact
-                        onAdd={() => handleAddCreature(row)}
-                        onAddToStaging={encounterId ? () => {
-                          const combatant: NpcCombatant = {
-                            id: crypto.randomUUID(),
-                            kind: 'npc',
-                            creatureRef: row.id,
-                            displayName: creature.name,
-                            initiative: 0,
-                            hp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                            maxHp: Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level)),
-                            tempHp: 0,
-                            level: creature.level,
-                          }
-                          useCombatantStore.getState().addStagingCombatant(combatant)
-                          const staging = useCombatantStore.getState().stagingCombatants
-                          saveEncounterStagingCombatants(encounterId, stagingToRows(encounterId, staging))
-                            .catch(logErrorWithToast('staging-save'))
-                        } : undefined}
-                        onClick={() => setStatBlockCreatureId(row.id)}
-                      />
-                    </div>
-                    {hpDelta !== 0 && (
-                      <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-1">
-                        HP: {creature.hp} → {Math.max(1, creature.hp + hpDelta)}{' '}
-                        <span className={hpDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({hpDelta > 0 ? '+' : ''}{hpDelta})
-                        </span>
-                        {' | '}AC: {creature.ac} → {creature.ac + statDelta}{' '}
-                        <span className={statDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({statDelta > 0 ? '+' : ''}{statDelta})
-                        </span>
-                      </p>
-                    )}
-                  </DraggableCreatureRow>
-                )
-              })}
+              {customFiltered.map((row) => (
+                <DraggableCreatureRow key={`custom-${row.id}`} row={row} tier={selectedTier}>
+                  <BestiaryResultRow
+                    row={row}
+                    tier={selectedTier}
+                    onAdd={() => handleAddCreature(row)}
+                    onAddToStaging={encounterId ? () => handleAddToStaging(row) : undefined}
+                    onClick={() => setStatBlockCreatureId(row.id)}
+                    isCustom
+                  />
+                </DraggableCreatureRow>
+              ))}
+              {creatureResults.map((row) => (
+                <DraggableCreatureRow key={row.id} row={row} tier={selectedTier}>
+                  <BestiaryResultRow
+                    row={row}
+                    tier={selectedTier}
+                    onAdd={() => handleAddCreature(row)}
+                    onAddToStaging={encounterId ? () => handleAddToStaging(row) : undefined}
+                    onClick={() => setStatBlockCreatureId(row.id)}
+                  />
+                </DraggableCreatureRow>
+              ))}
             </>
           )}
 

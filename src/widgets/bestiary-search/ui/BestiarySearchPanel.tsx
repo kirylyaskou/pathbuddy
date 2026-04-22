@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { CreatureCard, toCreature, extractIwr } from '@/entities/creature'
+import { toCreature, extractIwr, BestiaryResultRow } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
 import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
@@ -17,7 +17,7 @@ import type { CreatureRow, LibrarySourceOption } from '@/shared/api'
 import { useCombatantStore } from '@/entities/combatant'
 import { createCombatantFromCreature } from '@/features/combat-tracker'
 import { useShallow } from 'zustand/react/shallow'
-import { getHpAdjustment, getStatAdjustment } from '@engine'
+import { getHpAdjustment } from '@engine'
 import { useDraggable } from '@dnd-kit/core'
 import { HazardSearchPanel } from './HazardSearchPanel'
 import { CharactersTab } from './CharactersTab'
@@ -316,62 +316,25 @@ export function BestiarySearchPanel() {
               {/* Custom creatures rendered first with a gold
                   accent + "custom" pill so they stand out. Same pipeline as
                   bestiary entries. */}
-              {customFiltered.map((row) => {
-                const creature = toCreature(row)
-                const hpDelta = getHpAdjustment(selectedTier, creature.level)
-                const statDelta = getStatAdjustment(selectedTier)
-                return (
-                  <DraggableBestiaryRow key={`custom-${row.id}`} row={row} tier={selectedTier}>
-                    <div className="relative">
-                      <span
-                        className="absolute top-1.5 right-1.5 z-10 text-[10px] px-1.5 py-0.5 rounded bg-pf-gold/15 text-pf-gold border border-pf-gold/30 pointer-events-none uppercase tracking-wider"
-                      >
-                        custom
-                      </span>
-                      <CreatureCard
-                        creature={creature}
-                        compact
-                        className="border-l-2 border-l-pf-gold"
-                        onAdd={() => handleAdd(row)}
-                      />
-                    </div>
-                    {hpDelta !== 0 && (
-                      <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-1">
-                        HP: {creature.hp} → {Math.max(1, creature.hp + hpDelta)}{' '}
-                        <span className={hpDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({hpDelta > 0 ? '+' : ''}{hpDelta})
-                        </span>
-                        {' | '}AC: {creature.ac} → {creature.ac + statDelta}{' '}
-                        <span className={statDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({statDelta > 0 ? '+' : ''}{statDelta})
-                        </span>
-                      </p>
-                    )}
-                  </DraggableBestiaryRow>
-                )
-              })}
-              {results.map((row) => {
-                const creature = toCreature(row)
-                const hpDelta = getHpAdjustment(selectedTier, creature.level)
-                const statDelta = getStatAdjustment(selectedTier)
-                return (
-                  <DraggableBestiaryRow key={row.id} row={row} tier={selectedTier}>
-                    <CreatureCard creature={creature} compact onAdd={() => handleAdd(row)} />
-                    {hpDelta !== 0 && (
-                      <p className="text-[10px] text-muted-foreground px-2 -mt-0.5 mb-1">
-                        HP: {creature.hp} → {Math.max(1, creature.hp + hpDelta)}{' '}
-                        <span className={hpDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({hpDelta > 0 ? '+' : ''}{hpDelta})
-                        </span>
-                        {' | '}AC: {creature.ac} → {creature.ac + statDelta}{' '}
-                        <span className={statDelta > 0 ? 'text-primary' : 'text-destructive'}>
-                          ({statDelta > 0 ? '+' : ''}{statDelta})
-                        </span>
-                      </p>
-                    )}
-                  </DraggableBestiaryRow>
-                )
-              })}
+              {customFiltered.map((row) => (
+                <DraggableBestiaryRow key={`custom-${row.id}`} row={row} tier={selectedTier}>
+                  <BestiaryResultRow
+                    row={row}
+                    tier={selectedTier}
+                    onAdd={() => handleAdd(row)}
+                    isCustom
+                  />
+                </DraggableBestiaryRow>
+              ))}
+              {results.map((row) => (
+                <DraggableBestiaryRow key={row.id} row={row} tier={selectedTier}>
+                  <BestiaryResultRow
+                    row={row}
+                    tier={selectedTier}
+                    onAdd={() => handleAdd(row)}
+                  />
+                </DraggableBestiaryRow>
+              ))}
             </div>
           </div>
         </>

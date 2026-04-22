@@ -4,6 +4,7 @@ export type { Creature, CreatureStatBlockData, Rarity, CreatureSize, ActionCost,
 export type { CustomCreatureRow, CustomCreatureStatBlock } from './model/custom-creature-types'
 export { toCreature, toCreatureStatBlockData, extractIwr } from './model/mappers'
 export { CreatureCard } from './ui/CreatureCard'
+export { BestiaryResultRow } from './ui/BestiaryResultRow'
 export { CreatureStatBlock } from './ui/CreatureStatBlock'
 export type { EncounterContext } from './ui/CreatureStatBlock'
 export { StatItem } from './ui/StatItem'
