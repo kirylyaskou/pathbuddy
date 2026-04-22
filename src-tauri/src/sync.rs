@@ -261,14 +261,52 @@ pub async fn sync_foundry_data(
     let download_url = match url {
         Some(u) => u,
         None => {
-            let release: serde_json::Value = client
+            let response = client
                 .get("https://api.github.com/repos/foundryvtt/pf2e/releases/latest")
                 .send()
                 .await
-                .map_err(|e| format!("Failed to fetch release info: {}", e))?
+                .map_err(|e| format!("Failed to fetch release info: {}", e))?;
+
+            let status = response.status();
+            // GitHub returns rate-limit reset as a unix timestamp header.
+            let reset_in_min = response
+                .headers()
+                .get("x-ratelimit-reset")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|s| s.parse::<i64>().ok())
+                .map(|reset_ts| {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+                    ((reset_ts - now).max(0) + 59) / 60
+                });
+
+            let release: serde_json::Value = response
                 .json()
                 .await
                 .map_err(|e| format!("Failed to parse release JSON: {}", e))?;
+
+            // Rate limit or other API error — surface GitHub's "message" field verbatim
+            // with ETA for when the user can retry.
+            if status == reqwest::StatusCode::FORBIDDEN || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                let gh_message = release
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("GitHub API rate limit exceeded");
+                return Err(match reset_in_min {
+                    Some(m) if m > 0 => format!("{} Try again in ~{} min.", gh_message, m),
+                    _ => format!("{} Try again shortly.", gh_message),
+                });
+            }
+
+            if !status.is_success() {
+                let gh_message = release
+                    .get("message")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown error");
+                return Err(format!("GitHub API error ({}): {}", status, gh_message));
+            }
 
             release
                 .get("zipball_url")
