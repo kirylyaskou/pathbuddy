@@ -261,8 +261,17 @@ pub async fn sync_foundry_data(
     let download_url = match url {
         Some(u) => u,
         None => {
-            let response = client
-                .get("https://api.github.com/repos/foundryvtt/pf2e/releases/latest")
+            // Optional GITHUB_TOKEN raises the unauthenticated 60/hr quota to 5000/hr.
+            // Absent or empty → unauthenticated request (still works, just rate-limited).
+            let mut request = client
+                .get("https://api.github.com/repos/foundryvtt/pf2e/releases/latest");
+            if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+                if !token.trim().is_empty() {
+                    request = request.bearer_auth(token.trim());
+                }
+            }
+
+            let response = request
                 .send()
                 .await
                 .map_err(|e| format!("Failed to fetch release info: {}", e))?;
