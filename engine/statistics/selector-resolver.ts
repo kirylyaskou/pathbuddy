@@ -17,6 +17,18 @@ const INT_SKILLS = ['arcana', 'crafting', 'occultism', 'society']
 const WIS_SKILLS = ['medicine', 'nature', 'religion', 'survival']
 const CHA_SKILLS = ['deception', 'diplomacy', 'intimidation', 'performance']
 
+// Speed slugs are statistics in the universe but NOT "checks or DCs".
+// Per PF2e, selectors like 'all' (frightened, sickened) target "all checks
+// and DCs" — speed is numeric movement, not a check. Explicit speed
+// selectors ('all-speeds', 'land-speed', Acid Grip, etc.) still target them.
+const SPEED_SLUGS = new Set([
+  'land-speed',
+  'fly-speed',
+  'swim-speed',
+  'climb-speed',
+  'burrow-speed',
+])
+
 /**
  * Resolve a ConditionSelector to an array of statistic slugs that exist
  * on the given creature's statistic keys.
@@ -45,8 +57,10 @@ export function resolveSelector(
 function resolveSingleSelector(selector: string, statisticKeys: string[]): string[] {
   switch (selector) {
     case 'all':
-      // All checks and DCs — return every statistic key
-      return [...statisticKeys]
+      // All checks and DCs — return every statistic key except speed slugs.
+      // Per PF2e, "all checks and DCs" (frightened, sickened status penalties)
+      // does not include movement speed.
+      return statisticKeys.filter(k => !SPEED_SLUGS.has(k))
 
     case 'ac':
       return statisticKeys.filter(k => k === 'ac')
