@@ -15,12 +15,12 @@ import type {
 import type { FoundrySystem, FoundryItem, FoundryIwrEntry, FoundrySenseEntry, FoundryDamageRoll } from './foundry-types'
 
 export function toCreature(row: CreatureRow): Creature {
-  // v1.4.1 UAT BUG-2: iconic-as-NPC rows (Foundry `type: "character"`
-  // re-routed to `type='npc'` by the Rust sync). Character docs ship without
-  // `attributes.hp.max` / `attributes.ac.value` / saves (those paths only
-  // exist on true NPCs) so every numeric stat the Rust extractor reached
-  // for is null, and add-to-combat wrote HP 1/1. Overlay with the shared
-  // parser so combat-tracker receives the computed values.
+  // Iconic-as-NPC rows: Foundry `type: "character"` re-routed to `type='npc'`
+  // by the Rust sync. Character docs ship without `attributes.hp.max` /
+  // `attributes.ac.value` / saves (those paths only exist on true NPCs), so
+  // every numeric stat the Rust extractor reached for is null and add-to-combat
+  // would write HP 1/1. Overlay with the shared parser so the combat-tracker
+  // receives computed values.
   let derivedHp: number | null = null
   let derivedAc: number | null = null
   let derivedFort: number | null = null
@@ -81,8 +81,9 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
   const system = (raw.system || {}) as FoundrySystem
   const details = system.details || {}
 
-  // D-09: structured IWR transform at map-time. Legacy string[] inputs wrapped as { type }.
-  // Foundry `.exceptions` may be string[] or { label }[] — coerce to string[] with filter(Boolean).
+  // Structured IWR transform at map-time. Legacy string[] inputs wrapped as
+  // { type }. Foundry `.exceptions` may be string[] or { label }[] — coerce
+  // to string[] with filter(Boolean).
   const immunities = asArray(system.attributes?.immunities).map((i): ImmunityEntry => {
     const entry = i as FoundryIwrEntry & { exceptions?: unknown }
     const type = entry.type || String(i)
@@ -134,9 +135,8 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
   const weaponsById = new Map<string, FoundryItem>(
     items.filter((item) => item.type === 'weapon').map((item) => [item._id, item])
   )
-  // v1.4.1 UAT BUG-Z: compute a creature's base reach (feet) from its
-  // Foundry size. `"reach"` / `"reach-N"` traits on a strike layer on top
-  // of this base.
+  // Base reach (feet) derived from Foundry size. `"reach"` / `"reach-N"`
+  // traits on a strike layer on top of this base.
   const creatureSize: string = (typeof (system as { traits?: { size?: { value?: string } } }).traits?.size?.value === 'string')
     ? ((system as { traits: { size: { value: string } } }).traits.size.value)
     : 'med'
@@ -250,7 +250,7 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     classDCFromMod != null ? 10 + Number(classDCFromMod) :
     undefined
 
-  // D-08: Ability modifiers from Foundry `system.abilities.{str,dex,con,int,wis,cha}.mod`.
+  // Ability modifiers from Foundry `system.abilities.{str,dex,con,int,wis,cha}.mod`.
   // Bestiary rows have these; fallback to 0 if missing.
   const foundryAbilities = (system as { abilities?: Record<string, { mod?: number }> }).abilities ?? {}
   let abilityMods: AbilityMods = {
@@ -262,14 +262,13 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     cha: foundryAbilities.cha?.mod ?? 0,
   }
 
-  // v1.4 UAT BUG-B + v1.4.1 UAT fix: iconic-as-NPC (Foundry `type: "character"`
-  // synced into the bestiary as `type: "npc"`). Character documents store
-  // declarative data only — numeric stats live on nested items
-  // (class/ancestry/armor/weapon) and have to be reconstructed via the
-  // shared Foundry-PC parser. The Rust sync path reads NPC paths
-  // (attributes.hp.max, saves.fortitude.value, …) which are all absent on a
-  // character document, so the row ships with hp/ac/saves = null. The parser
-  // overlay fills them plus strikes, skills, languages, speed, and reach.
+  // Iconic-as-NPC overlay: Foundry `type: "character"` gets synced into the
+  // bestiary as `type: "npc"`, but character documents carry declarative data
+  // only — numeric stats live on nested items (class/ancestry/armor/weapon)
+  // and have to be reconstructed via the shared Foundry-PC parser. Rust sync
+  // reads NPC paths (attributes.hp.max, saves.fortitude.value, …) which are
+  // all absent on a character doc, so the row ships with hp/ac/saves = null.
+  // The parser overlay fills them plus strikes, skills, languages, speed, reach.
   let derivedStrikes: typeof strikes | null = null
   let derivedBase: Partial<Creature> | null = null
   let derivedSkills: typeof skills | null = null
@@ -310,7 +309,7 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
   }
 }
 
-// ─── v1.4.1 UAT: character-as-NPC derivation via shared parser ────────────
+// ─── Character-as-NPC derivation via shared parser ────────────────────────
 // Foundry character documents don't carry computed numeric stats on disk.
 // `derivePcStats` delegates to the shared `parseFoundryCharacterDoc` so the
 // iconic-as-NPC overlay (this file) and the PC-library row (sync-iconics-pc)

@@ -92,11 +92,11 @@ function DraggableHazardRow({
   )
 }
 
-// D-25: adapt a loaded custom stat block into the CreatureRow shape the existing
-// onAddCreature / handleAddCreature pipeline consumes. Co-located — not exported.
-// traits is JSON-stringified (toCreature uses parseJsonArray); raw_json carries the
-// full stat block but downstream fetchStatBlockData routes custom- ids through the
-// 59-10 Task 1 prefix branch, so raw_json re-parsing never runs for custom rows.
+// Adapt a loaded custom stat block into the CreatureRow shape the existing
+// handleAddCreature pipeline consumes. Co-located — not exported.
+// traits is JSON-stringified (toCreature uses parseJsonArray); raw_json carries
+// the full stat block but fetchStatBlockData routes custom- ids through the
+// prefix branch, so raw_json re-parsing never runs for custom rows.
 function customToCreatureRow(custom: CustomCreatureRow, stat: CreatureStatBlockData): CreatureRow {
   return {
     id: custom.id,
@@ -128,19 +128,18 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
   const [creatureLoading, setCreatureLoading] = useState(false)
   const [selectedTier, setSelectedTier] = useState<WeakEliteTier>('normal')
 
-  // D-25: custom creatures resolved to CreatureRow shape once on mount so the
-  // same <CreatureCard> pipeline (compact, onAdd, onAddToStaging, tier math,
-  // drag-to-drop) renders them uniformly with bestiary entries.
+  // Custom creatures resolved to CreatureRow shape once on mount so the same
+  // <CreatureCard> pipeline renders them uniformly with bestiary entries.
   const [customRows, setCustomRows] = useState<CreatureRow[]>([])
 
   // Hazard state
   const [hazardResults, setHazardResults] = useState<HazardRow[]>([])
   const [hazardLoading, setHazardLoading] = useState(false)
 
-  // FEAT-12: clicking a creature card opens its stat block for preview (no add)
+  // Clicking a creature card opens its stat block for preview (no add).
   const [statBlockCreatureId, setStatBlockCreatureId] = useState<string | null>(null)
 
-  // 70-04: Paizo library scope filter — parity with BestiarySearchPanel.
+  // Paizo library scope filter — parity with BestiarySearchPanel.
   const [sourceFilter, setSourceFilter] = useState<string | null>(null)
   const [librarySources, setLibrarySources] = useState<LibrarySourceOption[]>([])
 
@@ -202,11 +201,10 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
     return () => { cancelled = true; clearTimeout(timer) }
   }, [query, activeTab])
 
-  // D-25: load custom creatures and resolve each to a CreatureRow so
-  // <CreatureCard> can render them identically to bestiary entries.
-  // Eager-fetch is cheap in practice (a user has tens of custom creatures
-  // at most). Optimization into a single multi-id query is deferred until
-  // observed slowness.
+  // Load custom creatures and resolve each to a CreatureRow so CreatureCard
+  // renders them identically to bestiary entries. Eager-fetch is cheap in
+  // practice (tens of custom creatures at most); collapsing this to a single
+  // multi-id query is deferred until observed slowness.
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -242,7 +240,7 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
     setSelectedTier('normal')
   }, [query])
 
-  // D-25: filter custom creatures by name; cap at 20 for row-density parity.
+  // Filter custom creatures by name; cap at 20 for row-density parity.
   const customFiltered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return customRows.slice(0, 20)
@@ -266,10 +264,6 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
     },
     [onAddCreature, addCreatureToDraft, selectedTier]
   )
-
-  // D-25: custom creatures go through the SAME handleAddCreature pipeline
-  // as bestiary entries — no separate handler needed now that customRows are
-  // pre-resolved to CreatureRow shape at mount time.
 
   const handleAddHazard = useCallback(
     (hazard: HazardRow) => {
@@ -349,8 +343,7 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
             ))}
           </div>
         )}
-        {/* 70-04 / v1.4.1 UAT BUG-8: Paizo library scope — shadcn Select
-            dropdown replaces the horizontally-scrolling chip row. */}
+        {/* Paizo library scope — shadcn Select dropdown (replaces horizontal chip row). */}
         {activeTab === 'creatures' && librarySources.length > 0 && (
           <Select
             value={sourceFilter ?? '__all__'}
@@ -383,9 +376,8 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
               {!creatureLoading && creatureResults.length === 0 && customFiltered.length === 0 && query.trim() && (
                 <p className="text-sm text-muted-foreground text-center py-4">No creatures found</p>
               )}
-              {/* D-25: custom creatures — same CreatureCard pipeline as bestiary,
-                  visually marked with a gold left-border accent + absolute "custom"
-                  chip overlay so users can distinguish them at a glance. */}
+              {/* Custom creatures — gold left-border accent + "custom" chip overlay
+                  distinguishes them from bestiary entries at a glance. */}
               {customFiltered.map((row) => {
                 const creature = toCreature(row)
                 const hpDelta = getHpAdjustment(selectedTier, creature.level)
