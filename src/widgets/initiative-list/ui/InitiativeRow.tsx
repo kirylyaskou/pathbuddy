@@ -95,7 +95,7 @@ export function InitiativeRow({
       style={style}
       className={cn(
         'group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors border border-transparent',
-        isActive && 'bg-primary/15 border-primary/30',
+        isActive && 'bg-emerald-500/15 border-emerald-500/40',
         isSelected && !isActive && 'bg-accent/50 border-accent/30',
         !isActive && !isSelected && 'hover:bg-accent/30',
         isDragging && 'opacity-50',
