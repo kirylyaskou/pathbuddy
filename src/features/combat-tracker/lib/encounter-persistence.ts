@@ -18,6 +18,8 @@ function buildEncounterSavePayload() {
   const combatants = useCombatantStore.getState().combatants
   const conditions = useConditionStore.getState().activeConditions
 
+  const combatantIds = new Set(combatants.map((c) => c.id))
+
   return {
     encounterId: tracker.combatId,
     round: tracker.round,
@@ -30,14 +32,16 @@ function buildEncounterSavePayload() {
       tempHp: c.tempHp,
       initiative: c.initiative,
     })),
-    conditions: conditions.map((c): EncounterConditionRow => ({
-      combatantId: c.combatantId,
-      slug: c.slug,
-      value: c.value,
-      isLocked: c.isLocked,
-      grantedBy: c.grantedBy,
-      formula: c.formula,
-    })),
+    conditions: conditions
+      .filter((c) => combatantIds.has(c.combatantId))
+      .map((c): EncounterConditionRow => ({
+        combatantId: c.combatantId,
+        slug: c.slug,
+        value: c.value,
+        isLocked: c.isLocked,
+        grantedBy: c.grantedBy,
+        formula: c.formula,
+      })),
   }
 }
 
