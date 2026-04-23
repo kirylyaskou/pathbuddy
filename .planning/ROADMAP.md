@@ -1099,7 +1099,7 @@ Full details: [`.planning/milestones/v1.6.0-ROADMAP.md`](./milestones/v1.6.0-ROA
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 84. HTML Parser Library | 1/1 | Complete   | 2026-04-23 |
+| 84. HTML Parser Library | 2/2 | Complete   | 2026-04-23 |
 | 85. Migration + DB Schema | 0/? | Not started | — |
 | 86. Bundled Loader Integration | 0/? | Not started | — |
 | 87. API + Hook Extension | 0/? | Not started | — |
