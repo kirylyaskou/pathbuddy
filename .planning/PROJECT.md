@@ -1,8 +1,24 @@
 # PathMaid — Project Reference
 
-**Updated:** 2026-04-23 (после shipping v1.6.0)
+**Updated:** 2026-04-24 (начат v1.7.0)
 **Repo:** github.com/kirylyaskou/PathMaid
-**Current version:** v1.6.0
+**Current version:** v1.6.0 (shipped) · v1.7.0 (в работе)
+
+## Current Milestone: v1.7.0 Monster Translation
+
+**Goal:** Отрендерить полный RU-перевод stat block монстров в существующем `CreatureStatBlock` — структурированные ability cards, skills, saves, speeds, strikes показывают RU текст, цифры/rolls/spellcasting остаются интерактивными. Load-time HTML parsing, runtime читает готовые структурированные данные.
+
+**Target features:**
+- HTML parser (`rus_text` → structured RU) в bundled loader при seed translations (native `DOMParser`, zero new deps)
+- DB schema: `translations.structured_json` column + migration `0041_translation_structured_json.sql` (та же миграция фиксит 0038 prefix collision через rename `0038_translations.sql` → `0041_`)
+- `useContentTranslation` расширяется — возвращает typed `structured: {abilitiesLoc, skillsLoc, speedsLoc, savesLoc, strikesLoc, …} | null`
+- `CreatureStatBlock` wire-up — ability.description / skill.name / save.bonus / speed.type / strike.name подменяются из `translation.structured.*` с fallback на EN
+- Close v1.6.0 carryover: trim `use-spellcasting.ts` (<100 строк), reinstate per-phase SUMMARY/VERIFICATION/UAT discipline
+
+**Out of scope:**
+- Spell/item/feat/action structured RU — perception-wise работают, оставляем nameLoc-only
+- Integration regression tests для FSD moves — отдельный milestone (v1.8+)
+- macOS notarization / Android разморозка
 
 ---
 
@@ -36,13 +52,22 @@ Pathfinder 2e GM Assistant — десктопное приложение для 
 - ✓ **In-app updater** — ed25519 signing, UpdateDialog, startup auto-check, darwin-gate — v1.5.0
 - ✓ **Spellcasting deep fix** — castType dispatcher (prepared/innate/spontaneous/focus), heightening preview + persistence, @item.level cast-rank, FSD migration, innate frequency — v1.6.0
 
-### Active (v1.7.0 candidates, not yet prioritized)
+### Active (v1.7.0 scope)
 
-- [ ] Rename `0038_translations.sql` → resolve migration 0038 collision (tech debt from v1.6.0)
-- [ ] Reinstate per-phase SUMMARY.md / VERIFICATION.md / UAT.md discipline (v1.6.0 shipped with inline plans)
-- [ ] Integration regression tests для FSD-миграций (Phase 82 → hotfix 706ffed6 был бы пойман)
-- [ ] macOS notarization → full in-app updater для darwin
-- [ ] Android build разморозка (если есть спрос)
+- [ ] **TRANS-01** Parser `parseMonsterRuHtml(text, rus_text)` — pure TS, native DOMParser
+- [ ] **TRANS-02** Migration `0041_translation_structured_json.sql` + rename `0038_translations.sql`
+- [ ] **TRANS-03** Bundled loader populates `translations.structured_json` on seed
+- [ ] **TRANS-04** `useContentTranslation` returns typed `structured` field
+- [ ] **TRANS-05** `CreatureStatBlock` wires RU abilities / skills / saves / speeds / strikes с fallback на EN
+- [ ] **DEBT-01** `use-spellcasting.ts` <100 строк (carryover from v1.6.0 audit)
+- [ ] **DEBT-02** Per-phase SUMMARY.md / VERIFICATION.md / UAT.md — reinstate для каждой v1.7.0 фазы
+
+### Deferred (future milestones)
+
+- Integration regression tests для FSD-миграций — v1.8+
+- macOS notarization + full in-app updater для darwin — требует Apple Developer ID
+- Android build разморозка — только если спрос
+- Spell/item/feat/action structured RU — оценить после релиза v1.7.0, решение данные-driven
 
 ### Out of Scope
 
@@ -89,4 +114,4 @@ Pathfinder 2e GM Assistant — десктопное приложение для 
 
 ---
 
-_Last updated: 2026-04-23 after v1.6.0 milestone_
+_Last updated: 2026-04-24 — v1.7.0 Monster Translation kickoff_

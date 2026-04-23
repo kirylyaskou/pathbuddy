@@ -1,35 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6.0
-milestone_name: — Spellcasting Deep Fix
-status: shipped
-stopped_at: v1.6.0 archived and tagged
-last_updated: "2026-04-23T15:00:00Z"
-last_activity: 2026-04-23 -- v1.6.0 archived + v1.5.0 retroactive archive + MILESTONES.md created
+milestone: v1.7.0
+milestone_name: Monster Translation
+status: defining_requirements
+stopped_at: Requirements defined, roadmap being drafted
+last_updated: "2026-04-24T00:00:00Z"
+last_activity: 2026-04-24 -- v1.7.0 kickoff — PROJECT.md updated, REQUIREMENTS.md + ROADMAP.md next
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 32
-  completed_plans: 14
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-23 after v1.6.0 shipping)
+See: `.planning/PROJECT.md` (updated 2026-04-24 for v1.7.0 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** v1.7.0 планирование (запустить `/gsd-new-milestone`).
+**Current focus:** v1.7.0 — Monster Translation. Load-time HTML→structured parser для RU-переводов; `CreatureStatBlock` читает структурированный перевод и показывает RU в ability cards / skills / saves / speeds / strikes.
 
 ## Current Position
 
-Milestone: v1.6.0 → SHIPPED 2026-04-23
-Tag: v1.6.0 (и v1.5.0 retroactive если отсутствует)
-Next: `/gsd-new-milestone` для v1.7.0
+Milestone: v1.7.0 Monster Translation
+Phase: Not started (defining requirements)
+Plan: —
+Status: Requirements → Roadmap → Phase 84
+Last activity: 2026-04-24 — scope confirmed (hybrid C / load-time parser / native DOMParser / no new deps)
 
-Progress: [██████████] 100% (7/7 v1.6.0 phases)
+Progress: [░░░░░░░░░░] 0% (roadmap pending)
 
 ## Accumulated Context
 
@@ -46,19 +48,26 @@ Progress: [██████████] 100% (7/7 v1.6.0 phases)
 - Engine остаётся вне FSD, `@engine` alias
 - `import.meta.glob` для Drizzle migrations
 - No IIFE в JSX; derived state через `useMemo`; декомпозиция по FSD (`lib → model → ui`)
+- **Translation IPC boundary:** `shared/api/translations.ts` — единственный consumer DB translations; `shared/i18n/use-content-translation.ts` — единственный React-hook
 
-### Known Tech Debt (v1.6.0 audit carryover)
+### v1.7.0 Technical Decisions
 
-См. [`.planning/milestones/v1.6.0-MILESTONE-AUDIT.md`](./milestones/v1.6.0-MILESTONE-AUDIT.md):
+- **HTML parser:** native `DOMParser` (доступен в Tauri WebView) — zero new deps, stable querySelector API, safer than regex
+- **Migration:** `0041_translation_structured_json.sql` добавляет `structured_json TEXT NULL` на `translations` table **и** ренеймит `0038_translations.sql` → `0041_translations.sql` в том же touch (resolve migration 0038 collision с Phase 79's `0038_spell_overrides_heightened.sql`)
+- **Matching strategy:** EN/RU парсинг парой (оба HTML), match abilities по index (порядок гарантирован в pf2.ru source), fallback на bolded-name match через normalized lowercase
+- **Runtime:** zero parsing в UI — `useContentTranslation` returns ready-made structured object; parser живёт только в `shared/i18n/pf2e-content/` loader code path
 
-- Migration 0038 collision — `0038_translations.sql` (v1.5.1-1.5.3 RU branch) vs `0038_spell_overrides_heightened.sql` (Phase 79). Convention violated, но ordering стабилен.
-- `use-spellcasting.ts` = 119 строк (goal было <100).
-- Нет per-phase SUMMARY.md / VERIFICATION.md для фаз 77-83 (inline plans).
-- 4 post-milestone hotfixes (UAT gap в Phase 79/81 scope на description rendering).
+### Known Tech Debt (v1.6.0 audit carryover — scoped into v1.7.0)
+
+- ✓ Migration 0038 collision → fix в Phase 85 (DEBT via rename in same migration touch)
+- ✓ `use-spellcasting.ts` = 119 строк → trim <100 (DEBT-01, Phase 89)
+- ✓ Per-phase SUMMARY/VERIFICATION/UAT artifacts reinstated (DEBT-02, process-level for each v1.7 phase)
+- → Integration regression tests для FSD-миграций — deferred to v1.8+
+- → Post-milestone hotfixes (UAT gap в description rendering) — covered by DEBT-02 UAT discipline
 
 ### Pending Todos
 
-None (milestone closed).
+- Push `614172c5` (v1.6.0 archive commit) на origin/master — ожидание решения пользователя
 
 ### Blockers/Concerns
 
@@ -68,10 +77,10 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260422-rh9 | Add Recall Knowledge DC display to CreatureStatBlock | 2026-04-22 | 168e89f0 | _archived with v1.6.0_ |
+| _(new quick tasks tracked here during v1.7.0)_ | | | | |
 
 ## Session Continuity
 
-Last session: 2026-04-23
-Stopped at: v1.6.0 shipped, archived, tagged. Worktree: claude/upbeat-goldstine-a7bee2 merged into master.
-Next step: `/gsd-new-milestone` for v1.7.0 scoping.
+Last session: 2026-04-24
+Stopped at: v1.7.0 kickoff — PROJECT.md updated, STATE.md rewritten, REQUIREMENTS.md + ROADMAP.md write pending.
+Next step: Draft REQUIREMENTS.md → ROADMAP.md → commit kickoff → `/gsd-discuss-phase 84` or `/gsd-plan-phase 84`.

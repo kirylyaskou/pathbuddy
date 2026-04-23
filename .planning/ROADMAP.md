@@ -23,7 +23,7 @@
 - ✅ **v1.4.0 — Effects Deep Dive + PC Library + UX Unification** — Phases 65-70 (shipped 2026-04-20)
 - ✅ **v1.5.0 — In-App Updater** — Phases 71-76 (shipped 2026-04-23, [archive](./milestones/v1.5.0-ROADMAP.md))
 - ✅ **v1.6.0 — Spellcasting Deep Fix** — Phases 77-83 (shipped 2026-04-23, [archive](./milestones/v1.6.0-ROADMAP.md), [audit](./milestones/v1.6.0-MILESTONE-AUDIT.md))
-- 📋 **v1.7.0 — TBD** — planning (see `/gsd-new-milestone`)
+- 🚧 **v1.7.0 — Monster Translation** — Phases 84-89 (in progress — started 2026-04-24)
 
 ## Phases
 
@@ -1008,13 +1008,106 @@ Phases 77-83 — cantrip rank safety net, castType UI split, heightening preview
 
 Full details: [`.planning/milestones/v1.6.0-ROADMAP.md`](./milestones/v1.6.0-ROADMAP.md) · Audit: [`.planning/milestones/v1.6.0-MILESTONE-AUDIT.md`](./milestones/v1.6.0-MILESTONE-AUDIT.md)
 
-### 📋 v1.7.0 — TBD (planning)
+### 🚧 v1.7.0 — Monster Translation (In Progress)
 
-Run `/gsd-new-milestone` to scope. Known tech debt carryover from v1.6.0 audit:
-- Rename `0038_translations.sql` → `0041_translations.sql` to resolve migration collision
-- Reinstate per-phase SUMMARY/VERIFICATION/UAT artifacts
-- Integration regression tests for FSD-migrations
+**Milestone Goal:** Load-time HTML→structured парсер для RU-переводов монстров; `CreatureStatBlock` отображает RU текст в ability cards / skills / saves / speeds / strikes с fallback на EN. Runtime без парсинга.
+
+- [ ] **Phase 84: HTML Parser Library** — `parseMonsterRuHtml(text, rus_text)` pure TS + native DOMParser; unit coverage на Succubus + 5 other monsters
+- [ ] **Phase 85: Migration + DB Schema** — `0041_translation_structured_json.sql`: rename `0038_translations.sql` → `0041_translations.sql` + add `structured_json TEXT NULL` column
+- [ ] **Phase 86: Bundled Loader Integration** — parser дёргается при seed translations table; structured_json populated; graceful degradation на malformed HTML
+- [ ] **Phase 87: API + Hook Extension** — `shared/api/translations.ts` возвращает typed `structured` field; `useContentTranslation` surface'ит его consumers; backward compat для существующих consumers
+- [ ] **Phase 88: CreatureStatBlock Overlay Wiring** — ability cards / skills / saves / speeds / strikes / spellcasting heading читают structured RU с EN fallback
+- [ ] **Phase 89: Tech Debt — use-spellcasting Trim** — `use-spellcasting.ts` <100 строк (carryover из v1.6.0 audit)
+- [ ] **DEBT-02 (process)** — Per-phase SUMMARY.md / VERIFICATION.md / UAT.md дисциплина восстановлена для каждой v1.7.0 фазы (reinstates dropped-in-v1.6.0 practice)
+
+## Phase Details
+
+### Phase 84: HTML Parser Library
+**Goal**: Pure TS модуль `parseMonsterRuHtml(textEn, rusText)` извлекает структурированный RU из HTML пары. Zero new deps, native DOMParser.
+**Depends on**: Nothing (parser изолирован, не зависит от DB/schema)
+**Requirements**: TRANS-01
+**Files**: `src/shared/i18n/pf2e-content/lib/parse-monster.ts` (new), `src/shared/i18n/pf2e-content/lib/types.ts` (new with `MonsterStructuredLoc` type)
+**Success Criteria**:
+1. Parser не бросает на HTML из всех записей в `monster.json` — graceful `null` на malformed
+2. Для Succubus: корректно извлекает 5 ability blocks (Seductive Presence, Rejection Vulnerability, Change Shape, Embrace, Passionate Kiss, Profane Gift), strike (когти +16), skills (7 навыков), saves, speeds (25/35), spellcasting heading, HP (100), AC (23), weaknesses (cold iron 5, holy 5)
+4. EN↔RU matching: positional index-based primary strategy; bolded-name normalized match as fallback
+5. Pure TS, no React imports, no new npm deps
+6. Unit tests в `parse-monster.test.ts` — Succubus + 5 other monsters (можно добавить в `monster.json` для теста) — 100% parse success
+
+### Phase 85: Migration + DB Schema
+**Goal**: DB готова принимать structured_json. Prefix collision с Phase 79 migration разрешена.
+**Depends on**: Phase 84 (type shape known before column can be designed)
+**Requirements**: TRANS-02
+**Files**: `src/shared/db/migrations/0041_translation_structured_json.sql` (new), `src/shared/db/migrations/0038_translations.sql` → renamed to `src/shared/db/migrations/0041_translations.sql` (or delete+recreate depending on `import.meta.glob` load order), `src/shared/db/schema/translations.ts` (Drizzle schema update)
+**Success Criteria**:
+1. Fresh install: migrations применяются без конфликтов, `translations.structured_json` column существует, nullable
+2. Existing install: migration 0041 применяется идемпотентно; legacy translations rows имеют `structured_json IS NULL` (backfill в Phase 86 seed)
+3. `import.meta.glob` находит все migrations в новом порядке; нет дубликата `0038_*`
+4. Drizzle `db.select().from(translations)` type включает `structuredJson: string | null`
+5. `tsc --noEmit` = 0, `pnpm lint:arch` = 0
+
+### Phase 86: Bundled Loader Integration
+**Goal**: При seed `pf2e-content/monster.json` в DB парсер вызывается и результат сохраняется в `structured_json`. Legacy `name_loc`/`traits_loc`/`text_loc` продолжают работать unchanged.
+**Depends on**: Phase 84 (parser must exist), Phase 85 (DB column must exist)
+**Requirements**: TRANS-03
+**Files**: `src/shared/i18n/pf2e-content/index.ts` (extend loader)
+**Success Criteria**:
+1. Cold app-start: `SELECT COUNT(*) FROM translations WHERE kind='monster' AND structured_json IS NOT NULL` > 0
+2. Parser exceptions logged via `console.warn`, не ломают loader (loader всё равно seed'ит row с `structured_json=NULL`)
+3. Idempotent seed: повторный run не дублирует rows, `structured_json` перезаписывается
+4. Performance: seed 100+ monsters < 500ms (native DOMParser fast enough)
+5. Non-monster kinds (spell/item/feat/action) — `structured_json` остаётся NULL (scope monster-only)
+
+### Phase 87: API + Hook Extension
+**Goal**: Typed structured data доступна через `useContentTranslation` без парсинга в рантайме.
+**Depends on**: Phase 85 (column must exist), Phase 86 (populated with data)
+**Requirements**: TRANS-04
+**Files**: `src/shared/api/translations.ts` (add `structured` field parsing on read), `src/shared/i18n/use-content-translation.ts` (surface structured), `src/shared/i18n/index.ts` (re-export types)
+**Success Criteria**:
+1. `useContentTranslation('monster', name, level)` returns `{data: {nameLoc, traitsLoc, textLoc, structured: MonsterStructuredLoc | null}, isLoading, locale}`
+2. JSON.parse ошибки в `structured_json` → `structured=null`, консоль-warn, без throw
+3. `locale === 'en'` → всё-ещё short-circuit без DB-roundtrip (existing behavior preserved)
+4. Zero regressions для существующих consumers (FeatInlineCard / ItemReferenceDrawer / SpellReferenceDrawer / ActionsPage) — они читают только `nameLoc`
+5. Types exported из barrel: `MonsterStructuredLoc`, `AbilityLoc`, `SkillLoc`, `StrikeLoc`, etc.
+
+### Phase 88: CreatureStatBlock Overlay Wiring
+**Goal**: `CreatureStatBlock` показывает RU текст в интерактивных блоках когда structured translation существует. Numeric values / rolls / spellcasting editor интерактивность остаются.
+**Depends on**: Phase 87 (hook must surface structured)
+**Requirements**: TRANS-05
+**Files**: `src/entities/creature/ui/CreatureStatBlock.tsx` (wiring), потенциально под-компоненты (`AbilityCard`, `SkillsRow`, `SavesBlock`, `SpeedsBlock`, `StrikesBlock`) — декомпозиция по FSD (`lib → model → ui`) если CreatureStatBlock.tsx разрастается
+**Success Criteria**:
+1. Для Succubus @ locale=ru: ability cards показывают RU name + description; skill names RU (Акробатика, Обман, Дипломатия); saves-labels RU (Стойкость, Реакция, Воля); HP/AC labels RU (ПЗ, КБ); speeds RU (футы, полёт); strike name RU (когти); damage type RU (режущий)
+2. Цифры (bonus +16, damage 2d8+8, DC 26, skill bonuses) остаются engine-computed; clickable roll surfaces работают
+3. Spellcasting block heading RU (`Врождённые сакральные заклинания`); spell names уже переводятся через existing hook
+4. Creature без перевода (напр. Foundry-only) — рендер unchanged, EN baseline
+5. Creature с legacy nameLoc/traitsLoc но без structured_json — old overlay behavior сохраняется (name+traits RU, остальное EN), без regression
+6. `pnpm lint` = 0, `tsc --noEmit` = 0, `pnpm lint:arch` = 0
+
+### Phase 89: Tech Debt — use-spellcasting Trim
+**Goal**: `use-spellcasting.ts` facade <100 строк (carryover из v1.6.0 Phase 80 audit).
+**Depends on**: Nothing (orthogonal к v1.7.0 main scope; параллельна Phase 84-88)
+**Requirements**: DEBT-01
+**Files**: `src/features/spellcasting/model/use-spellcasting.ts`, потенциально `src/features/spellcasting/lib/resolve-cast-mode.ts` (new), `src/features/spellcasting/model/use-spellcasting-progress.ts` (new sub-hook)
+**Success Criteria**:
+1. `use-spellcasting.ts` < 100 lines (currently 119)
+2. Zero user-visible regressions — все v1.6.0 spellcasting сценарии (prepared/innate/spontaneous/focus) проходят без изменений
+3. `resolveCastMode` extracted в pure helper в `features/spellcasting/lib/`
+4. Sub-hook остаётся в `features/spellcasting/model/`, follows `useShallow` + `useMemo` conventions
+5. 0 `useState` в facade (был инвариант Phase 80)
+
+### v1.7.0 Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 84. HTML Parser Library | 0/? | Not started | — |
+| 85. Migration + DB Schema | 0/? | Not started | — |
+| 86. Bundled Loader Integration | 0/? | Not started | — |
+| 87. API + Hook Extension | 0/? | Not started | — |
+| 88. CreatureStatBlock Overlay Wiring | 0/? | Not started | — |
+| 89. use-spellcasting Trim | 0/? | Not started | — |
+
+**Parallelization hint:** Phase 84 + Phase 89 можно гнать параллельно (разные файлы, orthogonal). Phase 85-88 — strict sequence (Phase 85 → 86 → 87 → 88 dep chain).
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-23 — v1.5.0 + v1.6.0 archived to .planning/milestones/*
+*Last updated: 2026-04-24 — v1.7.0 Monster Translation roadmap added (Phases 84-89)*
