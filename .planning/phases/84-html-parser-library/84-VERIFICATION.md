@@ -1,8 +1,8 @@
 ---
 phase: 84-html-parser-library
 verified: 2026-04-24T11:30:00Z
-status: human_needed
-score: 8/8 must-haves verified
+status: passed
+score: 8/8 must-haves verified (human UAT resolved — 57/57 assertions passed in Tauri WebView DevTools)
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
