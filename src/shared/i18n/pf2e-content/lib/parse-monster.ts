@@ -25,6 +25,7 @@
 import type {
   MonsterStructuredLoc,
   AbilityLoc,
+  AbilityScoresLoc,
   SkillLoc,
   SpeedsLoc,
   SavesLoc,
@@ -94,36 +95,24 @@ function htmlToMarkdownLite(html: string): string {
 }
 
 /**
- * Extract action count from text and return cleaned text + count.
- * Action markers: [one-action] → 1, [two-actions] → 2, [three-actions] → 3
- */
-function extractActionCount(text: string): {
-  text: string
-  actionCount: 1 | 2 | 3 | null
-} {
-  let actionCount: 1 | 2 | 3 | null = null
-  let cleaned = text
-
-  if (/\[one-action\]/i.test(text)) {
-    actionCount = 1
-    cleaned = text.replace(/\[one-action\]/gi, '').trim()
-  } else if (/\[two-actions\]/i.test(text)) {
-    actionCount = 2
-    cleaned = text.replace(/\[two-actions\]/gi, '').trim()
-  } else if (/\[three-actions\]/i.test(text)) {
-    actionCount = 3
-    cleaned = text.replace(/\[three-actions\]/gi, '').trim()
-  }
-
-  return { text: cleaned, actionCount }
-}
-
-/**
  * Get the inner HTML of an element as a string, for further processing.
  * Falls back to textContent if innerHTML unavailable.
  */
 function getInnerHtml(el: Element): string {
   return el.innerHTML ?? el.textContent ?? ''
+}
+
+/**
+ * Strip a trailing numeric value from a comma-token.
+ * "холодное железо 5" → "холодное железо"
+ * "холод 10" → "холод"
+ * "благословлённое оружие" → "благословлённое оружие" (unchanged)
+ *
+ * WHY: Engine owns weakness/resistance magnitudes. Parser returns text
+ * labels only — numeric bonuses must not leak into localization output.
+ */
+function stripTrailingNumber(s: string): string {
+  return s.replace(/\s+\d+\s*$/, '').trim()
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +235,7 @@ function extractWeaknesses(rusBody: Element): string[] {
     const raw = match[1].trim()
     return raw
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => stripTrailingNumber(s.trim()))
       .filter((s) => s.length > 0)
   } catch {
     return []
@@ -262,7 +251,7 @@ function extractResistances(rusBody: Element): string[] {
     const raw = match[1].trim()
     return raw
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => stripTrailingNumber(s.trim()))
       .filter((s) => s.length > 0)
   } catch {
     return []
@@ -278,7 +267,7 @@ function extractImmunities(rusBody: Element): string[] {
     const raw = match[1].trim()
     return raw
       .split(',')
-      .map((s) => s.trim())
+      .map((s) => stripTrailingNumber(s.trim()))
       .filter((s) => s.length > 0)
   } catch {
     return []
@@ -374,8 +363,59 @@ function extractSpellcastingHeading(rusBody: Element): { headingLabel: string } 
 }
 
 /**
+ * Extract 6 ability-score labels from the RU stat block.
+ * pf2.ru renders them as a sequence of six bolded tokens each followed
+ * by a numeric bonus, e.g.:
+ *   <b>Сил</b> +2, <b>Лвк</b> +3, <b>Вын</b> +4, <b>Инт</b> +4, <b>Мдр</b> +2, <b>Хар</b> +7
+ *
+ * Positional mapping: 1st→strLabel, 2nd→dexLabel, 3rd→conLabel,
+ * 4th→intLabel, 5th→wisLabel, 6th→chaLabel.
+ *
+ * Bonuses (+N) are ignored — engine owns numeric values, parser returns
+ * text labels only. Returns fallback defaults when the section is absent
+ * or yields fewer than 6 matching tokens (graceful degradation).
+ */
+function extractAbilityScores(rusBody: Element): AbilityScoresLoc {
+  const defaults: AbilityScoresLoc = {
+    strLabel: 'Сил',
+    dexLabel: 'Лов',
+    conLabel: 'Стой',
+    intLabel: 'Инт',
+    wisLabel: 'Муд',
+    chaLabel: 'Хар',
+  }
+
+  try {
+    const bodyHtml = rusBody.innerHTML
+    // Match <b>LABEL</b> followed by optional whitespace + signed integer.
+    // The signed-integer anchor eliminates false matches on section headers
+    // (e.g. <b>Скорость</b>: 25) and ability descriptions.
+    const labelPattern = /<b>([А-Яа-яёЁ]{2,5})<\/b>\s*[+\-]\d+/g
+    const labels: string[] = []
+    let m: RegExpExecArray | null
+    while ((m = labelPattern.exec(bodyHtml)) !== null) {
+      labels.push(m[1].trim())
+      if (labels.length >= 6) break
+    }
+
+    if (labels.length < 6) return defaults
+
+    return {
+      strLabel: labels[0],
+      dexLabel: labels[1],
+      conLabel: labels[2],
+      intLabel: labels[3],
+      wisLabel: labels[4],
+      chaLabel: labels[5],
+    }
+  } catch {
+    return defaults
+  }
+}
+
+/**
  * Extract in-box abilities from an HTML body element.
- * Matches EN abilities by index (D-05: positional fallback).
+ * Matches EN abilities by index (positional fallback per matching strategy).
  */
 function extractAbilities(rusBody: Element, _enBody: Element | null): AbilityLoc[] {
   try {
@@ -395,11 +435,14 @@ function extractAbilities(rusBody: Element, _enBody: Element | null): AbilityLoc
       const nameMatch = /<b>([^<]+)<\/b>/i.exec(html)
       if (!nameMatch) continue
 
-      let abilityName = nameMatch[1].trim()
+      const abilityName = nameMatch[1].trim()
 
-      // Extract action count from name or full text
-      const { text: nameWithoutAction, actionCount } = extractActionCount(abilityName)
-      abilityName = nameWithoutAction
+      // Action markers ([one-action]/[two-actions]/[three-actions]) in pf2.ru HTML
+      // stand AFTER the closing </b>, not inside it. Search on the full span html.
+      let actionCount: 1 | 2 | 3 | null = null
+      if (/\[one-action\]/i.test(html)) actionCount = 1
+      else if (/\[two-actions\]/i.test(html)) actionCount = 2
+      else if (/\[three-actions\]/i.test(html)) actionCount = 3
 
       // Extract traits from parenthesized list after the name
       // Pattern: (trait1, trait2, trait3)
@@ -483,5 +526,6 @@ export function parseMonsterRuHtml(
     languagesLoc: extractLanguages(rusBody),
     strikesLoc: extractStrikes(rusBody),
     spellcastingLoc: extractSpellcastingHeading(rusBody),
+    abilityScoresLoc: extractAbilityScores(rusBody),
   }
 }
