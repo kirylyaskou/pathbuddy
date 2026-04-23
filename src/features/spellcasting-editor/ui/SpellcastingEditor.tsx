@@ -68,8 +68,11 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
 
   const minAvailableRank = minAvailableRankProp ?? (effectiveRanks.length > 0 ? Math.min(...effectiveRanks) : null)
   const effectiveSelectedSlotLevel = selectedSlotLevel ?? minAvailableRank
+  // Only apply rank-filter when caller wires onSelectSlotLevel (combat stat
+  // block). For builders and previews — no filter callback → show all ranks
+  // so the user can edit every rank at once.
   const filteredRanks = filteredRanksProp ?? (
-    effectiveSelectedSlotLevel === null
+    !onSelectSlotLevel || effectiveSelectedSlotLevel === null
       ? effectiveRanks
       : effectiveRanks.filter((r) => r === effectiveSelectedSlotLevel)
   )

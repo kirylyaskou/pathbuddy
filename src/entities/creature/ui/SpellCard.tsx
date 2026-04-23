@@ -188,7 +188,7 @@ export function SpellCard({ foundryId, name, source, combatId, castRank, castCon
           {/* Description */}
           {spell.description && (
             <p className="text-xs text-foreground/75 leading-relaxed whitespace-pre-line">
-              {stripHtml(resolveFoundryTokensForSpell(spell.description))}
+              {stripHtml(resolveFoundryTokensForSpell(spell.description, { itemLevel: castRank ?? spell.rank }))}
             </p>
           )}
         </div>

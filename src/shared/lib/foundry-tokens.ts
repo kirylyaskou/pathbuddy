@@ -1,10 +1,38 @@
 import { stripHtml } from './html'
 
+export interface ResolveFoundryTokensOptions {
+  /** Effective `@item.level` for expressions like `ceil(@item.level/2)`. For
+   *  cantrips this is the heightened rank (`ceil(casterLevel/2)`), for ranked
+   *  spells it's the slot rank. Omit to leave unresolved. */
+  itemLevel?: number
+}
+
+/**
+ * Resolve simple `@item.level` arithmetic expressions. Handles `ceil(...)`,
+ * `floor(...)`, and bare `@item.level`. Returns the original string when
+ * expression shape is unsupported.
+ */
+function resolveItemLevelExpr(expr: string, itemLevel: number | undefined): string {
+  if (itemLevel === undefined) return expr
+  // ceil(@item.level/N)
+  expr = expr.replace(/ceil\(\s*@item\.level\s*\/\s*(\d+)\s*\)/gi, (_, n: string) =>
+    String(Math.ceil(itemLevel / parseInt(n, 10))),
+  )
+  // floor(@item.level/N)
+  expr = expr.replace(/floor\(\s*@item\.level\s*\/\s*(\d+)\s*\)/gi, (_, n: string) =>
+    String(Math.floor(itemLevel / parseInt(n, 10))),
+  )
+  // @item.level alone
+  expr = expr.replace(/@item\.level/g, String(itemLevel))
+  return expr
+}
+
 /**
  * Resolve Foundry VTT inline tokens to human-readable text.
  * Handles @UUID, @Condition, @Damage, @Check, @Template, [[/act]], [[/br]], etc.
  */
-export function resolveFoundryTokens(text: string): string {
+export function resolveFoundryTokens(text: string, options: ResolveFoundryTokensOptions = {}): string {
+  const { itemLevel } = options
   // @UUID with alias → alias text
   text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
   // @UUID without alias → last path segment (Foundry IDs ~16 chars are dropped)
@@ -17,11 +45,21 @@ export function resolveFoundryTokens(text: string): string {
   text = text.replace(/@Condition\[([^\]]+)\]/g, (_, slug: string) =>
     slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   )
-  // @Damage[2d6[fire], 1d4[bleed]] → "2d6 fire plus 1d4 bleed"
-  text = text.replace(/@Damage\[([^\]]*)\]/g, (_, inner: string) =>
-    inner.split(/,\s*/).map((p: string) => {
-      const m = p.trim().match(/^(.+?)\[(.+?)\]$/)
-      return m ? `${m[1]} ${m[2]}` : p.trim()
+  // @Damage: supports one level of nested brackets so that forms like
+  // `@Damage[(ceil(@item.level/2))[persistent,acid]]` parse correctly.
+  // Outer match: @Damage[ ... ] where inner allows `[...]` sub-tokens.
+  text = text.replace(/@Damage\[((?:[^\[\]]|\[[^\]]*\])*)\]/g, (_, inner: string) =>
+    inner.split(/,\s*(?![^\[]*\])/).map((p: string) => {
+      const trimmed = p.trim()
+      // Match "formula[type1,type2,...]" — the formula part can contain nested
+      // parens/operators (ceil/floor/@item.level). Lazy up to the last `[`.
+      const m = trimmed.match(/^(.+?)\[([^\]]+)\]$/)
+      if (!m) return resolveItemLevelExpr(trimmed, itemLevel)
+      const formula = resolveItemLevelExpr(m[1].trim(), itemLevel)
+      // Strip parens that wrapped a pure numeric result so `(4)` → `4`.
+      const cleanFormula = /^\(\s*-?\d+(?:\.\d+)?\s*\)$/.test(formula) ? formula.slice(1, -1).trim() : formula
+      const types = m[2].split(/,\s*/).join(' ')
+      return `${cleanFormula} ${types}`
     }).join(' plus ')
   )
   // @Check[type:perception|dc:20] → "DC 20 Perception check"
@@ -73,6 +111,7 @@ export function resolveFoundryTokens(text: string): string {
 
 /**
  * Resolve Foundry tokens then strip HTML — canonical sanitize for display text.
+ * Optional `itemLevel` resolves `@item.level` expressions in @Damage formulas.
  */
 export function sanitizeFoundryText(html: string | null | undefined): string {
   if (!html) return ''
