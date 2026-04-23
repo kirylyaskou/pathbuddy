@@ -1,0 +1,70 @@
+/**
+ * Structured localization output for a parsed PF2e monster stat block.
+ *
+ * WHY numeric values are absent:
+ *   Bonuses (+16), damage dice (2d8+8), HP totals, AC values, DC numbers —
+ *   all are computed and owned by the engine (engine.creature.*). The RU
+ *   overlay touches only textual labels and names. Parsing numeric values
+ *   from HTML would duplicate engine-authoritative data and create a
+ *   two-source-of-truth risk. Consumers (Phase 88) read the structured
+ *   fields here and fall back to engine for all numeric rendering.
+ *   See CONTEXT.md D-03.
+ */
+export interface MonsterStructuredLoc {
+  abilitiesLoc: AbilityLoc[]
+  skillsLoc: SkillLoc[]
+  speedsLoc: SpeedsLoc
+  savesLoc: SavesLoc
+  acLoc: { label: string }
+  hpLoc: { label: string }
+  weaknessesLoc: string[]
+  resistancesLoc: string[]
+  immunitiesLoc: string[]
+  perceptionLoc: { label: string; senses: string }
+  languagesLoc: string[]
+  strikesLoc: StrikeLoc[]
+  spellcastingLoc: { headingLabel: string }
+}
+
+export interface AbilityLoc {
+  name: string
+  /** markdown-lite: **bold** / *italic* / \n for line breaks */
+  description: string
+  actionCount: 1 | 2 | 3 | null
+  traits: string[]
+}
+
+export interface SkillLoc {
+  /** RU display name (e.g. "Акробатика") */
+  name: string
+  /** EN lookup key (e.g. "Acrobatics") — canonical engine.creature.skills[].name */
+  engineKey: string
+  /** parsed from HTML for debug verification; Phase 88 ignores and uses engine value */
+  bonus: number
+}
+
+export interface SpeedsLoc {
+  /** RU-formatted string: "25 футов" */
+  land?: string
+  /** "35 футов" */
+  fly?: string
+  climb?: string
+  burrow?: string
+  swim?: string
+}
+
+export interface SavesLoc {
+  /** "Стойкость" */
+  fortLabel: string
+  /** "Реакция" */
+  refLabel: string
+  /** "Воля" */
+  willLabel: string
+}
+
+export interface StrikeLoc {
+  /** "когти" / "огненный шар" */
+  name: string
+  /** "режущий" / "огонь" */
+  damageType: string
+}
