@@ -1171,12 +1171,12 @@ Archived — see `.planning/milestones/v1.4.0-ROADMAP.md`
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 77. Cantrip Rank Safety Net | 1/1 | Complete    | 2026-04-23 |
-| 78. UI Split по castType | 0/5 | Not started | - |
-| 79. Heightening в SpellSearchDialog | 0/5 | Not started | - |
-| 80. Split use-spellcasting | 0/7 | Not started | - |
-| 81. Cast-rank через @item.level | 0/5 | Not started | - |
-| 82. FSD Migration — features/spellcasting/ | 0/5 | Not started | - |
-| 83. Innate Frequency Parsing | 0/4 | Not started | - |
+| 78. UI Split по castType | 5/5 | Complete    | 2026-04-23 |
+| 79. Heightening в SpellSearchDialog | 5/5 | Complete    | 2026-04-23 |
+| 80. Split use-spellcasting | 1/1 | Complete    | 2026-04-23 |
+| 81. Cast-rank через @item.level | 1/1 | Complete    | 2026-04-23 |
+| 82. FSD Migration — features/spellcasting/ | 1/1 | Complete    | 2026-04-23 |
+| 83. Innate Frequency Parsing | 1/1 | Complete    | 2026-04-23 |
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*

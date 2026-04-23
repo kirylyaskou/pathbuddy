@@ -49,6 +49,8 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
 
   const isEdit = mode === 'edit'
   const castMode = resolveCastMode(entry.castType)
+  // PF2e RAW: cantrips heighten to ceil(casterLevel / 2), clamped 1..10.
+  const autoCantripRank = Math.min(10, Math.max(1, Math.ceil(props.creatureLevel / 2)))
 
   const effectiveRanks = useMemo(() => {
     const baseRanks = entry.spellsByRank.map((br) => br.rank)
@@ -155,6 +157,7 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
           mode={mode}
           tradition={entry.tradition}
           warn={warn}
+          autoCastRank={autoCantripRank}
           onRemoveSpell={onRemoveSpell}
           onOpenSpellSearch={onOpenSpellSearch}
           sourceName={sourceName}

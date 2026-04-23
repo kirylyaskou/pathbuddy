@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: — Spellcasting Deep Fix
-status: executing
-stopped_at: Phase 77 complete — cantrip trait forces rank=0 in catalog sync
-last_updated: "2026-04-23T10:58:45Z"
-last_activity: 2026-04-23 -- Phase 77 applied: cantrip rank safety net в catalog sync-spells
+status: complete
+stopped_at: All 7 phases (77-83) implemented and committed
+last_updated: "2026-04-23T13:00:00Z"
+last_activity: 2026-04-23 -- v1.6.0 feature-complete; all phases shipped
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 7
   total_plans: 32
-  completed_plans: 1
-  percent: 14
+  completed_plans: 14
+  percent: 100
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)

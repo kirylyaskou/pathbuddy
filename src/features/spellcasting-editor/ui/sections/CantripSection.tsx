@@ -11,6 +11,10 @@ export interface CantripSectionProps {
   mode: 'view' | 'edit'
   tradition: SpellcastingSection['tradition']
   warn: string | null
+  /** Effective rank to render cantrip damage at. PF2e RAW: cantrips scale to
+   *  `ceil(casterLevel / 2)`. Passed from SpellcastingEditor which receives
+   *  creatureLevel. */
+  autoCastRank: number
   onRemoveSpell?: (name: string, rank: number, isDefault: boolean) => void
   onOpenSpellSearch?: (rank: number) => void
   sourceName?: string
@@ -23,6 +27,7 @@ export function CantripSection({
   mode,
   tradition,
   warn,
+  autoCastRank,
   onRemoveSpell,
   onOpenSpellSearch,
   sourceName,
@@ -51,6 +56,7 @@ export function CantripSection({
             name={slot.name}
             foundryId={slot.foundryId}
             rank={rank}
+            castRank={autoCastRank}
             cast={false}
             isEdit={isEdit}
             showCast={false}
@@ -69,6 +75,7 @@ export function CantripSection({
             name={slot.name}
             foundryId={slot.foundryId}
             rank={rank}
+            castRank={autoCastRank}
             cast={false}
             isEdit={isEdit}
             showCast={false}
