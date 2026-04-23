@@ -36,6 +36,9 @@ export interface TranslationRow {
   traitsLoc: string | null
   textLoc: string
   source: string | null
+  /** Raw JSON.stringify output of the monster HTML parser; null for legacy
+   *  rows that pre-date the parser-backed seed. Parse at consumer (not here). */
+  structuredJson: string | null
 }
 
 interface TranslationDbRow {
@@ -47,6 +50,7 @@ interface TranslationDbRow {
   traits_loc: string | null
   text_loc: string
   source: string | null
+  structured_json: string | null
 }
 
 function toRow(db: TranslationDbRow): TranslationRow {
@@ -59,6 +63,7 @@ function toRow(db: TranslationDbRow): TranslationRow {
     traitsLoc: db.traits_loc,
     textLoc: db.text_loc,
     source: db.source,
+    structuredJson: db.structured_json,
   }
 }
 
@@ -73,6 +78,9 @@ function toRow(db: TranslationDbRow): TranslationRow {
  *                  when caller does not know or the kind has no level
  * @param locale  — requested locale ('ru', etc.); 'en' always returns null
  *                  (the EN content IS the original — no translation needed)
+ *
+ * The returned row includes `structuredJson` — a raw JSON string from the
+ * parser-backed seed — or null for legacy rows. Parse at the consumer.
  */
 export async function getTranslation(
   kind: TranslationKind,
@@ -90,7 +98,7 @@ export async function getTranslation(
   if (typeof level === 'number') {
     // Exact match on (kind, name NOCASE, level, locale)
     const exact = await db.select<TranslationDbRow[]>(
-      `SELECT kind, name_key, level, locale, name_loc, traits_loc, text_loc, source
+      `SELECT kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json
        FROM translations
        WHERE kind = ?
          AND name_key = ? COLLATE NOCASE
@@ -108,7 +116,7 @@ export async function getTranslation(
   // a deterministic row if the data ever contains level-variants without an
   // exact caller level).
   const fuzzy = await db.select<TranslationDbRow[]>(
-    `SELECT kind, name_key, level, locale, name_loc, traits_loc, text_loc, source
+    `SELECT kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json
      FROM translations
      WHERE kind = ?
        AND name_key = ? COLLATE NOCASE
