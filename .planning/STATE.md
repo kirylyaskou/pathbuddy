@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.6.0
 milestone_name: — Spellcasting Deep Fix
-status: complete
-stopped_at: All 7 phases (77-83) implemented and committed
-last_updated: "2026-04-23T13:00:00Z"
-last_activity: 2026-04-23 -- v1.6.0 feature-complete; all phases shipped
+status: shipped
+stopped_at: v1.6.0 archived and tagged
+last_updated: "2026-04-23T15:00:00Z"
+last_activity: 2026-04-23 -- v1.6.0 archived + v1.5.0 retroactive archive + MILESTONES.md created
 progress:
   total_phases: 7
   completed_phases: 7
@@ -18,54 +18,47 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-20)
+See: `.planning/PROJECT.md` (updated 2026-04-23 after v1.6.0 shipping)
 
-**Core value:** Feature-complete PF2e DM tool — accurate game logic engine powering a React frontend with real Foundry VTT data.
-**Current focus:** Phase 78 — UI split по castType (SpellcastingEditor → dispatcher)
+**Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
+**Current focus:** v1.7.0 планирование (запустить `/gsd-new-milestone`).
 
 ## Current Position
 
-Phase: 77 (complete) → 78 (next)
-Plan: 77-01 complete (single-commit phase)
-Status: Ready to execute Phase 78
-Last activity: 2026-04-23 -- Phase 77 applied: cantrip rank safety net в catalog sync-spells
+Milestone: v1.6.0 → SHIPPED 2026-04-23
+Tag: v1.6.0 (и v1.5.0 retroactive если отсутствует)
+Next: `/gsd-new-milestone` для v1.7.0
 
-Progress: [█▒░░░░░░░░] 14% (1 of 7 v1.6.0 phases)
+Progress: [██████████] 100% (7/7 v1.6.0 phases)
 
 ## Accumulated Context
 
-### v1.6.0 Milestone Scope
+### Shipped Milestones
 
-Spellcasting module рефактор + три PF2e-correctness фикса:
-1. Cantrip trait overrides Foundry level.value в catalog (Phase 77) ✅
-2. castType-aware UI: prepared/innate как consumable copies, spontaneous как pool, focus без per-rank pips (Phase 78)
-3. Heightening в SpellSearchDialog + persistence (Phase 79, migration 0038)
-4. use-spellcasting → facade + 6 sub-hooks (Phase 80)
-5. Cast-rank через @item.level на encounter_combatant_effects (Phase 81, migration 0039)
-6. FSD migration: SpellcastingBlock → features/spellcasting/ (Phase 82)
-7. Innate frequency parsing — at-will / N-per-day (Phase 83, migration 0040)
-
-Итого: 3 миграции (0038, 0039, 0040), ~32 commits, ~20 новых файлов.
-
-### v1.5.0 Carried-Forward (shipped 2026-04-23, no formal archive)
-
-- macOS auto-update отключён на уровне frontend (darwin guard в startup hook + "Открыть страницу релиза" в Settings). Нотаризация — future milestone.
-- NSIS = canonical Windows updater format (updaterJsonPreferNsis: true).
-- shared/api/updater.ts — единственный файл с импортом @tauri-apps/plugin-updater (FSD constraint).
-- db.close() вызывается до install() для Windows NSIS compatibility.
+- v1.6.0 — Spellcasting Deep Fix (Phases 77-83) — archived [v1.6.0-ROADMAP.md](./milestones/v1.6.0-ROADMAP.md), audit [v1.6.0-MILESTONE-AUDIT.md](./milestones/v1.6.0-MILESTONE-AUDIT.md)
+- v1.5.0 — In-App Updater (Phases 71-76) — archived retroactively [v1.5.0-ROADMAP.md](./milestones/v1.5.0-ROADMAP.md)
 
 ### Carry-forward architectural invariants
 
-- createHashRouter mandatory (no HTML5 history in Tauri WebView)
-- FSD: useShallow mandatory для Zustand object selectors
-- shared/api/ — единственный Tauri IPC boundary
-- Engine остаётся вне FSD, @engine alias
-- import.meta.glob для Drizzle migrations
-- No IIFE в JSX; derived state через useMemo; декомпозиция по FSD (lib → model → ui)
+- `createHashRouter` mandatory (no HTML5 history в Tauri WebView)
+- FSD: `useShallow` mandatory для Zustand object selectors
+- `shared/api/` — единственный Tauri IPC boundary
+- Engine остаётся вне FSD, `@engine` alias
+- `import.meta.glob` для Drizzle migrations
+- No IIFE в JSX; derived state через `useMemo`; декомпозиция по FSD (`lib → model → ui`)
+
+### Known Tech Debt (v1.6.0 audit carryover)
+
+См. [`.planning/milestones/v1.6.0-MILESTONE-AUDIT.md`](./milestones/v1.6.0-MILESTONE-AUDIT.md):
+
+- Migration 0038 collision — `0038_translations.sql` (v1.5.1-1.5.3 RU branch) vs `0038_spell_overrides_heightened.sql` (Phase 79). Convention violated, но ordering стабилен.
+- `use-spellcasting.ts` = 119 строк (goal было <100).
+- Нет per-phase SUMMARY.md / VERIFICATION.md для фаз 77-83 (inline plans).
+- 4 post-milestone hotfixes (UAT gap в Phase 79/81 scope на description rendering).
 
 ### Pending Todos
 
-None.
+None (milestone closed).
 
 ### Blockers/Concerns
 
@@ -75,11 +68,10 @@ None.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260422-rh9 | Add Recall Knowledge DC display to CreatureStatBlock | 2026-04-22 | 168e89f0 | [260422-rh9-add-recall-knowledge-dc-display-to-creat](./quick/260422-rh9-add-recall-knowledge-dc-display-to-creat/) |
+| 260422-rh9 | Add Recall Knowledge DC display to CreatureStatBlock | 2026-04-22 | 168e89f0 | _archived with v1.6.0_ |
 
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Phase 77 complete — cantrip trait forces rank=0 в spells catalog
-Next step: /gsd-execute-phase 78 (UI split по castType)
-Resume file: n/a (inline plan in milestone context)
+Stopped at: v1.6.0 shipped, archived, tagged. Worktree: claude/upbeat-goldstine-a7bee2 merged into master.
+Next step: `/gsd-new-milestone` for v1.7.0 scoping.

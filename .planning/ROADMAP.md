@@ -21,8 +21,9 @@
 - ✅ **v1.2.1 — Spell Effects + Custom Creatures** — Phases 56-59 (shipped 2026-04-17)
 - ✅ **v1.3.0 — Encounter Import + Combat UX Refinement** — Phases 60-64 (shipped 2026-04-19)
 - ✅ **v1.4.0 — Effects Deep Dive + PC Library + UX Unification** — Phases 65-70 (shipped 2026-04-20)
-- ✅ **v1.5.0 — In-App Updater** — Phases 71-76 (shipped 2026-04-23)
-- 🚧 **v1.6.0 — Spellcasting Deep Fix** — Phases 77-83 (in progress)
+- ✅ **v1.5.0 — In-App Updater** — Phases 71-76 (shipped 2026-04-23, [archive](./milestones/v1.5.0-ROADMAP.md))
+- ✅ **v1.6.0 — Spellcasting Deep Fix** — Phases 77-83 (shipped 2026-04-23, [archive](./milestones/v1.6.0-ROADMAP.md), [audit](./milestones/v1.6.0-MILESTONE-AUDIT.md))
+- 📋 **v1.7.0 — TBD** — planning (see `/gsd-new-milestone`)
 
 ## Phases
 
@@ -995,189 +996,25 @@ Archived — see `.planning/milestones/v1.4.0-ROADMAP.md`
 
 ---
 
-### v1.5.0 — In-App Updater (In Progress)
+### ✅ v1.5.0 — In-App Updater (SHIPPED 2026-04-23)
 
-**Milestone Goal:** Добавить в PathMaid механизм самообновления через официальный `tauri-plugin-updater` + GitHub Releases. Desktop-only (Windows + Linux). Android вырезан из CI.
+Phases 71-76 — ed25519 signing, tauri-plugin-updater + process, shared/api/updater.ts, UpdateDialog + Settings UI, startup auto-check, v1.5.0 release.
 
-- [x] **Phase 71: CI Signing Setup** — ed25519 keypair, GitHub Secrets, tauri-action signing, Android job removed (completed 2026-04-20)
-- [x] **Phase 72: Rust Plugin + Config** — tauri-plugin-updater/process registered, capabilities, tauri.conf.json wired (completed 2026-04-20)
-- [x] **Phase 73: Shared API + Store** — shared/api/updater.ts IPC wrapper, shared/model/updater-store.ts Zustand state machine (completed 2026-04-20)
-- [ ] **Phase 74: Update Dialog + Settings UI** — UpdateDialog widget, Settings Updates section, darwin gate (parallel-safe with Phase 75)
-- [ ] **Phase 75: Startup Auto-Check** — useStartupUpdateCheck hook, toast/badge on update found (parallel-safe with Phase 74)
-- [ ] **Phase 76: Version Bump + Release** — v1.5.0 bump in all three sources, SQLite graceful shutdown before install, release notes
+Full details: [`.planning/milestones/v1.5.0-ROADMAP.md`](./milestones/v1.5.0-ROADMAP.md)
 
-## Phase Details
+### ✅ v1.6.0 — Spellcasting Deep Fix (SHIPPED 2026-04-23)
 
-### Phase 71: CI Signing Setup
-**Goal**: ed25519 ключи сгенерированы, GitHub Secrets настроены, Android job удалён, CI продуцирует подписанные .sig файлы и корректный latest.json
-**Depends on**: Phase 70 (previous milestone complete)
-**Requirements**: SIGN-01, SIGN-02, SIGN-03
-**Success Criteria** (what must be TRUE):
-  1. Публичный ключ прописан в tauri.conf.json plugins.updater.pubkey; .key файл в .gitignore, нет в git
-  2. GitHub Secrets TAURI_SIGNING_PRIVATE_KEY и TAURI_SIGNING_PRIVATE_KEY_PASSWORD выставлены; CI-сборка не падает с "no private key"
-  3. Релизные ассеты содержат .sig файлы рядом с каждым инсталлятором; latest.json имеет непустое signature для Windows и Linux
-  4. main.yml не содержит build-android job; updaterJsonPreferNsis: true выставлен; latest.json.platforms для Windows указывает на NSIS-инсталлятор
-  5. bundle.createUpdaterArtifacts: true прописан под bundle, не под plugins.updater
-**Plans**: 3 plans
-  - [x] 71-01-PLAN.md — Generate ed25519 keypair locally + backup to password manager (manual, wave 1)
-  - [x] 71-02-PLAN.md — Wire pubkey into tauri.conf.json + update main.yml (signing env + NSIS prefer + remove Android) + add .key to .gitignore (auto, wave 2)
-  - [x] 71-03-PLAN.md — Configure GitHub Secrets TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_PRIVATE_KEY_PASSWORD via GitHub UI + final phase verify (manual, wave 3)
+Phases 77-83 — cantrip rank safety net, castType UI split, heightening preview + persistence, use-spellcasting facade split, @item.level cast-rank, FSD migration, innate frequency parsing.
 
-### Phase 72: Rust Plugin + Config
-**Goal**: tauri-plugin-updater и tauri-plugin-process зарегистрированы, capabilities выданы, tauri.conf.json полностью настроен, pnpm tauri dev запускается чисто
-**Depends on**: Phase 71 (pubkey must be in tauri.conf.json before plugin can build against it)
-**Requirements**: PLUGIN-01, PLUGIN-02, PLUGIN-03, PLUGIN-04
-**Success Criteria** (what must be TRUE):
-  1. pnpm tauri dev запускается без паники и без HTTP-запросов к GitHub endpoint (dev-guard via #[cfg(not(debug_assertions))])
-  2. pnpm tauri build проходит без Rust-ошибок; Cargo target cfg исключает плагин из Android-сборки
-  3. capabilities/default.json содержит updater:default и process:allow-restart
-  4. plugins.updater.endpoints[0] = https://github.com/kirylyaskou/PathMaid/releases/latest/download/latest.json — без version literal; pubkey присутствует (из Phase 71); поле `dialog` отсутствует (удалено в Tauri v2 — custom UI mandatory)
-**Plans**: 2 plans
-  - [x] 72-01-PLAN.md — Add target-gated Rust deps + exact-pin JS deps + updater endpoints in tauri.conf.json (auto, wave 1)
-  - [x] 72-02-PLAN.md — Register plugins in lib.rs setup hook with dev-guard + capability permissions + manual smoke test (mixed auto+checkpoint, wave 2)
+Full details: [`.planning/milestones/v1.6.0-ROADMAP.md`](./milestones/v1.6.0-ROADMAP.md) · Audit: [`.planning/milestones/v1.6.0-MILESTONE-AUDIT.md`](./milestones/v1.6.0-MILESTONE-AUDIT.md)
 
-### Phase 73: Shared API + Store
-**Goal**: IPC граница и стор существуют и проходят typecheck; shared/api/updater.ts и shared/model/updater-store.ts готовы к потреблению всеми UI-слоями
-**Depends on**: Phase 72 (Rust plugin registered before JS wrapper compiles in Tauri context)
-**Requirements**: API-01, API-02, API-03
-**Success Criteria** (what must be TRUE):
-  1. shared/api/updater.ts экспортирует checkForUpdate(), downloadAndInstallUpdate(onEvent), relaunchApp() с тремя typed ошибками (UpdateNetworkError, UpdateSignatureError, UpdateInstallError)
-  2. shared/model/updater-store.ts экспортирует useUpdaterStore со статусами idle|checking|available|downloading|installing|error|uptodate, полями update, progress, error
-  3. tsc --noEmit = 0; единственный импорт @tauri-apps/plugin-updater и @tauri-apps/plugin-process — src/shared/api/updater.ts
-  4. FSD не нарушен: shared/model/ не импортирует из features/ или widgets/; pnpm lint:arch = 0 нарушений
-**Plans**: 1 plan
-  - [x] 73-01-PLAN.md — shared/api/updater.ts IPC wrapper + shared/model/updater-store.ts Zustand store + barrel update (auto, wave 1, completed 2026-04-20 — commits 16588b65, 2169d216, 844b68fb)
+### 📋 v1.7.0 — TBD (planning)
 
-### Phase 74: Update Dialog + Settings UI
-**Goal**: Пользователь может вручную проверить обновления через Settings, увидеть диалог с release notes и progress bar, запустить установку и перезапуск; darwin-gate на macOS
-**Depends on**: Phase 73 (shared/api + store must exist)
-**Requirements**: UI-01, UI-02, UI-03, UI-04
-**Success Criteria** (what must be TRUE):
-  1. Settings page содержит секцию Updates: текущая версия, кнопка Проверить обновления, статус-строка отражает updater-store.status
-  2. При status === 'available' открывается UpdateDialog с версией, release notes (plain-text), кнопками [Скачать и установить] / [Позже]
-  3. Во время status === 'downloading' — progress bar (или indeterminate если total null); кнопки заблокированы; ошибка os error 18 (Linux cross-device) отображается понятным сообщением
-  4. После status === 'installing' диалог показывает Перезапуск...; приложение перезапускается с новой версией
-  5. На macOS: кнопка Проверить заменена на Открыть страницу релиза (shell.open); UpdateDialog не открывается на darwin
-**Plans**: TBD
-**UI hint**: yes
-
-### Phase 75: Startup Auto-Check
-**Goal**: Приложение silent-проверяет обновления при каждом запуске (production, Windows/Linux); при наличии обновления — non-intrusive toast
-**Depends on**: Phase 73 (store and API must exist; parallel-safe with Phase 74 in separate worktree)
-**Requirements**: AUTO-01
-**Success Criteria** (what must be TRUE):
-  1. pnpm tauri dev не делает HTTP-запросов к GitHub endpoint — import.meta.env.PROD guard работает
-  2. В production: при наличии обновления — non-intrusive toast/badge (dismissible, один раз за сессию); клик открывает UpdateDialog
-  3. hook дедуплицирован: повторная навигация по роутам не запускает повторный check в пределах одной сессии
-  4. На macOS: platform() === 'darwin' guard блокирует check; hook возвращается без действий
-**Plans**: TBD
-
-### Phase 76: Version Bump + Release
-**Goal**: v1.5.0 готов к релизу: версия во всех трёх источниках, SQLite graceful shutdown, release notes с сообщением об однократном ручном обновлении
-**Depends on**: Phase 74, Phase 75 (all UI and auto-check complete)
-**Requirements**: REL-01, REL-02
-**Success Criteria** (what must be TRUE):
-  1. package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml — все три содержат версию 1.5.0
-  2. downloadAndInstallUpdate флоу — db.close() вызывается до install(); Windows UAT: инсталлятор не падает с "Failed to kill"
-  3. Release notes в main.yml содержат сообщение об однократном ручном обновлении с v1.4.1; endpoints[0] без version literal
-  4. tsc --noEmit = 0; pnpm lint = 0; pnpm lint:arch = 0 FSD-нарушений
-**Plans**: TBD
-
-### v1.5.0 Progress
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 71. CI Signing Setup | 3/3 | Complete    | 2026-04-20 |
-| 72. Rust Plugin + Config | 2/2 | Complete    | 2026-04-20 |
-| 73. Shared API + Store | 1/1 | Complete    | 2026-04-22 |
-| 74. Update Dialog + Settings UI | 1/1 | Complete    | 2026-04-23 |
-| 75. Startup Auto-Check | 1/1 | Complete    | 2026-04-23 |
-| 76. Version Bump + Release | 1/1 | Complete    | 2026-04-23 |
-
-### Phase 77: Cantrip Rank Safety Net
-**Goal**: Любой Foundry spell с трейтом `cantrip` ложится на `spells.rank = 0` независимо от `sys.level.value`. Унифицирует catalog sync с creature_spell_lists.
-**Depends on**: Nothing
-**Files**: `src/shared/api/sync/sync-spells.ts`
-**Success Criteria**:
-  1. После resync `SELECT COUNT(*) FROM spells WHERE traits LIKE '%cantrip%' AND rank > 0` = 0
-  2. Bestiary preview mixed caster: cantrips показаны в rank-0 секции
-  3. `tsc --noEmit` = 0, `pnpm lint` = 0 new errors
-
-### Phase 78: UI Split по castType
-**Goal**: SpellcastingEditor становится dispatcher по castType. Четыре view-компонента: CantripSection, ConsumableCopiesView (prepared + innate), PooledSpellsView (spontaneous), FocusPoolView. Innate рендерится как prepared (strike-through per copy), не как spontaneous pool.
-**Depends on**: Phase 77
-**Files**: `features/spellcasting-editor/ui/sections/{CantripSection,ConsumableCopiesView,PooledSpellsView,FocusPoolView,RankHeader,SpellRow}.tsx`, `SpellcastingEditor.tsx`, `model/types.ts`, `entities/creature/ui/SpellcastingBlock.tsx`, `entities/creature/model/use-spellcasting.ts`
-**Success Criteria**:
-  1. Prepared caster: cast → strike-through на выбранной копии + 1 pip потрачен
-  2. Innate caster: strike-through per spell instance (было spontaneous-style pool)
-  3. Spontaneous: pip+1 без strike; Focus: cards без per-rank pips
-  4. `resolveCastMode` маршрутизирует корректно все 4 castType
-  5. `SpellRankBlock.tsx` + `SpellSlotRow.tsx` удалены
-
-### Phase 79: Heightening в SpellSearchDialog
-**Goal**: При фильтре rank N в spell search появляется секция "Heightenable → N" со spells с base rank < N + heighten preview. Add кладёт spell с `heightened_from_rank`, SpellCard рендерит heightened damage.
-**Depends on**: Phase 78
-**Files**: migration `0038_spell_overrides_heightened.sql`, `shared/api/spells.ts`, `shared/api/encounters.ts`, `entities/spell/model/types.ts`, `entities/spell/lib/heighten-preview.ts` (new), `entities/creature/ui/SpellSearchDialog.tsx`, `use-spellcasting.ts`, views из Phase 78
-**Success Criteria**:
-  1. Search "Fireball" rank=8 → row с badge "3rd → 8th, +10d6 fire"
-  2. Add → card в rank-8 блоке, damage = 16d6
-  3. Reload encounter → `heightened_from_rank` = 3 в DB
-  4. Default bestiary spells не затронуты (NULL heightened_from_rank)
-
-### Phase 80: Split use-spellcasting
-**Goal**: 393-строчный хук → facade композирующий 6 sub-hooks (useCasterProgression, useRankFilter, useSpellOverrides, useSpellLinkMap, usePooledSlots, useConsumableCopies). Каждый sub-hook владеет одним concern (DB-таблица или derived state). Callers не меняются.
-**Depends on**: Phase 79
-**Files**: `entities/creature/model/spellcasting/{use-caster-progression,use-rank-filter,use-spell-overrides,use-spell-link-map,use-pooled-slots,use-consumable-copies}.ts` (new), `use-spellcasting.ts` (facade, ~80 lines)
-**Success Criteria**:
-  1. `use-spellcasting.ts` < 100 строк после рефактора
-  2. Ни одного user-visible изменения — все Phase 78 сценарии проходят
-  3. 0 `useState` в facade
-  4. `SpellcastingBlock.tsx` destructures те же props
-
-### Phase 81: Cast-rank через @item.level
-**Goal**: Per-instance `cast_at_rank` column на `encounter_combatant_effects`. При касте heightened spell engine получает `@item.level = cast rank`, damage/attack рассчитываются корректно. Fireball rank-8 = 16d6, Heroism rank-6 = +2.
-**Depends on**: Phase 80
-**Files**: migration `0039_encounter_effects_cast_rank.sql`, `shared/api/effects.ts`, `entities/spell-effect/model/types.ts`, `entities/creature/ui/SpellcastingBlock.tsx`, `widgets/combatant-detail/ui/EffectsSection.tsx`
-**Success Criteria**:
-  1. Heroism @ rank 3/6/9 → ally attack +1/+2/+3 (verified через engine)
-  2. Fireball @ rank 8 → 16d6 damage на cast
-  3. Reload encounter → все cast_at_rank сохранены
-  4. Non-heightened cast identical поведение (NULL → COALESCE → base rank)
-  5. Granted effects наследуют parent cast_at_rank
-
-### Phase 82: FSD Migration — features/spellcasting/
-**Goal**: Убрать FSD-нарушение (entities/creature → features). SpellcastingBlock + SpellSearchDialog + use-spellcasting + sub-hooks переезжают в `features/spellcasting/`. CreatureStatBlock получает `renderSpellcasting?` prop (DI). Новый `SpellListPreview` — read-only fallback.
-**Depends on**: Phase 81
-**Files**: `features/spellcasting/**` (new root), `entities/creature/ui/CreatureStatBlock.tsx` (DI prop), `entities/creature/ui/SpellListPreview.tsx` (new), 5 call-sites (CombatantDetail, CombatPage, BestiaryPage, BuilderPage, StatBlockModal)
-**Success Criteria**:
-  1. `grep -rn "from '@/features/spellcasting'" src/entities/` = 0 results
-  2. Live combat: SpellcastingBlock UX идентичен
-  3. Bestiary/Builder/Modal preview: read-only через SpellListPreview
-  4. `pnpm lint:arch` не хуже master
-  5. Old files в `entities/creature/` удалены
-
-### Phase 83: Innate Frequency Parsing
-**Goal**: Foundry `sys.frequency` парсится → сохраняется в `creature_spell_lists.frequency_json` → UI innate рендерит per-spell frequency. At-will badge вместо pips, N/day = N per-spell consumable pips.
-**Depends on**: Phase 82
-**Files**: migration `0040_creature_spells_frequency.sql`, `shared/api/sync/sync-spells.ts`, `entities/spell/model/types.ts`, `entities/creature/model/fetchStatBlock.ts`, `features/spellcasting/ui/sections/ConsumableCopiesView.tsx`
-**Success Criteria**:
-  1. NPC с at-will innate: "At will" badge, cast не консьюмит slot
-  2. NPC с 3/day innate: ровно 3 per-spell pips, strike-through работает
-  3. Legacy NPC без frequency_json: fallback на Phase 78 поведение (entries.length)
-  4. Foundry alternative shapes (string frequency) → graceful null
-
-### v1.6.0 Progress
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 77. Cantrip Rank Safety Net | 1/1 | Complete    | 2026-04-23 |
-| 78. UI Split по castType | 5/5 | Complete    | 2026-04-23 |
-| 79. Heightening в SpellSearchDialog | 5/5 | Complete    | 2026-04-23 |
-| 80. Split use-spellcasting | 1/1 | Complete    | 2026-04-23 |
-| 81. Cast-rank через @item.level | 1/1 | Complete    | 2026-04-23 |
-| 82. FSD Migration — features/spellcasting/ | 1/1 | Complete    | 2026-04-23 |
-| 83. Innate Frequency Parsing | 1/1 | Complete    | 2026-04-23 |
+Run `/gsd-new-milestone` to scope. Known tech debt carryover from v1.6.0 audit:
+- Rename `0038_translations.sql` → `0041_translations.sql` to resolve migration collision
+- Reinstate per-phase SUMMARY/VERIFICATION/UAT artifacts
+- Integration regression tests for FSD-migrations
 
 ---
 *Roadmap created: 2026-03-31 — v0.2.2-pre-alpha fresh start*
-*Last updated: 2026-04-23 — v1.6.0 Spellcasting Deep Fix roadmap added (Phases 77-83)*
+*Last updated: 2026-04-23 — v1.5.0 + v1.6.0 archived to .planning/milestones/*
