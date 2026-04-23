@@ -217,6 +217,12 @@ export function useSpellcasting(
     }
   }
 
+  // innate cast = same consumable-copy semantics as prepared. PF2e RAW treats
+  // innate spells as N copies (where N = frequency.max); strike-through per
+  // cast. encounter_prepared_casts keys by entry_id, so prepared/innate
+  // entries never conflict even when the caster has both.
+  const handleCastInnateSpell = handleCastPreparedSpell
+
   // spontaneous cast = bump used_count by one (no strike-through).
   async function handleCastSpontaneousSpell(rank: number, totalSlots: number) {
     if (!encounterId || !combatantId) return
@@ -369,9 +375,10 @@ export function useSpellcasting(
     handleSlotDelta,
     handleAddRank,
     handleAddSpell,
-    handleRemoveSpell,    // 62-02: cast handlers + consumed state
+    handleRemoveSpell,
     preparedCasts,
     handleCastPreparedSpell,
+    handleCastInnateSpell,
     handleCastSpontaneousSpell,
     // cast-apply helpers
     sectionWithLinkFlags,

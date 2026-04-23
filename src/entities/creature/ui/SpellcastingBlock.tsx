@@ -32,7 +32,7 @@ interface EncounterContext {
 
 // ephemeral Cast request in flight (picker is open).
 interface PendingCast {
-  castType: 'prepared' | 'spontaneous'
+  castType: 'prepared' | 'spontaneous' | 'innate'
   spellName: string
   rank: number
   slotKey: string | null  // null for spontaneous
@@ -61,7 +61,7 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
     handleTogglePip, handleSlotDelta, handleAddRank, handleAddSpell, handleRemoveSpell,
     removedSpells, addedByRank, isFocus, traditionFilter,
     rankWarning, minAvailableRank, filteredRanks,
-    preparedCasts, handleCastPreparedSpell, handleCastSpontaneousSpell,
+    preparedCasts, handleCastPreparedSpell, handleCastInnateSpell, handleCastSpontaneousSpell,
     sectionWithLinkFlags, hasLinkedEffectForAdded, getCastEffect, ensureSpellRow,
   } = useSpellcasting(section, creatureLevel, encounterContext)
   const { encounterId, combatantId } = encounterContext ?? {}
@@ -80,7 +80,7 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
   // helper — opens the picker for a cast request, or no-ops
   // if no linked effect is known for the spell.
   async function openPicker(
-    castType: 'prepared' | 'spontaneous',
+    castType: 'prepared' | 'spontaneous' | 'innate',
     spellName: string,
     rank: number,
     slotKey: string | null,
@@ -92,6 +92,8 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
       // plain mark-cast so users don't get a silent dead button.
       if (castType === 'prepared' && slotKey !== null) {
         await handleCastPreparedSpell(rank, slotKey, totalSlots)
+      } else if (castType === 'innate' && slotKey !== null) {
+        await handleCastInnateSpell(rank, slotKey, totalSlots)
       } else if (castType === 'spontaneous') {
         await handleCastSpontaneousSpell(rank, totalSlots)
       }
@@ -124,6 +126,12 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
   const handleEditorCastPrepared = encounterId
     ? (spellName: string, _foundryId: string | null, rank: number, slotKey: string, total: number) => {
         void openPicker('prepared', spellName, rank, slotKey, total)
+      }
+    : undefined
+
+  const handleEditorCastInnate = encounterId
+    ? (spellName: string, _foundryId: string | null, rank: number, slotKey: string, total: number) => {
+        void openPicker('innate', spellName, rank, slotKey, total)
       }
     : undefined
 
@@ -181,6 +189,8 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
       // Slot consumption — one slot per Cast regardless of target count.
       if (pendingCast.castType === 'prepared' && pendingCast.slotKey !== null) {
         await handleCastPreparedSpell(pendingCast.rank, pendingCast.slotKey, pendingCast.totalSlots)
+      } else if (pendingCast.castType === 'innate' && pendingCast.slotKey !== null) {
+        await handleCastInnateSpell(pendingCast.rank, pendingCast.slotKey, pendingCast.totalSlots)
       } else if (pendingCast.castType === 'spontaneous') {
         await handleCastSpontaneousSpell(pendingCast.rank, pendingCast.totalSlots)
       }
@@ -287,6 +297,7 @@ export function SpellcastingBlock({ section, creatureLevel, encounterContext, cr
             onAddRank={encounterId ? handleAddRank : undefined}
             onRemoveSpell={encounterId ? handleRemoveSpell : undefined}
             onCastPrepared={handleEditorCastPrepared}
+            onCastInnate={handleEditorCastInnate}
             onCastSpontaneous={handleEditorCastSpontaneous}
             hasLinkedEffectForAdded={encounterId ? hasLinkedEffectForAdded : undefined}
             onOpenSpellSearch={encounterId ? (rank) => { setSpellDialogRank(rank); setSpellDialogOpen(true) } : undefined}
