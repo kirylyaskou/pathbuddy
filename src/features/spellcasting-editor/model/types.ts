@@ -73,6 +73,13 @@ export interface SpellcastingEditorProps {
     slotKey: string,
     total: number,
   ) => void
+  onCastInnate?: (
+    spellName: string,
+    foundryId: string | null,
+    rank: number,
+    slotKey: string,
+    total: number,
+  ) => void
   onCastSpontaneous?: (
     spellName: string,
     foundryId: string | null,

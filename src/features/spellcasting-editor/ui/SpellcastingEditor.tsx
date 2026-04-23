@@ -2,20 +2,22 @@ import { useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { rankLabel } from '@/shared/lib/pf2e-display'
-import { SpellRankBlock } from './SpellRankBlock'
-import type { SpellcastingEditorProps } from '../model/types'
+import { CantripSection } from './sections/CantripSection'
+import { ConsumableCopiesView } from './sections/ConsumableCopiesView'
+import { PooledSpellsView } from './sections/PooledSpellsView'
+import { FocusPoolView } from './sections/FocusPoolView'
+import { resolveCastMode } from '../model/types'
+import type { SlotInstance, SpellcastingEditorProps } from '../model/types'
 
 /**
  * Pure presentation component for a single SpellcastingSection.
  *
- * Rendering scope:
- *   - optional rank-filter pills
- *   - per-rank blocks (rank label + slot pips +/- + spell cards + add-spell)
- *   - optional "add rank" footer
- *
- * **Excluded** (stays with caller):
- *   - entry header (tradition pill / DC+Attack / mode toggle)
- *   - SpellSearchDialog — caller owns open state; trigger via `onOpenSpellSearch`
+ * Dispatches to per-castType views:
+ *   - rank 0 → CantripSection (unlimited casts, no pips)
+ *   - prepared → ConsumableCopiesView (strike-through per slot)
+ *   - innate → ConsumableCopiesView (strike-through per copy, PF2e-correct)
+ *   - spontaneous → PooledSpellsView (shared pool, pips deplete on cast)
+ *   - focus → FocusPoolView (cards only, pool rendered separately)
  *
  * Zero persistence surface: no DB calls, no Zustand imports, no store writes.
  */
@@ -33,6 +35,7 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
     onAddRank,
     onRemoveSpell,
     onCastPrepared,
+    onCastInnate,
     onCastSpontaneous,
     onOpenSpellSearch,
     filteredRanks: filteredRanksProp,
@@ -45,8 +48,8 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
   } = props
 
   const isEdit = mode === 'edit'
+  const castMode = resolveCastMode(entry.castType)
 
-  // Derived: full set of ranks present either in the section or via positive slot delta.
   const effectiveRanks = useMemo(() => {
     const baseRanks = entry.spellsByRank.map((br) => br.rank)
     const customRanks = Object.entries(slotDeltas)
@@ -68,6 +71,160 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
       ? effectiveRanks
       : effectiveRanks.filter((r) => r === effectiveSelectedSlotLevel)
   )
+
+  // Pre-compute slot instances per rank so duplicate spell names get stable,
+  // unique slotKeys without mutating closure state during render.
+  const slotsByRank = useMemo(() => {
+    const result = new Map<number, { defaultSlots: SlotInstance[]; addedSlots: SlotInstance[] }>()
+    for (const rank of effectiveRanks) {
+      const byRank = entry.spellsByRank.find((br) => br.rank === rank)
+      const visible = byRank
+        ? byRank.spells.filter((s) => !removedSpells.has(`${rank}:${s.name}`))
+        : []
+      const occ = new Map<string, number>()
+      const take = (name: string) => {
+        const seen = occ.get(name) ?? 0
+        occ.set(name, seen + 1)
+        return `${name}#${seen}`
+      }
+      const defaultSlots: SlotInstance[] = visible.map((s) => ({
+        kind: 'default',
+        name: s.name,
+        foundryId: s.foundryId,
+        slotKey: take(s.name),
+      }))
+      const addedNames = addedByRank[rank] ?? []
+      const addedSlots: SlotInstance[] = addedNames.map((name) => ({
+        kind: 'added',
+        name,
+        foundryId: null,
+        slotKey: take(name),
+      }))
+      result.set(rank, { defaultSlots, addedSlots })
+    }
+    return result
+  }, [effectiveRanks, entry.spellsByRank, removedSpells, addedByRank])
+
+  function renderRank(rank: number) {
+    const byRank = entry.spellsByRank.find((br) => br.rank === rank)
+    const baseSlots = byRank?.slots ?? 0
+    const slotDelta = slotDeltas[rank] ?? 0
+    const totalSlots = Math.max(0, baseSlots + slotDelta)
+    const used = usedSlots[rank] ?? 0
+    const warn = rankWarning ? rankWarning(rank) : null
+    const slots = slotsByRank.get(rank) ?? { defaultSlots: [], addedSlots: [] }
+
+    if (rank === 0) {
+      return (
+        <CantripSection
+          key={rank}
+          byRank={byRank}
+          defaultSlots={slots.defaultSlots}
+          addedSlots={slots.addedSlots}
+          mode={mode}
+          tradition={entry.tradition}
+          warn={warn}
+          onRemoveSpell={onRemoveSpell}
+          onOpenSpellSearch={onOpenSpellSearch}
+          sourceName={sourceName}
+          combatId={combatId}
+        />
+      )
+    }
+
+    if (castMode === 'prepared') {
+      return (
+        <ConsumableCopiesView
+          key={rank}
+          rank={rank}
+          totalSlots={totalSlots}
+          baseSlots={baseSlots}
+          used={used}
+          warn={warn}
+          defaultSlots={slots.defaultSlots}
+          addedSlots={slots.addedSlots}
+          mode={mode}
+          castType="prepared"
+          preparedCasts={preparedCasts}
+          tradition={entry.tradition}
+          onCast={onCastPrepared}
+          onTogglePip={onTogglePip}
+          onSlotDelta={onSlotDelta}
+          onRemoveSpell={onRemoveSpell}
+          onOpenSpellSearch={onOpenSpellSearch}
+          sourceName={sourceName}
+          combatId={combatId}
+        />
+      )
+    }
+
+    if (castMode === 'innate') {
+      return (
+        <ConsumableCopiesView
+          key={rank}
+          rank={rank}
+          totalSlots={totalSlots}
+          baseSlots={baseSlots}
+          used={used}
+          warn={warn}
+          defaultSlots={slots.defaultSlots}
+          addedSlots={slots.addedSlots}
+          mode={mode}
+          castType="innate"
+          preparedCasts={preparedCasts}
+          tradition={entry.tradition}
+          onCast={onCastInnate ?? onCastPrepared}
+          onTogglePip={onTogglePip}
+          onSlotDelta={onSlotDelta}
+          onRemoveSpell={onRemoveSpell}
+          onOpenSpellSearch={onOpenSpellSearch}
+          sourceName={sourceName}
+          combatId={combatId}
+        />
+      )
+    }
+
+    if (castMode === 'focus') {
+      return (
+        <FocusPoolView
+          key={rank}
+          rank={rank}
+          warn={warn}
+          defaultSlots={slots.defaultSlots}
+          addedSlots={slots.addedSlots}
+          mode={mode}
+          tradition={entry.tradition}
+          onCast={onCastSpontaneous}
+          onRemoveSpell={onRemoveSpell}
+          onOpenSpellSearch={onOpenSpellSearch}
+          sourceName={sourceName}
+          combatId={combatId}
+        />
+      )
+    }
+
+    return (
+      <PooledSpellsView
+        key={rank}
+        rank={rank}
+        totalSlots={totalSlots}
+        baseSlots={baseSlots}
+        used={used}
+        warn={warn}
+        defaultSlots={slots.defaultSlots}
+        addedSlots={slots.addedSlots}
+        mode={mode}
+        tradition={entry.tradition}
+        onCast={onCastSpontaneous}
+        onTogglePip={onTogglePip}
+        onSlotDelta={onSlotDelta}
+        onRemoveSpell={onRemoveSpell}
+        onOpenSpellSearch={onOpenSpellSearch}
+        sourceName={sourceName}
+        combatId={combatId}
+      />
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -109,30 +266,7 @@ export function SpellcastingEditor(props: SpellcastingEditorProps) {
         </div>
       )}
 
-      {filteredRanks.map((rank) => (
-        <SpellRankBlock
-          key={rank}
-          rank={rank}
-          byRank={entry.spellsByRank.find((br) => br.rank === rank)}
-          slotDelta={slotDeltas[rank] ?? 0}
-          used={usedSlots[rank] ?? 0}
-          warn={rankWarning ? rankWarning(rank) : null}
-          addedSpells={addedByRank[rank] ?? []}
-          removedSpells={removedSpells}
-          preparedCasts={preparedCasts}
-          mode={mode}
-          castType={entry.castType}
-          tradition={entry.tradition}
-          sourceName={sourceName}
-          combatId={combatId}
-          onTogglePip={onTogglePip}
-          onSlotDelta={onSlotDelta}
-          onRemoveSpell={onRemoveSpell}
-          onCastPrepared={onCastPrepared}
-          onCastSpontaneous={onCastSpontaneous}
-          onOpenSpellSearch={onOpenSpellSearch}
-        />
-      ))}
+      {filteredRanks.map(renderRank)}
 
       {isEdit && onAddRank && nextRank <= 10 && (
         <button
