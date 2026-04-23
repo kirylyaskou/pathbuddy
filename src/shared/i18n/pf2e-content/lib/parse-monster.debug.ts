@@ -239,6 +239,12 @@ export async function runDebugTests(): Promise<void> {
     `Succubus: missing "холодное железо" weakness, got: ${JSON.stringify(result.weaknessesLoc)}`,
   )
 
+  // A22b: no numeric suffixes in weaknessesLoc — engine owns weakness magnitudes.
+  assert(
+    result.weaknessesLoc.every((w) => !/\d/.test(w)),
+    `Succubus: weaknessesLoc contains digits (numeric values must not leak): ${JSON.stringify(result.weaknessesLoc)}`,
+  )
+
   // ---------------------------------------------------------------------------
   // resistancesLoc / immunitiesLoc
   // ---------------------------------------------------------------------------
@@ -319,6 +325,64 @@ export async function runDebugTests(): Promise<void> {
   assert(
     result.spellcastingLoc.headingLabel.toLowerCase().includes('сакральные'),
     `Succubus: spellcasting heading missing "сакральные": "${result.spellcastingLoc.headingLabel}"`,
+  )
+
+  // ---------------------------------------------------------------------------
+  // abilityScoresLoc
+  // ---------------------------------------------------------------------------
+
+  // A34: abilityScoresLoc is present (non-null, non-undefined)
+  assert(
+    result.abilityScoresLoc !== undefined && result.abilityScoresLoc !== null,
+    'Succubus: abilityScoresLoc is missing',
+  )
+
+  // A35: strLabel non-empty (Succubus actual: "Сил")
+  assert(
+    typeof result.abilityScoresLoc.strLabel === 'string' &&
+      result.abilityScoresLoc.strLabel.length > 0,
+    `Succubus: strLabel empty, got "${result.abilityScoresLoc.strLabel}"`,
+  )
+
+  // A36: dexLabel non-empty (Succubus actual: "Лвк")
+  assert(
+    typeof result.abilityScoresLoc.dexLabel === 'string' &&
+      result.abilityScoresLoc.dexLabel.length > 0,
+    `Succubus: dexLabel empty, got "${result.abilityScoresLoc.dexLabel}"`,
+  )
+
+  // A37: conLabel non-empty (Succubus actual: "Вын")
+  assert(
+    typeof result.abilityScoresLoc.conLabel === 'string' &&
+      result.abilityScoresLoc.conLabel.length > 0,
+    `Succubus: conLabel empty, got "${result.abilityScoresLoc.conLabel}"`,
+  )
+
+  // A38: intLabel non-empty (Succubus actual: "Инт")
+  assert(
+    typeof result.abilityScoresLoc.intLabel === 'string' &&
+      result.abilityScoresLoc.intLabel.length > 0,
+    `Succubus: intLabel empty, got "${result.abilityScoresLoc.intLabel}"`,
+  )
+
+  // A39: wisLabel non-empty (Succubus actual: "Мдр")
+  assert(
+    typeof result.abilityScoresLoc.wisLabel === 'string' &&
+      result.abilityScoresLoc.wisLabel.length > 0,
+    `Succubus: wisLabel empty, got "${result.abilityScoresLoc.wisLabel}"`,
+  )
+
+  // A40: chaLabel non-empty (Succubus actual: "Хар")
+  assert(
+    typeof result.abilityScoresLoc.chaLabel === 'string' &&
+      result.abilityScoresLoc.chaLabel.length > 0,
+    `Succubus: chaLabel empty, got "${result.abilityScoresLoc.chaLabel}"`,
+  )
+
+  // A41: strLabel content check — pf2.ru Succubus ships "Сил" for Strength
+  assert(
+    result.abilityScoresLoc.strLabel === 'Сил',
+    `Succubus: strLabel expected "Сил", got "${result.abilityScoresLoc.strLabel}"`,
   )
 
   // ---------------------------------------------------------------------------
