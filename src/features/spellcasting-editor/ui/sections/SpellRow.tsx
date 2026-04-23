@@ -4,43 +4,43 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { IconButton } from '@/shared/ui/icon-button'
 import { SpellCard } from '@/entities/creature'
 
-interface SpellSlotRowProps {
+export interface SpellRowProps {
   name: string
   foundryId: string | null
   rank: number
-  slotKey: string
-  totalSlots: number
-  isEdit: boolean
-  isPrepared: boolean
-  isSpontaneous: boolean
-  canSpontCast: boolean
-  showCastButton: boolean
   cast: boolean
+  isEdit: boolean
+  showCast: boolean
+  canCast: boolean
+  onCast?: () => void
+  onRemove?: () => void
   sourceName?: string
   combatId?: string
+  castRank?: number
   showCastTooltip: boolean
-  onCastPrepared?: (name: string, foundryId: string | null, rank: number, slotKey: string, totalSlots: number) => void
-  onCastSpontaneous?: (name: string, foundryId: string | null, rank: number, totalSlots: number) => void
-  onRemove?: () => void
   removeTitle?: string
 }
 
-export function SpellSlotRow({
-  name, foundryId, rank, slotKey, totalSlots,
-  isEdit, isPrepared, isSpontaneous, canSpontCast, showCastButton, cast,
-  sourceName, combatId, showCastTooltip,
-  onCastPrepared, onCastSpontaneous, onRemove, removeTitle,
-}: SpellSlotRowProps) {
-  void isSpontaneous
-
-  const castButton = showCastButton && (isPrepared || canSpontCast) ? (
+export function SpellRow({
+  name,
+  foundryId,
+  rank,
+  cast,
+  isEdit,
+  showCast,
+  canCast,
+  onCast,
+  onRemove,
+  sourceName,
+  combatId,
+  castRank,
+  showCastTooltip,
+  removeTitle,
+}: SpellRowProps) {
+  const castButton = showCast && canCast ? (
     <button
       type="button"
-      onClick={() =>
-        isPrepared
-          ? onCastPrepared?.(name, foundryId, rank, slotKey, totalSlots)
-          : onCastSpontaneous?.(name, foundryId, rank, totalSlots)
-      }
+      onClick={onCast}
       className={cn(
         'p-1 rounded shrink-0 transition-colors',
         cast
@@ -71,7 +71,7 @@ export function SpellSlotRow({
           foundryId={foundryId}
           source={sourceName}
           combatId={combatId}
-          castRank={rank}
+          castRank={castRank ?? rank}
           castConsumed={cast}
         />
       </div>

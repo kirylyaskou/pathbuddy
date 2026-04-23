@@ -5,7 +5,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { IconButton } from '@/shared/ui/icon-button'
 import { SlotPips } from '@/entities/creature'
 import { rankLabel } from '@/shared/lib/pf2e-display'
-import { SpellSlotRow } from './SpellSlotRow'
+import { SpellRow } from './sections/SpellRow'
 import type { SpellcastingSection } from '@/entities/spell'
 
 interface SpellRankBlockProps {
@@ -51,10 +51,8 @@ export function SpellRankBlock(props: SpellRankBlockProps) {
   const baseSlots = byRank?.slots ?? 0
   const totalSlots = Math.max(0, baseSlots + slotDelta)
   const canSpontCast = isSpontaneous && used < totalSlots
-  const showCastButton = !isEdit && rank > 0 && (!!onCastPrepared || !!onCastSpontaneous)
+  const showCast = !isEdit && rank > 0 && (!!onCastPrepared || !!onCastSpontaneous)
 
-  // Precompute slot instances so duplicate prepared spell names get unique
-  // slot keys without mutating a closure during render.
   const { defaultSlots, addedSlots } = useMemo(() => {
     const visible = byRank
       ? byRank.spells.filter((s) => !removedSpells.has(`${rank}:${s.name}`))
@@ -79,6 +77,20 @@ export function SpellRankBlock(props: SpellRankBlockProps) {
     }))
     return { defaultSlots: def, addedSlots: add }
   }, [byRank, removedSpells, rank, addedSpells])
+
+  function castHandler(slot: SlotInstance): (() => void) | undefined {
+    if (isPrepared) {
+      return onCastPrepared
+        ? () => onCastPrepared(slot.name, slot.foundryId, rank, slot.slotKey, totalSlots)
+        : undefined
+    }
+    if (isSpontaneous) {
+      return onCastSpontaneous
+        ? () => onCastSpontaneous(slot.name, slot.foundryId, rank, totalSlots)
+        : undefined
+    }
+    return undefined
+  }
 
   return (
     <div>
@@ -149,26 +161,22 @@ export function SpellRankBlock(props: SpellRankBlockProps) {
       <div className="space-y-1">
         {defaultSlots.map((slot, i) => {
           const cast = isPrepared && preparedCasts.has(`${rank}:${slot.slotKey}`)
+          const canCast = isPrepared || canSpontCast
           return (
-            <SpellSlotRow
+            <SpellRow
               key={`def-${i}`}
               name={slot.name}
               foundryId={slot.foundryId}
               rank={rank}
-              slotKey={slot.slotKey}
-              totalSlots={totalSlots}
-              isEdit={isEdit}
-              isPrepared={isPrepared}
-              isSpontaneous={isSpontaneous}
-              canSpontCast={canSpontCast}
-              showCastButton={showCastButton}
               cast={cast}
+              isEdit={isEdit}
+              showCast={showCast}
+              canCast={canCast}
+              onCast={castHandler(slot)}
+              onRemove={onRemoveSpell ? () => onRemoveSpell(slot.name, rank, true) : undefined}
               sourceName={sourceName}
               combatId={combatId}
               showCastTooltip
-              onCastPrepared={onCastPrepared}
-              onCastSpontaneous={onCastSpontaneous}
-              onRemove={onRemoveSpell ? () => onRemoveSpell(slot.name, rank, true) : undefined}
               removeTitle="Remove"
             />
           )
@@ -176,26 +184,22 @@ export function SpellRankBlock(props: SpellRankBlockProps) {
 
         {addedSlots.map((slot, i) => {
           const cast = isPrepared && preparedCasts.has(`${rank}:${slot.slotKey}`)
+          const canCast = isPrepared || canSpontCast
           return (
-            <SpellSlotRow
+            <SpellRow
               key={`add-${i}`}
               name={slot.name}
               foundryId={slot.foundryId}
               rank={rank}
-              slotKey={slot.slotKey}
-              totalSlots={totalSlots}
-              isEdit={isEdit}
-              isPrepared={isPrepared}
-              isSpontaneous={isSpontaneous}
-              canSpontCast={canSpontCast}
-              showCastButton={showCastButton}
               cast={cast}
+              isEdit={isEdit}
+              showCast={showCast}
+              canCast={canCast}
+              onCast={castHandler(slot)}
+              onRemove={onRemoveSpell ? () => onRemoveSpell(slot.name, rank, false) : undefined}
               sourceName={sourceName}
               combatId={combatId}
               showCastTooltip={false}
-              onCastPrepared={onCastPrepared}
-              onCastSpontaneous={onCastSpontaneous}
-              onRemove={onRemoveSpell ? () => onRemoveSpell(slot.name, rank, false) : undefined}
               removeTitle="Remove added spell"
             />
           )
