@@ -1,5 +1,24 @@
 import { stripHtml } from './html'
 
+/** Split by delim at top level only — respects [] and () nesting */
+function splitTopLevel(s: string, delim: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let buf = ''
+  for (const ch of s) {
+    if (ch === '[' || ch === '(') depth++
+    else if (ch === ']' || ch === ')') depth = Math.max(0, depth - 1)
+    if (ch === delim && depth === 0) {
+      parts.push(buf)
+      buf = ''
+      continue
+    }
+    buf += ch
+  }
+  if (buf) parts.push(buf)
+  return parts
+}
+
 /**
  * Resolve Foundry VTT inline tokens to human-readable text.
  * Handles @UUID, @Condition, @Damage, @Check, @Template, [[/act]], [[/br]], etc.
@@ -18,10 +37,12 @@ export function resolveFoundryTokens(text: string): string {
     slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   )
   // @Damage[2d6[fire], 1d4[bleed]] → "2d6 fire plus 1d4 bleed"
-  text = text.replace(/@Damage\[([^\]]*)\]/g, (_, inner: string) =>
-    inner.split(/,\s*/).map((p: string) => {
-      const m = p.trim().match(/^(.+?)\[(.+?)\]$/)
-      return m ? `${m[1]} ${m[2]}` : p.trim()
+  // Balanced [...] inside, balanced (...) and [...] for split
+  text = text.replace(/@Damage\[((?:[^\[\]]|\[[^\]]*\])*)\]/g, (_, inner: string) =>
+    splitTopLevel(inner, ',').map((p: string) => {
+      const s = p.trim().replace(/@item\.rank/g, 'rank')
+      const m = s.match(/^(.+?)\[(.+?)\]$/)
+      return m ? `${m[1]} ${m[2]}` : s
     }).join(' plus ')
   )
   // @Check[type:perception|dc:20] → "DC 20 Perception check"
