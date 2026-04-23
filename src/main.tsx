@@ -6,6 +6,10 @@ import { AppProviders } from './app/providers'
 import { ErrorBoundary } from './shared/ui/error-boundary'
 import './app/styles/globals.css'
 
+if (import.meta.env.DEV) {
+  void import('./shared/i18n/pf2e-content/lib/parse-monster.debug')
+}
+
 function App() {
   const [dbReady, setDbReady] = useState(false)
   const handleReady = useCallback(() => setDbReady(true), [])
