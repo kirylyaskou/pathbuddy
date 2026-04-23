@@ -561,17 +561,15 @@ export function CombatPage() {
                     )}
                     className="rounded-none border-x-0 border-t-0"
                     encounterContext={spellcastingEncounter}
-                    renderSpellcasting={spellcastingEncounter
-                      ? (section, level, name) => (
-                        <SpellcastingBlock
-                          key={section.entryId}
-                          section={section}
-                          creatureLevel={level}
-                          creatureName={name}
-                          encounterContext={spellcastingEncounter}
-                        />
-                      )
-                      : undefined}
+                    renderSpellcasting={(section, level, name) => (
+                      <SpellcastingBlock
+                        key={section.entryId}
+                        section={section}
+                        creatureLevel={level}
+                        creatureName={name}
+                        encounterContext={spellcastingEncounter}
+                      />
+                    )}
                   />
                 )}
 
