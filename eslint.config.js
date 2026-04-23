@@ -9,7 +9,7 @@ const IIFE_MESSAGE =
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'dist/**', 'src-tauri/**'],
+    ignores: ['node_modules/**', 'dist/**', 'src-tauri/**', 'src/**/*.debug.ts'],
   },
   {
     files: ['engine/**/*.ts'],
