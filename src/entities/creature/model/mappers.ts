@@ -3,6 +3,7 @@ import type { CreatureRow } from '@/shared/api'
 import { mapSize } from '@/shared/lib/size-map'
 import { parseJsonArray } from '@/shared/lib/json'
 import { parseFoundryCharacterDoc } from '@/shared/api/sync/foundry-pc-parser'
+import { resolveFoundryTokens } from '@/shared/lib/foundry-tokens'
 import type {
   Creature,
   CreatureStatBlockData,
@@ -473,80 +474,6 @@ function parseActionCost(actionType?: string, actions?: number | null): DisplayA
   if (actionType === 'passive') return undefined
   if (actions != null && actions >= 1 && actions <= 3) return actions as 1 | 2 | 3
   return undefined
-}
-
-function resolveFoundryTokens(text: string): string {
-  // @UUID with alias: @UUID[Compendium.pf2e.X.Item.Y]{alias} → alias text
-  text = text.replace(/@UUID\[[^\]]*\]\{([^}]+)\}/g, '$1')
-  // @UUID without alias: extract last dot-path segment (e.g. "Enfeebled")
-  text = text.replace(/@UUID\[([^\]]+)\]/g, (_, path: string) => {
-    const parts = path.split('.')
-    return parts[parts.length - 1]
-  })
-  // @Damage: @Damage[9d10[untyped]] → "9d10 untyped"
-  //          @Damage[2d6[fire], 1d4[bleed]] → "2d6 fire plus 1d4 bleed"
-  text = text.replace(/@Damage\[([^\]]*(?:\[[^\]]*\][^\]]*)*)\]/g, (_, inner: string) => {
-    const parts = inner.split(/,\s*/).map((part: string) => {
-      const m = part.trim().match(/^(.+?)\[(.+?)\]$/)
-      return m ? `${m[1]} ${m[2]}` : part.trim()
-    })
-    return parts.join(' plus ')
-  })
-  // @Check: @Check[type:perception|dc:20] → "DC 20 Perception check"
-  //         @Check[will|dc:25] → "DC 25 Will check" (Foundry positional)
-  //         @Check[dc:25] → "DC 25" (no type at all)
-  text = text.replace(/@Check\[([^\]]+)\]/g, (_, inner: string) => {
-    const segments = inner.split('|')
-    const params: Record<string, string> = {}
-    let positionalType: string | undefined
-    for (const seg of segments) {
-      if (seg.includes(':')) {
-        const [k, v] = seg.split(':')
-        params[k] = v
-      } else if (!positionalType && seg) {
-        positionalType = seg
-      }
-    }
-    const rawType = params.type ?? positionalType
-    if (!rawType) {
-      return params.dc ? `DC ${params.dc}` : 'flat check'
-    }
-    const type = rawType.charAt(0).toUpperCase() + rawType.slice(1)
-    const dc = params.dc ? `DC ${params.dc} ` : ''
-    return `${dc}${type} check`
-  })
-  // Collapse accidental "check check" duplication left behind when the
-  // Foundry author wrote " check" after an @Check token that already
-  // renders its own "check" suffix.
-  text = text.replace(/\bcheck\s+check\b/gi, 'check')
-  // @Template: @Template[type:cone|distance:15] → "15-foot cone"
-  //            @Template[type:emanation|distance:30] → "30-foot emanation"
-  text = text.replace(/@Template\[([^\]]+)\]/g, (_, inner: string) => {
-    const params = Object.fromEntries(inner.split('|').map((p: string) => p.split(':')))
-    const distance = params.distance ?? '?'
-    const type = params.type ?? 'area'
-    return `${distance}-foot ${type}`
-  })
-  // [[/act slug]] or [[/act slug #id]] → capitalize slug, hyphens to spaces
-  text = text.replace(/\[\[\/act\s+([^#\s\]]*)[^\]]*\]\]/g, (_, slug: string) => {
-    if (!slug) return ''
-    return slug
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (c: string) => c.toUpperCase())
-  })
-
-  // [[/br expr #label]]{display} → use display text only
-  text = text.replace(/\[\[\/br\s+[^\]]*\]\]\{([^}]+)\}/g, '$1')
-
-  // [[/br expr]] with NO {display} → use expr as-is
-  text = text.replace(/\[\[\/br\s+([^#\s\]]+)[^\]]*\]\]/g, '$1')
-
-  // {Nfeet} or {Nfoot} where N is digits → "N feet"
-  text = text.replace(/\{(\d+)feet?\}/gi, '$1 feet')
-
-  // @Localize fallback — strip token (sync pipeline resolves these at import time)
-  text = text.replace(/@Localize\[[^\]]+\]/g, '')
-  return text
 }
 
 function stripHtml(html: string): string {

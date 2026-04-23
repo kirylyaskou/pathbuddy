@@ -58,8 +58,15 @@ export function resolveFoundryTokens(text: string, options: ResolveFoundryTokens
       const formula = resolveItemLevelExpr(m[1].trim(), itemLevel)
       // Strip parens that wrapped a pure numeric result so `(4)` → `4`.
       const cleanFormula = /^\(\s*-?\d+(?:\.\d+)?\s*\)$/.test(formula) ? formula.slice(1, -1).trim() : formula
-      const types = m[2].split(/,\s*/).join(' ')
-      return `${cleanFormula} ${types}`
+      // Types are comma-separated, each may carry Foundry `|options:...`
+      // metadata (e.g. `void|options:area-damage`) — strip everything after
+      // the first `|` for display.
+      const types = m[2]
+        .split(/,\s*/)
+        .map((t: string) => t.split('|')[0]!.trim())
+        .filter(Boolean)
+        .join(' ')
+      return `${cleanFormula} ${types}`.trim()
     }).join(' plus ')
   )
   // @Check[type:perception|dc:20] → "DC 20 Perception check"
@@ -113,7 +120,10 @@ export function resolveFoundryTokens(text: string, options: ResolveFoundryTokens
  * Resolve Foundry tokens then strip HTML — canonical sanitize for display text.
  * Optional `itemLevel` resolves `@item.level` expressions in @Damage formulas.
  */
-export function sanitizeFoundryText(html: string | null | undefined): string {
+export function sanitizeFoundryText(
+  html: string | null | undefined,
+  options: ResolveFoundryTokensOptions = {},
+): string {
   if (!html) return ''
-  return stripHtml(resolveFoundryTokens(html))
+  return stripHtml(resolveFoundryTokens(html, options))
 }

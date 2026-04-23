@@ -304,6 +304,8 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
     [creature.abilities, isSpecialFormation, troopDefenses],
   )
 
+  console.log(creature)
+
   return (
     <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
       <CardHeader className="-mt-6 pb-2 stat-block-header border-b border-primary/20">
