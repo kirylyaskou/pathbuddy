@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.7.0
-milestone_name: — Monster Translation
-status: verifying
-stopped_at: Completed 89-01 use-spellcasting trim
-last_updated: "2026-04-24T07:56:57.820Z"
+milestone_name: — Monster Translation (SHIPPED)
+status: shipped
+stopped_at: v1.7.0 shipped 2026-04-24; ready for v1.7.1 hotfix (UI translation dictionaries)
+last_updated: "2026-04-24T07:58:07.966Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 52
@@ -21,15 +21,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-24 for v1.7.0 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** Phase 89 — tech-debt-use-spellcasting-trim
+**Current focus:** v1.7.0 shipped. Next: v1.7.1 hotfix milestone — UI Translation Dictionaries.
 
 ## Current Position
 
-Milestone: v1.7.0 Monster Translation
-Phase: 89 (tech-debt-use-spellcasting-trim) — EXECUTING
-Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-04-24
+Milestone: v1.7.0 Monster Translation — SHIPPED 2026-04-24
+Phase: —
+Plan: —
+Status: Milestone archived, ready for tag push + CI release build
+Last activity: 2026-04-24 — version bumped 1.6.0 → 1.7.0, milestone archived
 
 Progress: [██████████] 100%
 
@@ -37,6 +37,7 @@ Progress: [██████████] 100%
 
 ### Shipped Milestones
 
+- v1.7.0 — Monster Translation (Phases 84-89) — archived [v1.7.0-ROADMAP.md](./milestones/v1.7.0-ROADMAP.md)
 - v1.6.0 — Spellcasting Deep Fix (Phases 77-83) — archived [v1.6.0-ROADMAP.md](./milestones/v1.6.0-ROADMAP.md), audit [v1.6.0-MILESTONE-AUDIT.md](./milestones/v1.6.0-MILESTONE-AUDIT.md)
 - v1.5.0 — In-App Updater (Phases 71-76) — archived retroactively [v1.5.0-ROADMAP.md](./milestones/v1.5.0-ROADMAP.md)
 
