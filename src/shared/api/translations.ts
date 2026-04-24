@@ -24,6 +24,7 @@
 
 import { getDb } from '@/shared/db'
 import type { TranslationKind } from '@/shared/i18n'
+import type { MonsterStructuredLoc } from '@/shared/i18n/pf2e-content/lib'
 
 export type { TranslationKind }
 
@@ -37,8 +38,13 @@ export interface TranslationRow {
   textLoc: string
   source: string | null
   /** Raw JSON.stringify output of the monster HTML parser; null for legacy
-   *  rows that pre-date the parser-backed seed. Parse at consumer (not here). */
+   *  rows that pre-date the parser-backed seed. Kept alongside `structured`
+   *  as a debug/escape-hatch surface. */
   structuredJson: string | null
+  /** Parsed `structuredJson` as typed object. Null when structuredJson is
+   *  null OR when JSON.parse threw (in which case toRow logs console.warn).
+   *  This is the consumer-facing typed surface — prefer this over structuredJson. */
+  structured: MonsterStructuredLoc | null
 }
 
 interface TranslationDbRow {
@@ -54,6 +60,18 @@ interface TranslationDbRow {
 }
 
 function toRow(db: TranslationDbRow): TranslationRow {
+  let structured: MonsterStructuredLoc | null = null
+  if (db.structured_json !== null) {
+    try {
+      structured = JSON.parse(db.structured_json) as MonsterStructuredLoc
+    } catch (err) {
+      console.warn(
+        `[translations] structured JSON parse failed for kind=${db.kind} name=${db.name_key}:`,
+        err,
+      )
+      structured = null
+    }
+  }
   return {
     kind: db.kind as TranslationKind,
     nameKey: db.name_key,
@@ -64,6 +82,7 @@ function toRow(db: TranslationDbRow): TranslationRow {
     textLoc: db.text_loc,
     source: db.source,
     structuredJson: db.structured_json,
+    structured,
   }
 }
 
@@ -79,8 +98,10 @@ function toRow(db: TranslationDbRow): TranslationRow {
  * @param locale  — requested locale ('ru', etc.); 'en' always returns null
  *                  (the EN content IS the original — no translation needed)
  *
- * The returned row includes `structuredJson` — a raw JSON string from the
- * parser-backed seed — or null for legacy rows. Parse at the consumer.
+ * The returned row includes both `structured` (parsed typed object — prefer
+ * this) and `structuredJson` (raw string — debug/escape hatch). Parse failures
+ * log once and yield `structured=null` — other fields still populated so
+ * callers get textual fallback.
  */
 export async function getTranslation(
   kind: TranslationKind,
