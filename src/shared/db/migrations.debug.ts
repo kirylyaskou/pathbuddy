@@ -14,12 +14,16 @@
  *   6. _migrations contains the new structured_json migration marker
  *   7. translations table has at least one monster row with structured_json populated
  *      (proves the bundled loader wrote JSON after seed — not just that the column exists)
+ *   8. getTranslation('monster', 'Succubus', 6, 'ru') returns a row whose
+ *      structured field is a typed object with non-empty abilitiesLoc —
+ *      proves the full read-path chain (column → loader → JSON.parse → typed).
  *
  * This file is NOT a test suite — it is a manual smoke test. Excluded from
  * production bundle by the DEV-guarded dynamic import in main.tsx.
  */
 
 import { getDb } from './connection'
+import { getTranslation } from '@/shared/api/translations'
 
 interface PragmaColumn {
   cid: number
@@ -118,6 +122,24 @@ export async function runMigrationsDebug(): Promise<void> {
   assert(
     (populated[0]?.n ?? 0) >= 1,
     "translations must contain at least one monster row with structured_json populated after seed (run pnpm tauri dev and retry if DB is empty)",
+  )
+
+  // A8: end-to-end read-path — getTranslation returns a typed structured
+  //     object for the bundled Succubus monster. Proves that: column
+  //     exists, loader wrote JSON, toRow() parsed it back into a typed
+  //     shape, and the hook-facing TranslationRow.structured surface works.
+  const succubusRow = await getTranslation('monster', 'Succubus', 6, 'ru')
+  assert(
+    succubusRow !== null,
+    "getTranslation must return a row for Succubus level 6 locale=ru (run pnpm tauri dev to seed the translations table if empty)",
+  )
+  assert(
+    succubusRow?.structured !== null && succubusRow?.structured !== undefined,
+    "Succubus row must have a parsed structured object (not null) — write+read path typed round-trip",
+  )
+  assert(
+    (succubusRow?.structured?.abilitiesLoc?.length ?? 0) > 0,
+    "Succubus structured.abilitiesLoc must contain at least one ability (parser produced abilities; loader persisted in bundled seed)",
   )
 
   console.log(`[migrations.debug] ${passed}/${total} assertions passed`)
