@@ -23,7 +23,7 @@
   - Fresh-install seed: loader populates `structured_json` для всех monster rows
   - Existing installs: structured_json starts NULL, получает populate на ближайшем seed-refresh
 
-- [ ] **TRANS-03**: Bundled loader (`shared/i18n/pf2e-content/index.ts`) вызывает `parseMonsterRuHtml` при seed'e translations table
+- [x] **TRANS-03**: Bundled loader (`shared/i18n/pf2e-content/index.ts`) вызывает `parseMonsterRuHtml` при seed'e translations table
   - Parser ошибки логируются через `console.warn`, не ломают loader
   - `structured_json` = JSON.stringify результата parser'a; NULL если parser вернул null
   - Loader idempotent: повторный seed перезаписывает `structured_json` (текущая логика uses `INSERT OR REPLACE`)
