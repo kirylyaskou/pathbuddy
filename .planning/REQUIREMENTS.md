@@ -45,7 +45,7 @@
 
 ### Tech Debt Carryover (`DEBT-*`)
 
-- [ ] **DEBT-01**: `src/features/spellcasting/model/use-spellcasting.ts` <100 строк
+- [x] **DEBT-01**: `src/features/spellcasting/model/use-spellcasting.ts` <100 строк
   - Carryover из v1.6.0 audit (Phase 80 goal was <100, landed 119)
   - Выделить `resolveCastMode` в отдельный pure helper в `features/spellcasting/lib/`; progress computation в sub-hook
   - Zero user-visible regressions — все existing v1.6.0 спеллкастинг сценарии проходят
