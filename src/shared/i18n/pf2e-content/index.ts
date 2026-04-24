@@ -127,6 +127,29 @@ export async function loadContentTranslations(db: Database): Promise<void> {
     }
   }
 
+  // Denormalize Russian display name onto entities so FTS5 (external
+  // content) can match against it. name_loc is indexed as a column on
+  // entities_fts; without this mirror, RU search would need a JOIN +
+  // LIKE which loses FTS5 acceleration.
+  await db.execute(
+    `UPDATE entities
+       SET name_loc = (
+         SELECT name_loc FROM translations
+          WHERE translations.kind = 'monster'
+            AND translations.locale = ?
+            AND translations.name_key = entities.name COLLATE NOCASE
+          LIMIT 1
+       )`,
+    [LOCALE],
+  )
+
+  // Rebuild FTS5 so new name_loc values are indexed. Cheap for bundled
+  // dataset size (hundreds of rows) and runs once per app start.
+  await db.execute(
+    `INSERT INTO entities_fts(entities_fts) VALUES('rebuild')`,
+    [],
+  )
+
   // Observability: report count per (kind, locale)
   const rows = await db.select<{ kind: string; locale: string; n: number }[]>(
     'SELECT kind, locale, COUNT(*) as n FROM translations GROUP BY kind, locale'
