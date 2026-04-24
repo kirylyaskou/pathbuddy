@@ -28,7 +28,7 @@
   - `structured_json` = JSON.stringify результата parser'a; NULL если parser вернул null
   - Loader idempotent: повторный seed перезаписывает `structured_json` (текущая логика uses `INSERT OR REPLACE`)
 
-- [ ] **TRANS-04**: `useContentTranslation` возвращает typed `structured` поле
+- [x] **TRANS-04**: `useContentTranslation` возвращает typed `structured` поле
   - Type: `structured: MonsterStructuredLoc | null` (union types для future spell/item structured support)
   - API layer (`shared/api/translations.ts`) парсит `structured_json` → typed object на read path
   - Backward compat: существующие consumers (FeatInlineCard, ItemReferenceDrawer, etc.) продолжают использовать только `nameLoc` — не затрагиваются

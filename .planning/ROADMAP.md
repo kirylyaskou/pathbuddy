@@ -1015,7 +1015,7 @@ Full details: [`.planning/milestones/v1.6.0-ROADMAP.md`](./milestones/v1.6.0-ROA
 - [x] **Phase 84: HTML Parser Library** — `parseMonsterRuHtml(text, rus_text)` pure TS + native DOMParser; unit coverage на Succubus + 5 other monsters (completed 2026-04-23)
 - [x] **Phase 85: Migration + DB Schema** — `0041_translation_structured_json.sql`: rename `0038_translations.sql` → `0041_translations.sql` + add `structured_json TEXT NULL` column (completed 2026-04-23)
 - [x] **Phase 86: Bundled Loader Integration** — parser дёргается при seed translations table; structured_json populated; graceful degradation на malformed HTML (completed 2026-04-24)
-- [ ] **Phase 87: API + Hook Extension** — `shared/api/translations.ts` возвращает typed `structured` field; `useContentTranslation` surface'ит его consumers; backward compat для существующих consumers
+- [x] **Phase 87: API + Hook Extension** — `shared/api/translations.ts` возвращает typed `structured` field; `useContentTranslation` surface'ит его consumers; backward compat для существующих consumers (completed 2026-04-24)
 - [ ] **Phase 88: CreatureStatBlock Overlay Wiring** — ability cards / skills / saves / speeds / strikes / spellcasting heading читают structured RU с EN fallback
 - [ ] **Phase 89: Tech Debt — use-spellcasting Trim** — `use-spellcasting.ts` <100 строк (carryover из v1.6.0 audit)
 - [ ] **DEBT-02 (process)** — Per-phase SUMMARY.md / VERIFICATION.md / UAT.md дисциплина восстановлена для каждой v1.7.0 фазы (reinstates dropped-in-v1.6.0 practice)
@@ -1072,6 +1072,9 @@ Plans:
 3. `locale === 'en'` → всё-ещё short-circuit без DB-roundtrip (existing behavior preserved)
 4. Zero regressions для существующих consumers (FeatInlineCard / ItemReferenceDrawer / SpellReferenceDrawer / ActionsPage) — они читают только `nameLoc`
 5. Types exported из barrel: `MonsterStructuredLoc`, `AbilityLoc`, `SkillLoc`, `StrikeLoc`, etc.
+**Plans:** 1/1 plans complete
+Plans:
+- [x] 87-01-PLAN.md — JSON.parse в toRow + typed structured field; barrel re-exports 7 types; A8 end-to-end assertion (TRANS-04)
 
 ### Phase 88: CreatureStatBlock Overlay Wiring
 **Goal**: `CreatureStatBlock` показывает RU текст в интерактивных блоках когда structured translation существует. Numeric values / rolls / spellcasting editor интерактивность остаются.
@@ -1104,8 +1107,8 @@ Plans:
 |-------|----------------|--------|-----------|
 | 84. HTML Parser Library | 2/2 | Complete    | 2026-04-23 |
 | 85. Migration + DB Schema | 1/1 | Complete    | 2026-04-24 |
-| 86. Bundled Loader Integration | 1/1 | Complete   | 2026-04-24 |
-| 87. API + Hook Extension | 0/? | Not started | — |
+| 86. Bundled Loader Integration | 1/1 | Complete    | 2026-04-24 |
+| 87. API + Hook Extension | 1/1 | Complete   | 2026-04-24 |
 | 88. CreatureStatBlock Overlay Wiring | 0/? | Not started | — |
 | 89. use-spellcasting Trim | 0/? | Not started | — |
 

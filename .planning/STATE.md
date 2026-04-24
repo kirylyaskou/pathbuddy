@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.7.0
 milestone_name: — Monster Translation
 status: verifying
-stopped_at: Completed 86-01-PLAN.md
-last_updated: "2026-04-24T06:57:01.081Z"
+stopped_at: Completed 87-api-hook-extension 87-01-PLAN.md
+last_updated: "2026-04-24T07:14:59.027Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 52
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 4
+  total_plans: 5
+  completed_plans: 5
   percent: 100
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-24 for v1.7.0 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** Phase 86 — bundled-loader-integration
+**Current focus:** Phase 87 — api-hook-extension
 
 ## Current Position
 
 Milestone: v1.7.0 Monster Translation
-Phase: 86 (bundled-loader-integration) — EXECUTING
+Phase: 87 (api-hook-extension) — EXECUTING
 Plan: 1 of 1
 Status: Phase complete — ready for verification
 Last activity: 2026-04-24
@@ -82,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-24T06:57:01.077Z
-Stopped at: Completed 86-01-PLAN.md
+Last session: 2026-04-24T07:14:59.024Z
+Stopped at: Completed 87-api-hook-extension 87-01-PLAN.md
 Next step: Draft REQUIREMENTS.md → ROADMAP.md → commit kickoff → `/gsd-discuss-phase 84` or `/gsd-plan-phase 84`.
