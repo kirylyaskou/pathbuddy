@@ -498,11 +498,6 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
 
         {creature.spellcasting && creature.spellcasting.length > 0 && (
           <>
-            {structured?.spellcastingLoc?.headingLabel && (
-              <div className="flex items-center w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40 font-semibold text-sm text-foreground">
-                {structured.spellcastingLoc.headingLabel}
-              </div>
-            )}
             {creature.spellcasting.map((section) =>
               renderSpellcasting
                 ? renderSpellcasting(section, creature.level, creature.name)
