@@ -6,15 +6,61 @@ import { SectionHeader } from '@/shared/ui/section-header'
 import { AbilityCard } from '@/shared/ui/ability-card'
 import { highlightGameText } from '../lib/foundry-text'
 import type { ClassifiedAbilities } from '../model/classify-abilities'
+import type { AbilityLoc } from '@/shared/i18n'
+import type { DisplayActionCost } from '../model/types'
+import { renderMarkdownLite } from '@/shared/lib/render-markdown-lite'
 
 type AbilityTab = 'offensive' | 'defensive' | 'other'
+type AbilityEntry = ClassifiedAbilities['offensive'][number]
 
 interface CreatureAbilitiesSectionProps {
   classified: ClassifiedAbilities
   onRoll: (formula: string, label: string) => void
+  abilitiesLocByName?: Map<string, AbilityLoc>
 }
 
-export function CreatureAbilitiesSection({ classified, onRoll }: CreatureAbilitiesSectionProps) {
+function resolveAbilityLoc(
+  ability: { name: string; actionCost?: DisplayActionCost; description: string; traits?: string[] },
+  loc: AbilityLoc | undefined,
+) {
+  return {
+    displayName: loc?.name ?? ability.name,
+    displayCost: (loc?.actionCount ?? ability.actionCost) as DisplayActionCost | undefined,
+    displayTraits: loc?.traits?.length ? loc.traits : (ability.traits ?? []),
+    locDescription: loc?.description,
+  }
+}
+
+function AbilityCardResolved({
+  ability,
+  loc,
+  cardKey,
+  actionCostOverride,
+  onRoll,
+}: {
+  ability: AbilityEntry
+  loc: AbilityLoc | undefined
+  cardKey: string
+  actionCostOverride?: DisplayActionCost
+  onRoll: (formula: string, label: string) => void
+}) {
+  const { displayName, displayCost, displayTraits, locDescription } = resolveAbilityLoc(ability, loc)
+  const cost = actionCostOverride ?? (displayCost !== 0 ? displayCost : undefined)
+  return (
+    <AbilityCard key={cardKey} name={displayName} actionCost={cost} traits={displayTraits}>
+      <p className="text-sm text-foreground/80 leading-relaxed">
+        {locDescription
+          // RU descriptions render via markdown-lite — clickable-formula
+          // extraction does not survive parsing into RU tokens; engine
+          // numeric values are surfaced via separate strike/skill rows.
+          ? renderMarkdownLite(locDescription)
+          : highlightGameText(ability.description, (f) => onRoll(f, ability.name))}
+      </p>
+    </AbilityCard>
+  )
+}
+
+export function CreatureAbilitiesSection({ classified, onRoll, abilitiesLocByName }: CreatureAbilitiesSectionProps) {
   const [tab, setTab] = useState<AbilityTab>('offensive')
 
   // Switch away from 'offensive' if it's empty — fall back to first non-empty
@@ -61,31 +107,25 @@ export function CreatureAbilitiesSection({ classified, onRoll }: CreatureAbiliti
           </div>
 
           {activeList.length === 1 ? (
-            <AbilityCard
-              name={activeList[0].name}
-              actionCost={activeList[0].actionCost !== 0 ? activeList[0].actionCost : undefined}
-              traits={activeList[0].traits}
-            >
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                {highlightGameText(activeList[0].description, (f) => onRoll(f, activeList[0].name))}
-              </p>
-            </AbilityCard>
+            <AbilityCardResolved
+              ability={activeList[0]}
+              loc={abilitiesLocByName?.get(activeList[0].name.trim().toLowerCase())}
+              cardKey={`${tab}-0`}
+              onRoll={onRoll}
+            />
           ) : (
             <div
               className="grid gap-2 items-start"
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
             >
               {activeList.map((ability, i) => (
-                <AbilityCard
+                <AbilityCardResolved
                   key={`${tab}-${i}`}
-                  name={ability.name}
-                  actionCost={ability.actionCost !== 0 ? ability.actionCost : undefined}
-                  traits={ability.traits}
-                >
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {highlightGameText(ability.description, (f) => onRoll(f, ability.name))}
-                  </p>
-                </AbilityCard>
+                  ability={ability}
+                  loc={abilitiesLocByName?.get(ability.name.trim().toLowerCase())}
+                  cardKey={`${tab}-${i}`}
+                  onRoll={onRoll}
+                />
               ))}
             </div>
           )}
@@ -100,16 +140,14 @@ export function CreatureAbilitiesSection({ classified, onRoll }: CreatureAbiliti
                 style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
               >
                 {classified.reactions.map((ability, i) => (
-                  <AbilityCard
+                  <AbilityCardResolved
                     key={`react-${i}`}
-                    name={ability.name}
-                    actionCost="reaction"
-                    traits={ability.traits}
-                  >
-                    <p className="text-sm text-foreground/80 leading-relaxed">
-                      {highlightGameText(ability.description, (f) => onRoll(f, ability.name))}
-                    </p>
-                  </AbilityCard>
+                    ability={ability}
+                    loc={abilitiesLocByName?.get(ability.name.trim().toLowerCase())}
+                    cardKey={`react-${i}`}
+                    actionCostOverride="reaction"
+                    onRoll={onRoll}
+                  />
                 ))}
               </div>
             </div>
