@@ -9,9 +9,12 @@
  *     don't need caching/invalidation infrastructure)
  *   - recomputes on kind/name/level/locale change
  *
- * Returns `{ data, isLoading }`:
+ * Returns `{ data, isLoading, locale }`:
  *   - `data === null` → caller must render the English original
- *   - `data` populated → caller may render Russian HTML via <SafeHtml/>
+ *   - `data.textLoc` / `data.nameLoc` / `data.traitsLoc` → raw RU HTML for existing consumers
+ *   - `data.structured` → typed `MonsterStructuredLoc` (monster kind only; null for
+ *     other kinds or when the parser produced no output). Consumers (e.g.
+ *     CreatureStatBlock) use this for structured overlays without touching raw JSON.
  *
  * Callers: CreatureCard, StatBlockModal, SpellCard, ItemCard, FeatDetail,
  * ActionsPage. Each one owns the conditional render branch; the hook stays
