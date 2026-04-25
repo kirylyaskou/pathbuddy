@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   syncFoundryData,
   importLocalPacks,
@@ -13,10 +14,15 @@ import { Button } from '@/shared/ui/button'
 import { Progress } from '@/shared/ui/progress'
 import { Separator } from '@/shared/ui/separator'
 import { MascotHex } from '@/shared/ui/mascot-hex'
-import { Download, RefreshCw, Loader2 } from 'lucide-react'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/shared/ui/collapsible'
+import { Download, RefreshCw, Loader2, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { getVersion } from '@tauri-apps/api/app'
+
+import oglFullText from '/LICENSES/OGL-1.0a.txt?raw'
+import section15Text from '/LICENSES/OGL-SECTION-15.md?raw'
+import vendorVersionTxt from '/vendor/pf2e-locale-ru/VERSION.txt?raw'
 
 export function SettingsPage() {
   const [syncing, setSyncing] = useState(false)
@@ -268,7 +274,102 @@ export function SettingsPage() {
           )
         )}
       </section>
+
+      <Separator className="my-6" />
+
+      <AboutSection currentVersion={currentVersion} />
     </div>
     </>
+  )
+}
+
+function AboutSection({ currentVersion }: { currentVersion: string }) {
+  const { t } = useTranslation('common')
+  const [section15Open, setSection15Open] = useState(false)
+  const [oglOpen, setOglOpen] = useState(false)
+
+  const vendorSha = useMemo(() => {
+    const match = vendorVersionTxt.match(/^source_commit:\s*([0-9a-f]{40})/m)
+    return match?.[1] ?? 'unknown'
+  }, [])
+
+  return (
+    <section>
+      <h2 className="text-xl font-semibold text-foreground">
+        {t('about.title')}
+      </h2>
+
+      <p className="mt-2 text-base text-foreground">
+        {t('about.version', { version: currentVersion })}
+      </p>
+
+      <p className="mt-2 text-sm text-muted-foreground">
+        {t('about.paizoDisclaimer')}
+      </p>
+
+      <p className="mt-3 text-sm text-muted-foreground">
+        {t('about.translationsAttribution')}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground font-mono">
+        {t('about.vendoredVersion', { sha: vendorSha })}
+      </p>
+
+      <Collapsible
+        open={section15Open}
+        onOpenChange={setSection15Open}
+        className="mt-4"
+      >
+        <CollapsibleTrigger className="flex items-center gap-2 text-sm text-foreground hover:text-foreground/80">
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${section15Open ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+          <span>
+            {t('about.section15Heading')}
+            {' — '}
+            {t('about.section15Toggle')}
+          </span>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <pre className="mt-2 max-h-96 overflow-auto rounded border border-border bg-muted p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+            {section15Text}
+          </pre>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible
+        open={oglOpen}
+        onOpenChange={setOglOpen}
+        className="mt-3"
+      >
+        <CollapsibleTrigger className="flex items-center gap-2 text-sm text-foreground hover:text-foreground/80">
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${oglOpen ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+          <span>
+            {t('about.oglFullHeading')}
+            {' — '}
+            {t('about.oglFullToggle')}
+          </span>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <pre className="mt-2 max-h-96 overflow-auto rounded border border-border bg-muted p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+            {oglFullText}
+          </pre>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <p className="mt-4 text-sm">
+        <a
+          href="https://github.com/kirylyaskou/PathMaid"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/80"
+        >
+          {t('about.githubLink')}
+        </a>
+      </p>
+    </section>
   )
 }

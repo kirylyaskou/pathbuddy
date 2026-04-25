@@ -38,5 +38,17 @@
     "cancel": "Отмена",
     "save": "Сохранить",
     "loading": "Загрузка…"
+  },
+  "about": {
+    "title": "О приложении и лицензиях",
+    "version": "PathMaid {{version}} • Помощник Мастера Pathfinder 2e",
+    "paizoDisclaimer": "Это программное обеспечение использует товарные знаки и/или авторские права, принадлежащие Paizo Inc., в рамках Политики Сообщества Paizo. Не одобрено и не утверждено Paizo. Pathfinder — товарный знак Paizo Inc.",
+    "translationsAttribution": "Русские переводы предоставлены сообществом проекта pf2-locale-ru",
+    "vendoredVersion": "Версия источника: {{sha}}",
+    "section15Heading": "OGL 1.0a — Раздел 15: COPYRIGHT NOTICE",
+    "section15Toggle": "Показать полную цепочку",
+    "oglFullHeading": "Open Game License v1.0a (полный текст)",
+    "oglFullToggle": "Показать полный текст",
+    "githubLink": "Исходный код на GitHub"
   }
 }
