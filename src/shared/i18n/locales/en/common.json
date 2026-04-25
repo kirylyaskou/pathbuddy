@@ -44,6 +44,10 @@
       "immunities": "Immunities",
       "resistances": "Resistances",
       "weaknesses": "Weaknesses"
+    },
+    "untranslated": {
+      "label": "RU",
+      "tooltip": "This monster is not translated in pf2-locale-ru"
     }
   }
 }

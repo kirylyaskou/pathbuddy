@@ -13,6 +13,7 @@ import {
 import { SectionHeader } from "@/shared/ui/section-header"
 import { StatRow } from "@/shared/ui/stat-row"
 import { LevelBadge } from "@/shared/ui/level-badge"
+import { NoTranslationBadge } from "@/shared/ui/no-translation-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
 import type { CreatureStatBlockData } from '../model/types'
 import { stripHtml } from '@/shared/lib/html'
@@ -342,7 +343,12 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
   )
 
   return (
-    <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold", className)}>
+    <Card className={cn("overflow-hidden card-grimdark border-border/50 border-l-[3px] border-l-pf-gold relative", className)}>
+      {locale === 'ru' && translation === null && (
+        <div className="absolute top-2 right-2 z-10">
+          <NoTranslationBadge />
+        </div>
+      )}
       <CardHeader className="-mt-6 pb-2 stat-block-header border-b border-primary/20">
         <div className="flex items-start gap-4">
           <LevelBadge level={creature.level} size="lg" />

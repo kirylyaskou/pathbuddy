@@ -5,7 +5,8 @@ import { Button } from "@/shared/ui/button"
 import { LevelBadge } from "@/shared/ui/level-badge"
 import { StatBlock } from "@/shared/ui/stat-badge"
 import { TraitList } from "@/shared/ui/trait-pill"
-import { useContentTranslation } from "@/shared/i18n"
+import { NoTranslationBadge } from "@/shared/ui/no-translation-badge"
+import { useContentTranslation, useCurrentLocale } from "@/shared/i18n"
 import type { Creature } from '../model/types'
 
 interface CreatureCardProps {
@@ -21,16 +22,23 @@ export function CreatureCard({ creature, compact, onAdd, onAddToStaging, onClick
   // Show the localized name in summary tiles when a translation exists, so users
   // recognize entries by the name they know. Detail view does the full overlay.
   const { data: translation } = useContentTranslation('monster', creature.name, creature.level)
+  const locale = useCurrentLocale()
   const displayName = translation?.nameLoc ?? creature.name
+  const showUntranslatedBadge = locale === 'ru' && translation === null
   if (compact) {
     return (
       <Card
         className={cn(
-          "group cursor-pointer card-grimdark border-border/40 hover:border-primary/30",
+          "group cursor-pointer card-grimdark border-border/40 hover:border-primary/30 relative",
           className
         )}
         onClick={onClick}
       >
+        {showUntranslatedBadge && (
+          <div className="absolute top-1 right-1 z-10">
+            <NoTranslationBadge />
+          </div>
+        )}
         <CardContent className="p-2.5">
           <div className="flex items-start gap-2.5">
             <LevelBadge level={creature.level} size="sm" />
@@ -96,11 +104,16 @@ export function CreatureCard({ creature, compact, onAdd, onAddToStaging, onClick
   return (
     <Card
       className={cn(
-        "group cursor-pointer card-grimdark border-border/40 hover:border-primary/30",
+        "group cursor-pointer card-grimdark border-border/40 hover:border-primary/30 relative",
         className
       )}
       onClick={onClick}
     >
+      {showUntranslatedBadge && (
+        <div className="absolute top-2 right-2 z-10">
+          <NoTranslationBadge />
+        </div>
+      )}
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <LevelBadge level={creature.level} />

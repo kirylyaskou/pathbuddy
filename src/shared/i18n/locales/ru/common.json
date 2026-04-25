@@ -56,6 +56,10 @@
       "immunities": "Иммунитеты",
       "resistances": "Сопротивления",
       "weaknesses": "Уязвимости"
+    },
+    "untranslated": {
+      "label": "RU",
+      "tooltip": "Этот монстр не переведён в pf2-locale-ru"
     }
   }
 }
