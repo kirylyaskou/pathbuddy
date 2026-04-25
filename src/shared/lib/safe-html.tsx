@@ -77,22 +77,54 @@ function preprocessActionTokens(html: string): string {
 /**
  * Replace Foundry inline-link tokens (`@UUID[ref]{label}`, `@Trait[slug]`,
  * `@Check[…]{label}`, `@Damage[formula]`, generic `@Kind[ref]{label}`)
- * with semantically-classed `<span>` elements that survive DOMPurify.
+ * plus PF2e bracket notation `(formula)[type]` / `[[/act name]]{label}` /
+ * `[[/gmr roll]]{label}` with semantically-classed `<span>` elements that
+ * survive DOMPurify.
  *
  * The reference component of @UUID is intentionally dropped — Foundry-side
  * UUIDs are not resolvable in PathMaid's offline DB. Trait `data-trait`
  * survives the allowlist so a future hover-tooltip wiring can read it.
+ *
+ * Bracket-formula tokens (`(3d10+17)[bludgeoning]`, `30[healing]`,
+ * `15d6[fire|options:area-damage]`) are emitted by the Foundry toolkit
+ * macros and ship through the pf2-locale-ru pack verbatim. We strip the
+ * options-list and route both formula + type into the styled spans so the
+ * pill renders the same way as engine-side ClickableFormula output.
  */
 function preprocessFoundryTokens(html: string): string {
   let out = html
+  // Order matters: greedy `@UUID[…]{label}` BEFORE the generic catch-all so
+  // we keep the explicit class. Same for Trait/Check/Damage.
   out = out.replace(/@UUID\[[^\]]+\]\{([^}]+)\}/g, '<span class="pf2e-uuid-ref">$1</span>')
   out = out.replace(/@UUID\[[^\]]+\]/g, '')
   out = out.replace(/@Trait\[([^\]]+)\]\{([^}]+)\}/g, '<span class="pf2e-trait" data-trait="$1">$2</span>')
   out = out.replace(/@Trait\[([^\]]+)\]/g, '<span class="pf2e-trait" data-trait="$1">$1</span>')
   out = out.replace(/@Check\[[^\]]+\]\{([^}]+)\}/g, '<span class="pf2e-check">$1</span>')
-  out = out.replace(/@Damage\[([^\]]+)\]/g, '<span class="pf2e-damage">$1</span>')
+  out = out.replace(/@Damage\[([^\]]+)\]/g, (_m, body: string) => {
+    // `@Damage[2d6[fire]]` / `@Damage[1d4[poison]]` — strip nested type.
+    const inner = body.replace(/\[([^\]]+)\]/g, ' $1')
+    return `<span class="pf2e-damage">${inner}</span>`
+  })
+  // `[[/act steal]]{Воровства}` / `[[/gmr 1d6 #label]]{1d6 раундов}` —
+  // chat-command tokens. Drop the command body, keep the visible label.
+  out = out.replace(/\[\[\/(act|gmr|r|br)\s+[^\]]+\]\]\{([^}]+)\}/g, '<span class="pf2e-action">$2</span>')
+  out = out.replace(/\[\[\/(act|gmr|r|br)\s+[^\]]+\]\]/g, '')
+  // Bracket formulas: `30[healing]`, `(3d10+17)[bludgeoning]`,
+  // `15d6[fire|options:area-damage]`. Capture group 1 = formula, 2 = type
+  // (everything before any `|options:…`). The option list after `|` is
+  // dropped — it's metadata the chat command would consume but offers no
+  // visual value to the DM.
+  out = out.replace(
+    /\(([^)]+)\)\[([^\]|]+)(?:\|[^\]]*)?\]/g,
+    '<span class="pf2e-damage">($1) $2</span>',
+  )
+  out = out.replace(
+    /(\d+(?:d\d+)?(?:[+-]\d+)?)\[([^\]|]+)(?:\|[^\]]*)?\]/g,
+    '<span class="pf2e-damage">$1 $2</span>',
+  )
+  // Generic catch-all for any `@Kind[ref]{label}` we didn't enumerate.
   out = out.replace(/@\w+\[[^\]]+\]\{([^}]+)\}/g, '<span>$1</span>')
-  out = out.replace(/@\w+\[([^\]]+)\]/g, '<span>$1</span>')
+  out = out.replace(/@\w+\[[^\]]+\]/g, '<span>$1</span>')
   return out
 }
 

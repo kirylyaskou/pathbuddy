@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { StatRow } from '@/shared/ui/stat-row'
+import { useCurrentLocale } from '@/shared/i18n'
+import { getTraitLabel } from '@/shared/i18n/pf2e-content'
+import type { SupportedLocale } from '@/shared/i18n'
 import type { CreatureStatBlockData } from '../model/types'
 import { normalizeImmunities, formatImmunityWithExceptions } from '../model/iwr-normalize'
 
@@ -9,11 +12,17 @@ interface CreatureDefensesBlockProps {
   weaknesses: CreatureStatBlockData['weaknesses']
 }
 
-function formatIwrEntry(entry: { type: string; value: number; exceptions?: string[] }) {
-  const base = `${entry.type} ${entry.value}`
-  return entry.exceptions && entry.exceptions.length > 0
-    ? `${base} (except ${entry.exceptions.join(', ')})`
-    : base
+function formatIwrEntry(
+  entry: { type: string; value: number; exceptions?: string[] },
+  locale: SupportedLocale,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+) {
+  const localizedType = getTraitLabel(entry.type.toLowerCase(), locale)
+  if (entry.exceptions && entry.exceptions.length > 0) {
+    const exc = entry.exceptions.map((e) => getTraitLabel(e.toLowerCase(), locale)).join(', ')
+    return t('statblock.iwrEntryWithExceptions', { type: localizedType, value: entry.value, exceptions: exc })
+  }
+  return t('statblock.iwrEntry', { type: localizedType, value: entry.value })
 }
 
 export function CreatureDefensesBlock({
@@ -22,6 +31,7 @@ export function CreatureDefensesBlock({
   weaknesses,
 }: CreatureDefensesBlockProps) {
   const { t } = useTranslation('common')
+  const locale = useCurrentLocale()
 
   if (immunities.length === 0 && resistances.length === 0 && weaknesses.length === 0) {
     return null
@@ -31,17 +41,26 @@ export function CreatureDefensesBlock({
     <div className="p-4 space-y-2">
       {immunities.length > 0 && (
         <StatRow label={t('statblock.iwr.immunities')}>
-          {normalizeImmunities(immunities).map(formatImmunityWithExceptions).join(', ')}
+          {normalizeImmunities(immunities)
+            .map((imm) => {
+              const localized = formatImmunityWithExceptions({
+                ...imm,
+                type: getTraitLabel(imm.type.toLowerCase(), locale),
+                exceptions: imm.exceptions?.map((e) => getTraitLabel(e.toLowerCase(), locale)),
+              })
+              return localized
+            })
+            .join(', ')}
         </StatRow>
       )}
       {resistances.length > 0 && (
         <StatRow label={t('statblock.iwr.resistances')}>
-          {resistances.map(formatIwrEntry).join(', ')}
+          {resistances.map((r) => formatIwrEntry(r, locale, t)).join(', ')}
         </StatRow>
       )}
       {weaknesses.length > 0 && (
         <StatRow label={t('statblock.iwr.weaknesses')}>
-          {weaknesses.map(formatIwrEntry).join(', ')}
+          {weaknesses.map((w) => formatIwrEntry(w, locale, t)).join(', ')}
         </StatRow>
       )}
     </div>

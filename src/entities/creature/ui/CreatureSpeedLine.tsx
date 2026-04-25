@@ -1,5 +1,8 @@
 import { Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
+import { useCurrentLocale } from '@/shared/i18n'
+import { getTraitLabel } from '@/shared/i18n/pf2e-content'
 import type { EffectiveSpeed } from '../model/use-effective-speeds'
 
 interface CreatureSpeedLineProps {
@@ -21,10 +24,12 @@ export function CreatureSpeedLine({ speeds }: CreatureSpeedLineProps) {
 }
 
 function SpeedItem({ speed }: { speed: EffectiveSpeed }) {
+  const { t } = useTranslation()
+  const locale = useCurrentLocale()
   const text =
     speed.type === 'land'
-      ? `${speed.final} feet`
-      : `${speed.type} ${speed.final} feet`
+      ? t('statblock.speedFt', { value: speed.final })
+      : t('statblock.speedTypedFt', { type: getTraitLabel(speed.type.toLowerCase(), locale), value: speed.final })
   const tone =
     speed.net < 0 ? 'text-pf-blood' : speed.net > 0 ? 'text-pf-threat-low' : ''
 
