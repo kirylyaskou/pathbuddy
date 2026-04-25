@@ -31,33 +31,72 @@ const LOCALE = 'ru'
 const SOURCE = 'pf2-locale-ru'
 const KIND = 'monster' as const
 
+// SQLite parameter limit is 999. With 9 columns per row we use 100 rows per
+// chunk = 900 params — well under the limit and large enough that 1973 rows
+// fit in 20 statements instead of 1973.
+const CHUNK_SIZE = 100
+
 /**
  * Upsert all vendored monster translations into the `translations` table.
- * Safe to call repeatedly (idempotent via INSERT OR REPLACE on unique key).
+ *
+ * Boot strategy: idempotent and fast.
+ *   1. Count existing rows with the current source. If the count already
+ *      matches the in-bundle row count, skip the INSERT loop entirely —
+ *      vendor data hasn't changed since last boot. Vendor bumps invalidate
+ *      this gate by changing the row count.
+ *   2. Otherwise, wrap chunked multi-VALUES INSERT OR REPLACE statements in
+ *      a single transaction so SQLite issues one fsync instead of one per
+ *      row. Without batching, the IPC round-trip per row stalled boot for
+ *      minutes on the 1973-entry vendor set.
+ *
+ * The FTS5 RU denormalization step always runs because Foundry sync may
+ * have rebuilt the entities table since last seed, clearing name_loc.
  */
 export async function loadContentTranslations(db: Database): Promise<void> {
   const rows = collectMonsterTranslations()
 
-  for (const row of rows) {
+  const existing = await db.select<{ n: number }[]>(
+    'SELECT COUNT(*) AS n FROM translations WHERE source = ? AND locale = ? AND kind = ?',
+    [SOURCE, LOCALE, KIND],
+  )
+  const existingCount = existing[0]?.n ?? 0
+
+  if (existingCount === rows.length) {
+    console.log(`[translations] Skipping seed — ${existingCount} rows already present`)
+  } else {
+    console.log(
+      `[translations] Seeding ${rows.length} rows (existing=${existingCount}); chunked transaction`,
+    )
+    await db.execute('BEGIN TRANSACTION', [])
     try {
-      await db.execute(
-        `INSERT OR REPLACE INTO translations
-           (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          KIND,
-          row.packKey,
-          null,
-          LOCALE,
-          row.nameLoc,
-          null,
-          row.textLoc,
-          SOURCE,
-          JSON.stringify(row.structured),
-        ],
-      )
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        const chunk = rows.slice(i, i + CHUNK_SIZE)
+        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+        const params: (string | null)[] = []
+        for (const row of chunk) {
+          params.push(
+            KIND,
+            row.packKey,
+            null,
+            LOCALE,
+            row.nameLoc,
+            null,
+            row.textLoc,
+            SOURCE,
+            JSON.stringify(row.structured),
+          )
+        }
+        await db.execute(
+          `INSERT OR REPLACE INTO translations
+             (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
+           VALUES ${placeholders}`,
+          params,
+        )
+      }
+      await db.execute('COMMIT', [])
     } catch (err) {
-      console.warn(`[translations] insert failed for ${row.packKey}:`, err)
+      await db.execute('ROLLBACK', [])
+      throw err
     }
   }
 
