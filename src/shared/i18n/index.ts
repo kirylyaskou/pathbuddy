@@ -71,3 +71,4 @@ export {
   getTraitDescription,
 } from './pf2e-content'
 export { useContentTranslation } from './use-content-translation'
+export { useCurrentLocale } from './use-current-locale'
