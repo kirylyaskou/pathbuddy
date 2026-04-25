@@ -411,7 +411,23 @@
 }
 
 .pf2e-safe-html p {
+  display: block;
+  margin: 0.5rem 0 !important;
+}
+
+.pf2e-safe-html p + p {
+  margin-top: 0.5rem !important;
+}
+
+.pf2e-safe-html ul,
+.pf2e-safe-html ol {
   margin: 0.5rem 0;
+  padding-left: 1.25rem;
+  list-style: revert;
+}
+
+.pf2e-safe-html li {
+  margin: 0.15rem 0;
 }
 
 /* Action-cost glyph wrapper injected by SafeHtml preprocess step.

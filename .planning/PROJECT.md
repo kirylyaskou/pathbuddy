@@ -1,28 +1,32 @@
 # PathMaid — Project Reference
 
-**Updated:** 2026-04-24 (начат v1.7.1)
+**Updated:** 2026-04-25 (v1.7.1 feature-complete, v1.7.2 starting)
 **Repo:** github.com/kirylyaskou/PathMaid
-**Current version:** v1.7.0 (shipped 2026-04-24) · v1.7.1 (в работе)
+**Current version:** v1.7.0 (shipped 2026-04-24) · v1.7.1 (feature-complete, blocked on bugs/tech-debt — not tagged) · v1.7.2 (в работе)
 
-## Current Milestone: v1.7.1 Translation Dictionaries
+## Current Milestone: v1.7.2 — Translation Polish + Tech Debt
 
-**Goal:** Расширить RU-покрытие `CreatureStatBlock` до всего textual content (кроме numerics) через dictionary-based i18n независимого от HTML parser output. Фиксим spell translation regression из v1.7.0. Source of truth: pf2.ru/rules/player-core (author-authorized partner integration reference).
+**Goal:** Закрыть блокеры релиза v1.7.1: paragraph-spacing bug в spell drawer + 5 tech-debt items накопленных за phases 91-95. После этого milestone tag-able.
 
 **Target features:**
-- Structural stat-block labels переведены через i18next (HP/AC/Fort/Ref/Will/Perception/Speed/Senses/Languages/Skills/Strikes/Abilities/Spellcasting/Damage/Recall Knowledge + tabs)
-- 17-skill dictionary вынесен в shared module, применяется к ВСЕМ скиллам при locale=ru
-- ~25 PF2e languages dictionary
-- ~60 core traits dictionary (labels + tooltip descriptions из pf2.ru)
-- Spell RU rendering regression restored (формат pre-v1.7.0 baseline)
+- Spell description rendering — paragraph blocks visually separated (Crit Success / Success / Failure / Heightened) per AoN-style stat block
+- Strike + ability trait pills route through TraitPill (Phase 93 SC9 deferral closure) — RU labels + tooltips везде, не только на header pills
+- Item-shaped pack ingest family — actions / feats / equipment / conditions из vendored packs (extends isItemPack helper)
+- Structured spell overlay shape — heightening / save / cost / time / target as typed fields (replaces текст-only overlay из Phase 95)
+- Spell-side untranslated badge slot — SpellReferenceDrawer header
+- Orphan `source='pf2.ru'` rows cleanup — one-shot DELETE in loader on first v1.7.2 boot
 
 **Out of scope:**
-- Automated sync/scrape от pf2.ru — ТОЛЬКО manual authoring reference для compile-time dict
-- PC/character sheets translation — monsters only
-- Full trait coverage (все 500+) — scope только ~60 core; rest deferred
-- LLM/remote translation — remains out
-- macOS notarization / Android разморозка
+- Automated upstream sync mechanism (vendor SHA-keyed cache) — v1.8+
+- macOS notarization / Android distribution
+- Custom creature translation pipeline
+- LLM/remote translation paths
 
 ## Completed Milestones
+
+### v1.7.1 — pf2-locale-ru Migration (feature-complete 2026-04-25, not yet tagged)
+
+Phases 90-95 — vendor pf2-locale-ru content + 4 LICENSES + ingest pipeline replacing HTML parser + 5 dictionary getters + UI wiring + untranslated badge + spell migration. Full details: [`.planning/milestones/v1.7.1-ROADMAP.md`](./milestones/v1.7.1-ROADMAP.md). Release blocked on paragraph spacing bug + 5 tech debts → v1.7.2 cycle.
 
 ### v1.7.0 — Monster Translation (shipped 2026-04-24)
 
