@@ -14,8 +14,8 @@
  *   6. _migrations contains the new structured_json migration marker
  *   7. translations table has at least one monster row with structured_json populated
  *      (proves the bundled loader wrote JSON after seed — not just that the column exists)
- *   8. getTranslation('monster', 'Succubus', 6, 'ru') returns a row whose
- *      structured field is a typed object with non-empty abilitiesLoc —
+ *   8. getTranslation('monster', 'Succubus', null, 'ru') returns a row whose
+ *      structured field is a typed object with non-empty items[] —
  *      proves the full read-path chain (column → loader → JSON.parse → typed).
  *
  * This file is NOT a test suite — it is a manual smoke test. Excluded from
@@ -113,8 +113,8 @@ export async function runMigrationsDebug(): Promise<void> {
   )
 
   // A7: at least one monster row in translations has structured_json populated
-  //     after the bundled loader ran. Proves the write path is live end-to-end
-  //     (parser produced output → JSON.stringify → column populated).
+  //     after the loader ran. Proves the write path is live end-to-end
+  //     (adapter produced output → JSON.stringify → column populated).
   const populated = await db.select<CountRow[]>(
     "SELECT COUNT(*) AS n FROM translations WHERE kind = 'monster' AND structured_json IS NOT NULL",
     [],
@@ -125,21 +125,25 @@ export async function runMigrationsDebug(): Promise<void> {
   )
 
   // A8: end-to-end read-path — getTranslation returns a typed structured
-  //     object for the bundled Succubus monster. Proves that: column
-  //     exists, loader wrote JSON, toRow() parsed it back into a typed
-  //     shape, and the hook-facing TranslationRow.structured surface works.
-  const succubusRow = await getTranslation('monster', 'Succubus', 6, 'ru')
+  //     object for Succubus. Proves that: column exists, loader wrote JSON,
+  //     toRow() parsed it back into a typed shape, and the hook-facing
+  //     TranslationRow.structured surface works.
+  //
+  //     Babele actor entries do not carry a level field, so adapter writes
+  //     level=NULL. getTranslation's fuzzy fallback (level IS NULL) DESC
+  //     matches that row first when caller passes level=null.
+  const succubusRow = await getTranslation('monster', 'Succubus', null, 'ru')
   assert(
     succubusRow !== null,
-    "getTranslation must return a row for Succubus level 6 locale=ru (run pnpm tauri dev to seed the translations table if empty)",
+    "getTranslation must return a row for Succubus locale=ru (run pnpm tauri dev to seed the translations table if empty)",
   )
   assert(
     succubusRow?.structured !== null && succubusRow?.structured !== undefined,
     "Succubus row must have a parsed structured object (not null) — write+read path typed round-trip",
   )
   assert(
-    (succubusRow?.structured?.abilitiesLoc?.length ?? 0) > 0,
-    "Succubus structured.abilitiesLoc must contain at least one ability (parser produced abilities; loader persisted in bundled seed)",
+    (succubusRow?.structured?.items?.length ?? 0) > 0,
+    "Succubus structured.items must be non-empty — adapter populated items[] from the Babele pack actor entry",
   )
 
   console.log(`[migrations.debug] ${passed}/${total} assertions passed`)
