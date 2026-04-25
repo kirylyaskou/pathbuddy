@@ -91,6 +91,17 @@ async function seedKind(
  * have rebuilt the entities table since last seed, clearing name_loc.
  */
 export async function loadContentTranslations(db: Database): Promise<void> {
+  // Stale rows from the v1.7.0 HTML-parser seed had source='pf2.ru'. The
+  // adapter pipeline writes source='pf2-locale-ru'; INSERT OR REPLACE
+  // only overwrites rows that share (kind, name_key, level, locale), so
+  // stale rows whose pack key no longer matches sit inert in the table.
+  // Clear them once on every boot — cheap when none remain (after first
+  // post-upgrade boot) and harmless on subsequent calls.
+  await db.execute(
+    "DELETE FROM translations WHERE source = 'pf2.ru'",
+    [],
+  )
+
   const monsterRows = collectMonsterTranslations()
   const spellRows = collectSpellTranslations()
 
