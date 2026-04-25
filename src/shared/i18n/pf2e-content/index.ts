@@ -37,10 +37,14 @@ const SOURCE = 'pf2-locale-ru'
 const KIND_MONSTER = 'monster' as const
 const KIND_SPELL = 'spell' as const
 
-// SQLite parameter limit is 999. With 9 columns per row we use 100 rows per
-// chunk = 900 params — well under the limit and large enough that 1973 rows
-// fit in 20 statements instead of 1973.
-const CHUNK_SIZE = 100
+// SQLite parameter limit is 999. With 9 columns per row, 110 rows per
+// chunk = 990 params — just under the limit and roughly 10% fewer IPC
+// roundtrips than the previous 100-row chunk size.
+const CHUNK_SIZE = 110
+
+// entity_items uses 4 columns per row — we can pack much more per IPC call.
+// 240 rows × 4 cols = 960 params, still under the 999 ceiling.
+const ENTITY_ITEMS_CHUNK_SIZE = 240
 
 /**
  * Per-kind seeding helper: counts existing rows for `(kind, locale, source)`,
@@ -252,8 +256,8 @@ export async function loadContentTranslations(db: Database): Promise<void> {
       await db.execute('BEGIN TRANSACTION', [])
       try {
         await db.execute(`DELETE FROM entity_items WHERE locale = ?`, [LOCALE])
-        for (let i = 0; i < monsterItemPairs.length; i += CHUNK_SIZE) {
-          const chunk = monsterItemPairs.slice(i, i + CHUNK_SIZE)
+        for (let i = 0; i < monsterItemPairs.length; i += ENTITY_ITEMS_CHUNK_SIZE) {
+          const chunk = monsterItemPairs.slice(i, i + ENTITY_ITEMS_CHUNK_SIZE)
           const placeholders = chunk.map(() => '(?, ?, ?, ?)').join(', ')
           const params: string[] = []
           for (const pair of chunk) {
