@@ -25,6 +25,7 @@ import section15Text from '/LICENSES/OGL-SECTION-15.md?raw'
 import vendorVersionTxt from '/vendor/pf2e-locale-ru/VERSION.txt?raw'
 
 export function SettingsPage() {
+  const { t } = useTranslation('common')
   const [syncing, setSyncing] = useState(false)
   const [stage, setStage] = useState('')
   const [progress, setProgress] = useState<{
@@ -64,7 +65,7 @@ export function SettingsPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       store.setError(msg)
-      toast.error(`Проверка обновлений: ${msg}`)
+      toast.error(`${t('settings.updaterStatus.checkFailedPrefix')}: ${msg}`)
     }
   }
 
@@ -74,17 +75,17 @@ export function SettingsPage() {
   ): string => {
     switch (s) {
       case 'checking':
-        return 'Проверяем...'
+        return t('settings.updaterStatus.checking')
       case 'available':
-        return 'Обновление доступно — см. диалог'
+        return t('settings.updaterStatus.available')
       case 'downloading':
-        return 'Скачиваем...'
+        return t('settings.updaterStatus.downloading')
       case 'installing':
-        return 'Устанавливаем...'
+        return t('settings.updaterStatus.installing')
       case 'uptodate':
-        return 'Актуальная версия'
+        return t('settings.updaterStatus.uptodate')
       case 'error':
-        return `Ошибка: ${err ?? 'неизвестно'}`
+        return `${t('settings.updaterStatus.errorPrefix')}: ${err ?? '—'}`
       case 'idle':
       default:
         return ''
@@ -115,15 +116,13 @@ export function SettingsPage() {
         setStage(stageText)
         if (total > 0) setProgress({ current, total })
       })
-      toast.success(
-        `Sync complete — ${count.toLocaleString()} entities imported.`
-      )
+      toast.success(t('toast.sync.success', { count: count.toLocaleString() }))
       useCombatTrackerStore.getState().bumpEntityDataVersion()
       await loadSyncStatus()
     } catch (err) {
       console.error('[Sync] Failed:', err)
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
-      toast.error(`Sync failed — ${msg}. Try again.`)
+      toast.error(t('toast.sync.failed', { message: msg }))
     } finally {
       setSyncing(false)
       setStage('')
@@ -143,15 +142,13 @@ export function SettingsPage() {
           if (total > 0) setProgress({ current, total })
         }
       )
-      toast.success(
-        `Import complete — ${count.toLocaleString()} entities imported.`
-      )
+      toast.success(t('toast.import.success', { count: count.toLocaleString() }))
       useCombatTrackerStore.getState().bumpEntityDataVersion()
       await loadSyncStatus()
     } catch (err) {
       console.error('[Import] Failed:', err)
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
-      toast.error(`Import failed — ${msg}. Try again.`)
+      toast.error(t('toast.import.failed', { message: msg }))
     } finally {
       setSyncing(false)
       setStage('')
@@ -188,7 +185,7 @@ export function SettingsPage() {
         >
           <MascotHex height={260} />
           <h2 className="text-xl font-semibold text-foreground">
-            Подготавливаем бардак
+            {t('settings.preparingMess')}
           </h2>
           <p className="text-sm text-muted-foreground">{stage}</p>
           <Progress
@@ -199,14 +196,13 @@ export function SettingsPage() {
         </div>
       )}
       <div className="mx-auto max-w-2xl p-8">
-      <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t('settings.title')}</h1>
       <Separator className="my-6" />
 
       <section>
-        <h2 className="text-xl font-semibold text-foreground">Data Source</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t('settings.dataSource.title')}</h2>
         <p className="mt-2 text-base text-muted-foreground">
-          Import latest Foundry VTT PF2e data from GitHub. Replaces existing
-          entities.
+          {t('settings.dataSource.description')}
         </p>
 
         <div className="mt-4 flex gap-3">
@@ -216,7 +212,7 @@ export function SettingsPage() {
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            {syncing ? 'Syncing...' : 'Sync Foundry VTT Data'}
+            {syncing ? t('settings.dataSource.syncing') : t('settings.dataSource.syncButton')}
           </Button>
 
           <Button
@@ -224,29 +220,32 @@ export function SettingsPage() {
             onClick={handleLocalImport}
             disabled={syncing}
           >
-            Import Local (refs/)
+            {t('settings.dataSource.importLocalButton')}
           </Button>
         </div>
 
         <p className="mt-4 text-sm text-muted-foreground">
           {lastSync && entityCount
-            ? `Last synced: ${formatDate(lastSync)} — ${Number(entityCount).toLocaleString()} entities`
-            : 'No data imported yet. Run a sync to load entities.'}
+            ? t('settings.dataSource.lastSynced', {
+                date: formatDate(lastSync),
+                count: Number(entityCount).toLocaleString(),
+              })
+            : t('settings.dataSource.noData')}
         </p>
       </section>
 
       <Separator className="my-6" />
 
       <section>
-        <h2 className="text-xl font-semibold text-foreground">Обновления</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t('settings.updates.title')}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Текущая версия: {currentVersion}
+          {t('settings.updates.currentVersion', { version: currentVersion })}
         </p>
         <div className="mt-4">
           {darwin ? (
             <Button variant="outline" onClick={openReleasesPage}>
               <Download className="mr-2 h-4 w-4" />
-              Открыть страницу релиза
+              {t('settings.updates.openReleasePage')}
             </Button>
           ) : (
             <Button
@@ -258,13 +257,13 @@ export function SettingsPage() {
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
-              Проверить обновления
+              {t('settings.updates.check')}
             </Button>
           )}
         </div>
         {darwin ? (
           <p className="mt-3 text-sm text-muted-foreground">
-            Автообновление недоступно — проверяйте страницу релиза вручную.
+            {t('settings.updates.darwinUnavailable')}
           </p>
         ) : (
           updaterStatus !== 'idle' && (

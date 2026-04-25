@@ -49,5 +49,44 @@
       "label": "RU",
       "tooltip": "This monster is not translated in pf2-locale-ru"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "preparingMess": "Preparing the mess",
+    "dataSource": {
+      "title": "Data Source",
+      "description": "Import latest Foundry VTT PF2e data from GitHub. Replaces existing entities.",
+      "syncButton": "Sync Foundry VTT Data",
+      "syncing": "Syncing...",
+      "importLocalButton": "Import Local (refs/)",
+      "lastSynced": "Last synced: {{date}} — {{count}} entities",
+      "noData": "No data imported yet. Run a sync to load entities."
+    },
+    "updates": {
+      "title": "Updates",
+      "currentVersion": "Current version: {{version}}",
+      "openReleasePage": "Open release page",
+      "check": "Check for updates",
+      "darwinUnavailable": "Auto-update unavailable — check the release page manually."
+    },
+    "updaterStatus": {
+      "checking": "Checking...",
+      "available": "Update available — see dialog",
+      "downloading": "Downloading...",
+      "installing": "Installing...",
+      "uptodate": "Up to date",
+      "errorPrefix": "Error",
+      "checkFailedPrefix": "Update check"
+    }
+  },
+  "toast": {
+    "sync": {
+      "success": "Sync complete — {{count}} entities imported.",
+      "failed": "Sync failed — {{message}}. Try again."
+    },
+    "import": {
+      "success": "Import complete — {{count}} entities imported.",
+      "failed": "Import failed — {{message}}. Try again."
+    }
   }
 }
