@@ -6,7 +6,8 @@ import type { SpellRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { SafeHtml } from '@/shared/lib/safe-html'
-import { useContentTranslation } from '@/shared/i18n'
+import { NoTranslationBadge } from '@/shared/ui/no-translation-badge'
+import { useContentTranslation, useCurrentLocale } from '@/shared/i18n'
 import { TRADITION_COLORS, actionCostLabel, rankLabel, parseDamageDisplay, parseAreaDisplay } from '../lib/helpers'
 import { parseJsonArray } from '@/shared/lib/json'
 
@@ -34,13 +35,20 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
   // Phase 80: spell translation lookup — `rank` is the level disambiguator
   // for spells (different-rank spells can share a base name).
   const { data: translation } = useContentTranslation('spell', spell?.name, spell?.rank ?? null)
+  const locale = useCurrentLocale()
+  const showUntranslatedBadge = locale === 'ru' && translation === null
 
   return (
     <Sheet open={!!spellId} onOpenChange={(open) => { if (!open) onClose() }}>
       <SheetContent side="right" className="w-[420px] sm:w-[480px] overflow-y-auto flex flex-col gap-0 p-0">
         {spell && (
           <>
-            <SheetHeader className="p-4 pb-3 border-b border-border/30">
+            <SheetHeader className="p-4 pb-3 border-b border-border/30 relative">
+              {showUntranslatedBadge && (
+                <div className="absolute top-2 right-10 z-10">
+                  <NoTranslationBadge />
+                </div>
+              )}
               <SheetTitle className="text-base font-semibold leading-tight">
                 {translation?.nameLoc ?? spell.name}
               </SheetTitle>
