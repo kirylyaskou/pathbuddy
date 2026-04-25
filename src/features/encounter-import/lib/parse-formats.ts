@@ -56,8 +56,8 @@ interface PathmaidenExport {
     partySize?: number
     combatants: Array<{
       name: string
-      /** 69-03: canonical bestiary/custom/hazard name used by the matcher.
-       *  Falls back to `name` when absent (legacy pre-69 exports). */
+      /** Canonical bestiary/custom/hazard name used by the matcher.
+       *  Falls back to `name` when absent (legacy exports without lookupName). */
       lookupName?: string
       level?: number
       isHazard?: boolean
@@ -69,6 +69,12 @@ interface PathmaidenExport {
   }
 }
 
+interface PathmaidBundleExport {
+  version: 'pathmaid-bundle-v1'
+  exportedAt?: string
+  encounters: PathmaidenExport['encounter'][]
+}
+
 export function detectFormat(json: unknown): ImportFormat {
   if (Array.isArray(json) && json.length > 0) {
     const first = json[0] as Record<string, unknown> | undefined
@@ -78,6 +84,9 @@ export function detectFormat(json: unknown): ImportFormat {
   }
   if (json && typeof json === 'object' && !Array.isArray(json)) {
     const obj = json as Record<string, unknown>
+    if (obj.version === 'pathmaid-bundle-v1' && Array.isArray(obj.encounters)) {
+      return 'pathmaid-bundle'
+    }
     if (obj.version === 'pathmaiden-v1' && typeof obj.encounter === 'object' && obj.encounter) {
       return 'pathmaiden'
     }
@@ -168,10 +177,44 @@ export function parsePathmaiden(json: unknown): ParsedEncounter[] {
   ]
 }
 
+export function parsePathmaidBundle(json: unknown): ParsedEncounter[] {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) return []
+  const raw = json as PathmaidBundleExport
+  if (raw.version !== 'pathmaid-bundle-v1' || !Array.isArray(raw.encounters)) return []
+  const out: ParsedEncounter[] = []
+  for (const enc of raw.encounters) {
+    if (!enc || typeof enc !== 'object') continue
+    const combatants: ParsedCombatant[] = []
+    for (const c of enc.combatants ?? []) {
+      if (!c?.name || typeof c.name !== 'string') continue
+      const lookupName =
+        typeof c.lookupName === 'string' && c.lookupName.trim() ? c.lookupName : c.name
+      combatants.push({
+        displayName: c.name,
+        lookupName,
+        level: c.level,
+        isHazard: c.isHazard === true,
+        weakEliteTier: c.weakEliteTier,
+        hp: c.hp,
+        hpMax: c.hpMax,
+        initiative: c.initiative,
+      })
+    }
+    out.push({
+      name: enc.name ?? 'Imported Encounter',
+      partyLevel: enc.partyLevel,
+      partySize: enc.partySize,
+      combatants,
+    })
+  }
+  return out
+}
+
 /** Dispatch parse by detected format. Returns empty array on unknown. */
 export function parseEncounterJson(json: unknown): ParsedEncounter[] {
   const fmt = detectFormat(json)
   if (fmt === 'dashboard') return parseDashboard(json)
   if (fmt === 'pathmaiden') return parsePathmaiden(json)
+  if (fmt === 'pathmaid-bundle') return parsePathmaidBundle(json)
   return []
 }
