@@ -93,6 +93,30 @@ export function adaptBabeleSpellEntry(
   }
 }
 
+/**
+ * Babele item-shaped entry — covers actions, feats, equipment, conditions.
+ * Pack mappings for these are typically empty (`{}`) because Babele falls
+ * back to the global Item mapping for `name` + `description`. Entries
+ * carry the same minimal name+description shape as spells.
+ */
+export interface BabeleItemEntry {
+  name?: string
+  description?: string
+  [key: string]: unknown
+}
+
+export function adaptBabeleItemEntry(
+  entry: BabeleItemEntry,
+): { name: string; description: string } {
+  if (entry === null || typeof entry !== 'object') {
+    throw new Error('Invalid Babele item entry: not an object')
+  }
+  return {
+    name: typeof entry.name === 'string' ? entry.name : '',
+    description: typeof entry.description === 'string' ? entry.description : '',
+  }
+}
+
 export function adaptBabeleActorEntry(
   entry: BabeleActorEntry,
 ): MonsterStructuredLoc {

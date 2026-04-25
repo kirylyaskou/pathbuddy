@@ -23,12 +23,14 @@ import type Database from '@tauri-apps/plugin-sql'
 import {
   collectMonsterTranslations,
   collectSpellTranslations,
+  collectItemKindTranslations,
+  type ItemKind,
 } from './ingest'
 import { getTranslation } from '@/shared/api/translations'
 import type { SupportedLocale } from '@/shared/i18n/config'
 import type { MonsterStructuredLoc } from './lib'
 
-export type TranslationKind = 'monster' | 'spell' | 'item' | 'feat' | 'action'
+export type TranslationKind = 'monster' | 'spell' | 'item' | 'feat' | 'action' | 'condition'
 
 const LOCALE = 'ru'
 const SOURCE = 'pf2-locale-ru'
@@ -158,6 +160,45 @@ export async function loadContentTranslations(db: Database): Promise<void> {
       )
     }
   })
+
+  // Item-shaped kinds (action / feat / item / condition) share a uniform
+  // text-overlay shape with spells. Group rows by kind and feed each
+  // group through seedKind so per-kind skip-gates work independently.
+  const itemRows = collectItemKindTranslations()
+  const grouped = new Map<ItemKind, typeof itemRows>()
+  for (const row of itemRows) {
+    const bucket = grouped.get(row.kind) ?? []
+    bucket.push(row)
+    grouped.set(row.kind, bucket)
+  }
+  for (const [kind, kindRows] of grouped) {
+    await seedKind(db, kind, kindRows.length, async () => {
+      for (let i = 0; i < kindRows.length; i += CHUNK_SIZE) {
+        const chunk = kindRows.slice(i, i + CHUNK_SIZE)
+        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+        const params: (string | null)[] = []
+        for (const row of chunk) {
+          params.push(
+            kind,
+            row.packKey,
+            null,
+            LOCALE,
+            row.nameLoc,
+            null,
+            row.textLoc,
+            SOURCE,
+            null,
+          )
+        }
+        await db.execute(
+          `INSERT OR REPLACE INTO translations
+             (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
+           VALUES ${placeholders}`,
+          params,
+        )
+      }
+    })
+  }
 
   await db.execute(
     `UPDATE entities
