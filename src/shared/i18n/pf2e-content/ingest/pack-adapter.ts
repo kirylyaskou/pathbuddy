@@ -48,6 +48,51 @@ export function isActorPack(pack: BabelePackFile): boolean {
   return fields.includes('items') && fields.includes('description')
 }
 
+/**
+ * Detect a spell-shaped pack: spell entries carry name + description text
+ * with spell-specific overlay fields (range, duration, time, heightening,
+ * cost, target) but no items[]. Used to route the spells-srd pack into
+ * the simpler text-overlay path (no MonsterStructuredLoc).
+ */
+export function isSpellPack(pack: BabelePackFile): boolean {
+  if (!pack.mapping || typeof pack.mapping !== 'object') return false
+  const fields = Object.keys(pack.mapping)
+  return (
+    !fields.includes('items') &&
+    fields.includes('range') &&
+    fields.includes('duration') &&
+    fields.includes('heightening')
+  )
+}
+
+/**
+ * Babele spell entry — minimal shape consumed by adapter. Full schema
+ * carries more fields (target, time, cost, etc.) but they are not needed
+ * for the current text-overlay rendering path.
+ */
+export interface BabeleSpellEntry {
+  name?: string
+  description?: string
+  [key: string]: unknown
+}
+
+/**
+ * Pure transform: Babele spell entry → minimal text-overlay row payload.
+ * Spells use a simpler shape than monsters — no structured_json yet, just
+ * RU display name and HTML description in text_loc.
+ */
+export function adaptBabeleSpellEntry(
+  entry: BabeleSpellEntry,
+): { name: string; description: string } {
+  if (entry === null || typeof entry !== 'object') {
+    throw new Error('Invalid Babele spell entry: not an object')
+  }
+  return {
+    name: typeof entry.name === 'string' ? entry.name : '',
+    description: typeof entry.description === 'string' ? entry.description : '',
+  }
+}
+
 export function adaptBabeleActorEntry(
   entry: BabeleActorEntry,
 ): MonsterStructuredLoc {

@@ -20,7 +20,10 @@
  */
 
 import type Database from '@tauri-apps/plugin-sql'
-import { collectMonsterTranslations } from './ingest'
+import {
+  collectMonsterTranslations,
+  collectSpellTranslations,
+} from './ingest'
 import { getTranslation } from '@/shared/api/translations'
 import type { SupportedLocale } from '@/shared/i18n/config'
 import type { MonsterStructuredLoc } from './lib'
@@ -29,12 +32,47 @@ export type TranslationKind = 'monster' | 'spell' | 'item' | 'feat' | 'action'
 
 const LOCALE = 'ru'
 const SOURCE = 'pf2-locale-ru'
-const KIND = 'monster' as const
+const KIND_MONSTER = 'monster' as const
+const KIND_SPELL = 'spell' as const
 
 // SQLite parameter limit is 999. With 9 columns per row we use 100 rows per
 // chunk = 900 params — well under the limit and large enough that 1973 rows
 // fit in 20 statements instead of 1973.
 const CHUNK_SIZE = 100
+
+/**
+ * Per-kind seeding helper: counts existing rows for `(kind, locale, source)`,
+ * skips when the count matches the in-bundle row total, otherwise wraps the
+ * caller-supplied INSERT loop in a transaction so SQLite issues one fsync
+ * instead of one per chunk.
+ */
+async function seedKind(
+  db: Database,
+  kind: string,
+  expected: number,
+  insert: () => Promise<void>,
+): Promise<void> {
+  const existing = await db.select<{ n: number }[]>(
+    'SELECT COUNT(*) AS n FROM translations WHERE source = ? AND locale = ? AND kind = ?',
+    [SOURCE, LOCALE, kind],
+  )
+  const existingCount = existing[0]?.n ?? 0
+  if (existingCount === expected) {
+    console.log(`[translations] Skipping ${kind} seed — ${existingCount} rows already present`)
+    return
+  }
+  console.log(
+    `[translations] Seeding ${expected} ${kind} rows (existing=${existingCount}); chunked transaction`,
+  )
+  await db.execute('BEGIN TRANSACTION', [])
+  try {
+    await insert()
+    await db.execute('COMMIT', [])
+  } catch (err) {
+    await db.execute('ROLLBACK', [])
+    throw err
+  }
+}
 
 /**
  * Upsert all vendored monster translations into the `translations` table.
@@ -53,52 +91,62 @@ const CHUNK_SIZE = 100
  * have rebuilt the entities table since last seed, clearing name_loc.
  */
 export async function loadContentTranslations(db: Database): Promise<void> {
-  const rows = collectMonsterTranslations()
+  const monsterRows = collectMonsterTranslations()
+  const spellRows = collectSpellTranslations()
 
-  const existing = await db.select<{ n: number }[]>(
-    'SELECT COUNT(*) AS n FROM translations WHERE source = ? AND locale = ? AND kind = ?',
-    [SOURCE, LOCALE, KIND],
-  )
-  const existingCount = existing[0]?.n ?? 0
-
-  if (existingCount === rows.length) {
-    console.log(`[translations] Skipping seed — ${existingCount} rows already present`)
-  } else {
-    console.log(
-      `[translations] Seeding ${rows.length} rows (existing=${existingCount}); chunked transaction`,
-    )
-    await db.execute('BEGIN TRANSACTION', [])
-    try {
-      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
-        const chunk = rows.slice(i, i + CHUNK_SIZE)
-        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
-        const params: (string | null)[] = []
-        for (const row of chunk) {
-          params.push(
-            KIND,
-            row.packKey,
-            null,
-            LOCALE,
-            row.nameLoc,
-            null,
-            row.textLoc,
-            SOURCE,
-            JSON.stringify(row.structured),
-          )
-        }
-        await db.execute(
-          `INSERT OR REPLACE INTO translations
-             (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
-           VALUES ${placeholders}`,
-          params,
+  await seedKind(db, KIND_MONSTER, monsterRows.length, async () => {
+    for (let i = 0; i < monsterRows.length; i += CHUNK_SIZE) {
+      const chunk = monsterRows.slice(i, i + CHUNK_SIZE)
+      const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+      const params: (string | null)[] = []
+      for (const row of chunk) {
+        params.push(
+          KIND_MONSTER,
+          row.packKey,
+          null,
+          LOCALE,
+          row.nameLoc,
+          null,
+          row.textLoc,
+          SOURCE,
+          JSON.stringify(row.structured),
         )
       }
-      await db.execute('COMMIT', [])
-    } catch (err) {
-      await db.execute('ROLLBACK', [])
-      throw err
+      await db.execute(
+        `INSERT OR REPLACE INTO translations
+           (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
+         VALUES ${placeholders}`,
+        params,
+      )
     }
-  }
+  })
+
+  await seedKind(db, KIND_SPELL, spellRows.length, async () => {
+    for (let i = 0; i < spellRows.length; i += CHUNK_SIZE) {
+      const chunk = spellRows.slice(i, i + CHUNK_SIZE)
+      const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+      const params: (string | null)[] = []
+      for (const row of chunk) {
+        params.push(
+          KIND_SPELL,
+          row.packKey,
+          null,
+          LOCALE,
+          row.nameLoc,
+          null,
+          row.textLoc,
+          SOURCE,
+          null,
+        )
+      }
+      await db.execute(
+        `INSERT OR REPLACE INTO translations
+           (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
+         VALUES ${placeholders}`,
+        params,
+      )
+    }
+  })
 
   await db.execute(
     `UPDATE entities
