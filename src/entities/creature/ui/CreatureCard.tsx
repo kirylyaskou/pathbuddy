@@ -18,9 +18,8 @@ interface CreatureCardProps {
 }
 
 export function CreatureCard({ creature, compact, onAdd, onAddToStaging, onClick, className }: CreatureCardProps) {
-  // Phase 79: when a Russian translation exists for this creature, show the
-  // localized name in summary tiles too — lets users recognize entries by
-  // the name they know. The detail modal does the full stat-block switch.
+  // Show the localized name in summary tiles when a translation exists, so users
+  // recognize entries by the name they know. Detail view does the full overlay.
   const { data: translation } = useContentTranslation('monster', creature.name, creature.level)
   const displayName = translation?.nameLoc ?? creature.name
   if (compact) {

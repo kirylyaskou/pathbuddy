@@ -25,8 +25,8 @@ function resolveAbilityLoc(
 ) {
   return {
     displayName: loc?.name ?? ability.name,
-    displayCost: (loc?.actionCount ?? ability.actionCost) as DisplayActionCost | undefined,
-    displayTraits: loc?.traits?.length ? loc.traits : (ability.traits ?? []),
+    displayCost: ability.actionCost,
+    displayTraits: ability.traits ?? [],
     locDescription: loc?.description,
   }
 }

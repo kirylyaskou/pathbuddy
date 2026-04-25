@@ -104,12 +104,11 @@ interface CreatureStatBlockProps {
 }
 
 export function CreatureStatBlock({ creature, className, encounterContext, renderSpellcasting }: CreatureStatBlockProps) {
-  // RU content translation overlay. When a bundled pf2.ru translation exists
-  // we override the display name and the trait pills (traitsLoc is
-  // comma-separated and already includes rarity/size labels, so
-  // auto-rendered rarity/size pills are disabled to avoid duplicates). All
-  // numeric stats, interactive formulas, ability cards, spellcasting blocks,
-  // and skills stay English — keeps the structured UI intact.
+  // RU content translation overlay. When a vendored pack entry exists we
+  // override the display name and surface per-monster RU free-text deltas
+  // (description, language details, senses details, speed details) but keep
+  // numeric stats, formulas, ability cards, and spellcasting blocks in
+  // English-driven engine values — those are the source of truth.
   const { data: translation } = useContentTranslation(
     'monster',
     creature.name,
@@ -120,27 +119,14 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
   const structured = translation?.structured ?? null
 
   const abilitiesLocByName = useMemo(() => {
-    if (!structured?.abilitiesLoc) return undefined
+    if (!structured?.items || structured.items.length === 0) return undefined
     const m = new Map<string, AbilityLoc>()
-    for (const a of structured.abilitiesLoc) {
-      m.set(a.name.trim().toLowerCase(), a)
+    for (const it of structured.items) {
+      if (it.description !== undefined && it.description.trim().length > 0) {
+        m.set(it.name.trim().toLowerCase(), { name: it.name, description: it.description })
+      }
     }
-    return m
-  }, [structured])
-
-  const defensesLoc = useMemo(() => {
-    if (!structured) return undefined
-    return {
-      acLoc: structured.acLoc,
-      hpLoc: structured.hpLoc,
-      savesLoc: structured.savesLoc,
-      weaknessesLoc: structured.weaknessesLoc,
-      resistancesLoc: structured.resistancesLoc,
-      immunitiesLoc: structured.immunitiesLoc,
-      perceptionLoc: structured.perceptionLoc,
-      languagesLoc: structured.languagesLoc,
-      abilityScoresLoc: structured.abilityScoresLoc,
-    }
+    return m.size > 0 ? m : undefined
   }, [structured])
 
   // Tag this hook as an "attack" roll site so Sure Strike (RollTwice selector:
@@ -400,7 +386,7 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
           {creature.senses.length > 0 && (
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground/80">Senses</span>
-              {' '}{creature.senses.join(', ')}
+              {' '}{structured?.sensesDetails ?? creature.senses.join(', ')}
             </p>
           )}
         </div>
@@ -439,7 +425,6 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
               immunities={creature.immunities}
               resistances={creature.resistances}
               weaknesses={creature.weaknesses}
-              defensesLoc={defensesLoc}
             />
             <Separator />
           </>
@@ -447,8 +432,11 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
 
         <div className="p-4">
           <StatRow label="Speed">
-            <CreatureSpeedLine speeds={effectiveSpeeds} speedsLoc={structured?.speedsLoc} />
+            <CreatureSpeedLine speeds={effectiveSpeeds} />
           </StatRow>
+          {structured?.speedDetails && (
+            <p className="mt-1 text-xs text-muted-foreground italic">{structured.speedDetails}</p>
+          )}
         </div>
 
         {isSpecialFormation && (
@@ -483,7 +471,6 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
             currentMapIndex={currentMapIndex}
             isMapTracked={Boolean(mapCombatantId)}
             onAttackClick={handleStrikeAttack}
-            strikesLoc={structured?.strikesLoc}
           />
         )}
 
@@ -521,7 +508,7 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
           <SectionHeader>Skills</SectionHeader>
           <CollapsibleContent>
             <div className="px-4 pb-4 pt-2">
-              <CreatureSkillsLine skills={creature.skills} modStats={modStats} onRoll={handleRoll} skillsLoc={structured?.skillsLoc} />
+              <CreatureSkillsLine skills={creature.skills} modStats={modStats} onRoll={handleRoll} />
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -529,7 +516,7 @@ export function CreatureStatBlock({ creature, className, encounterContext, rende
 
         {creature.languages.length > 0 && (
           <div className="p-4 space-y-2">
-            <StatRow label="Languages">{creature.languages.join(", ")}</StatRow>
+            <StatRow label="Languages">{structured?.languageDetails ?? creature.languages.join(", ")}</StatRow>
           </div>
         )}
 

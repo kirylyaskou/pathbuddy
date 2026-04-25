@@ -2,7 +2,6 @@ import { Collapsible, CollapsibleContent } from '@/shared/ui/collapsible'
 import { SectionHeader } from '@/shared/ui/section-header'
 import { CreatureStrikeRow } from './CreatureStrikeRow'
 import type { EffectiveStrike } from '../model/use-effective-strikes'
-import type { StrikeLoc } from '@/shared/i18n'
 
 interface CreatureStrikesSectionProps {
   strikes: EffectiveStrike[]
@@ -11,7 +10,6 @@ interface CreatureStrikesSectionProps {
   currentMapIndex: number
   isMapTracked: boolean
   onAttackClick: (strike: EffectiveStrike, mapIdx: number) => void
-  strikesLoc?: StrikeLoc[]
 }
 
 export function CreatureStrikesSection({
@@ -21,7 +19,6 @@ export function CreatureStrikesSection({
   currentMapIndex,
   isMapTracked,
   onAttackClick,
-  strikesLoc,
 }: CreatureStrikesSectionProps) {
   return (
     <Collapsible defaultOpen>
@@ -37,7 +34,6 @@ export function CreatureStrikesSection({
               currentMapIndex={currentMapIndex}
               isMapTracked={isMapTracked}
               onAttackClick={onAttackClick}
-              strikeLoc={strikesLoc?.[i]}
             />
           ))}
         </div>
