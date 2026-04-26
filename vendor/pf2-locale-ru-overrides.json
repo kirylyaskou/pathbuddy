@@ -1,0 +1,28 @@
+{
+  "_README": [
+    "User-curated translations for entries NOT covered by pf2-locale-ru community module.",
+    "PathMaid does NOT fabricate or auto-translate these — content is YOUR responsibility.",
+    "",
+    "Shape:",
+    "  { \"translations\": { \"<kind>\": { \"<English Name>\": { \"name\": \"<Russian>\", \"description\": \"<optional HTML>\" } } } }",
+    "",
+    "Supported kinds:",
+    "  monster | hazard | spell | item | action | feat | condition",
+    "",
+    "Examples:",
+    "  \"hazard\": { \"Angry Victims\": { \"name\": \"Разгневанные жертвы\" } }",
+    "  \"monster\": { \"Some Homebrew Creature\": { \"name\": \"Некое самодельное существо\" } }",
+    "",
+    "Locale: all entries assumed RU (locale='ru'). Source attribution: 'user-override' in DB.",
+    "Bump SEED_VERSION in src/shared/i18n/pf2e-content/index.ts after editing to force reseed."
+  ],
+  "translations": {
+    "hazard": {},
+    "monster": {},
+    "spell": {},
+    "item": {},
+    "action": {},
+    "feat": {},
+    "condition": {}
+  }
+}

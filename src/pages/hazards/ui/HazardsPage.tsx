@@ -9,6 +9,8 @@ import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { parseJsonArray } from '@/shared/lib/json'
 import { logError } from '@/shared/lib/error'
 import { stripRarityMarker } from '@/shared/lib/display-name'
+import { useCurrentLocale } from '@/shared/i18n'
+import { NoTranslationBadge } from '@/shared/ui/no-translation-badge'
 
 type TypeFilter = 'all' | 'simple' | 'complex'
 
@@ -34,6 +36,8 @@ function HazardCard({ hazard, expanded, onToggle }: {
 }) {
   const traits = parseJsonArray(hazard.traits)
   const actions = parseJsonArray<HazardAction>(hazard.actions_json)
+  const locale = useCurrentLocale()
+  const showUntranslated = locale === 'ru' && !hazard.name_loc
 
   return (
     <div
@@ -50,6 +54,7 @@ function HazardCard({ hazard, expanded, onToggle }: {
         <LevelBadge level={hazard.level} size="sm" />
 
         <span className="font-semibold text-sm flex-1">{stripRarityMarker(hazard.name_loc ?? hazard.name)}</span>
+        {showUntranslated && <NoTranslationBadge />}
 
         {hazard.is_complex ? (
           <span className="px-1.5 py-0.5 text-[10px] rounded border font-semibold bg-orange-900/40 text-orange-300 border-orange-700/40 shrink-0">

@@ -29,6 +29,36 @@ import {
 import { getTranslation } from '@/shared/api/translations'
 import type { SupportedLocale } from '@/shared/i18n/config'
 import type { MonsterStructuredLoc } from './lib'
+import overridesData from '@vendor/pf2-locale-ru-overrides.json'
+
+interface OverrideEntry {
+  name?: string
+  description?: string
+}
+interface OverridesShape {
+  translations?: Record<string, Record<string, OverrideEntry>>
+}
+
+function collectOverrideRows(): Array<{ kind: string; nameKey: string; nameLoc: string; textLoc: string }> {
+  const rows: Array<{ kind: string; nameKey: string; nameLoc: string; textLoc: string }> = []
+  const data = overridesData as OverridesShape
+  const groups = data.translations ?? {}
+  for (const [kind, entries] of Object.entries(groups)) {
+    if (!entries || typeof entries !== 'object') continue
+    for (const [enName, override] of Object.entries(entries)) {
+      if (!override || typeof override !== 'object') continue
+      const name = typeof override.name === 'string' ? override.name : ''
+      if (!name) continue
+      rows.push({
+        kind,
+        nameKey: enName,
+        nameLoc: name,
+        textLoc: typeof override.description === 'string' ? override.description : '',
+      })
+    }
+  }
+  return rows
+}
 
 export type TranslationKind = 'monster' | 'spell' | 'item' | 'feat' | 'action' | 'condition'
 
@@ -43,7 +73,7 @@ const KIND_SPELL = 'spell' as const
 // in a way that requires re-seeding existing DBs. The warm boot guard
 // compares this against sync_metadata so collect* and INSERT loops are
 // skipped entirely when the DB is already up to date.
-const SEED_VERSION = '3'
+const SEED_VERSION = '4'
 const SEED_VERSION_KEY = 'seed.translations.version'
 
 // SQLite parameter limit is 999. With 9 columns per row, 110 rows per
@@ -294,6 +324,39 @@ export async function loadContentTranslations(db: Database): Promise<void> {
     })
   }
   if (PERF_DEV) console.timeEnd('[perf] seedKind item-kinds INSERT (loop)')
+
+  // User-curated overrides — supplement vendor where pf2-locale-ru lacks
+  // entries (Kingmaker AP hazards, homebrew, etc.). source='user-override'
+  // so audit can identify non-vendor rows. INSERT OR REPLACE so overrides
+  // also win over vendor when keys collide (deliberate opt-in fix path).
+  const overrideRows = collectOverrideRows()
+  if (PERF_DEV) console.log(`[perf] override rows: ${overrideRows.length}`)
+  if (overrideRows.length > 0) {
+    for (let i = 0; i < overrideRows.length; i += CHUNK_SIZE) {
+      const chunk = overrideRows.slice(i, i + CHUNK_SIZE)
+      const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+      const params: (string | null)[] = []
+      for (const row of chunk) {
+        params.push(
+          row.kind,
+          row.nameKey,
+          null,
+          LOCALE,
+          row.nameLoc,
+          null,
+          row.textLoc,
+          'user-override',
+          null,
+        )
+      }
+      await db.execute(
+        `INSERT OR REPLACE INTO translations
+           (kind, name_key, level, locale, name_loc, traits_loc, text_loc, source, structured_json)
+         VALUES ${placeholders}`,
+        params,
+      )
+    }
+  }
 
   if (PERF_DEV) console.time('[perf] entities.name_loc UPDATE + FTS rebuild')
   await db.execute(
