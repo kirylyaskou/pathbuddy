@@ -509,3 +509,100 @@ PATHFINDER #182: GRAVECLAW
 Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
 
 Pathfinder Adventure Path #182: Graveclaw © 2022, Paizo Inc.; Author: Jason Tondro.
+
+--- v1.7.5 expansion (2026-04-26): per-AP entries for Phase 109 vendored bestiaries ---
+
+AGE OF ASHES
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Age of Ashes © 2019, Paizo Inc.
+
+AGENTS OF EDGEWATCH
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Agents of Edgewatch © 2020, Paizo Inc.
+
+EXTINCTION CURSE
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Extinction Curse © 2020, Paizo Inc.
+
+FISTS OF THE RUBY PHOENIX
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Fists of the Ruby Phoenix © 2021, Paizo Inc.
+
+STRENGTH OF THOUSANDS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Strength of Thousands © 2021, Paizo Inc.
+
+QUEST FOR THE FROZEN FLAME
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Quest for the Frozen Flame © 2022, Paizo Inc.
+
+OUTLAWS OF ALKENSTAR
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Outlaws of Alkenstar © 2022, Paizo Inc.
+
+BLOOD LORDS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Blood Lords © 2022, Paizo Inc.
+
+CROWN OF THE KOBOLD KING
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Crown of the Kobold King © 2022, Paizo Inc.
+
+MENACE UNDER OTARI
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Menace Under Otari © 2022, Paizo Inc.
+
+GATEWALKERS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Gatewalkers © 2023, Paizo Inc.
+
+REVENGE OF THE RUNELORDS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Revenge of the Runelords © Paizo Inc.
+
+MALEVOLENCE
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Malevolence © Paizo Inc.
+
+SEVEN DOOMS FOR SANDPOINT
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Seven Dooms for Sandpoint © 2024, Paizo Inc.
+
+HOWL OF THE WILD
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Howl of the Wild © 2024, Paizo Inc.
+
+WAR OF IMMORTALS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder War of Immortals © 2024, Paizo Inc.
+
+BATTLECRY
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Battlecry © 2024, Paizo Inc.
+
+SHADES OF BLOOD
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Shades of Blood © 2025, Paizo Inc.
+
+HELLBREAKERS
+Pathfinder Core Rulebook (Second Edition) © 2019, Paizo Inc.; Authors: Logan Bonner, Jason Bulmahn, Stephen Radney-MacFarland, and Mark Seifter.
+
+Pathfinder Hellbreakers © Paizo Inc.
