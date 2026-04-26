@@ -8,6 +8,7 @@ import { cn } from '@/shared/lib/utils'
 import { sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
 import { parseJsonArray } from '@/shared/lib/json'
 import { logError } from '@/shared/lib/error'
+import { stripRarityMarker } from '@/shared/lib/display-name'
 
 type TypeFilter = 'all' | 'simple' | 'complex'
 
@@ -48,7 +49,7 @@ function HazardCard({ hazard, expanded, onToggle }: {
       <div className="flex items-center gap-2 px-3 py-2">
         <LevelBadge level={hazard.level} size="sm" />
 
-        <span className="font-semibold text-sm flex-1">{hazard.name}</span>
+        <span className="font-semibold text-sm flex-1">{stripRarityMarker(hazard.name_loc ?? hazard.name)}</span>
 
         {hazard.is_complex ? (
           <span className="px-1.5 py-0.5 text-[10px] rounded border font-semibold bg-orange-900/40 text-orange-300 border-orange-700/40 shrink-0">
@@ -190,7 +191,7 @@ export function HazardsPage() {
     let list = allHazards
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter((h) => h.name.toLowerCase().includes(q))
+      list = list.filter((h) => h.name.toLowerCase().includes(q) || (h.name_loc?.toLowerCase().includes(q) ?? false))
     }
     if (typeFilter !== 'all') {
       list = list.filter((h) => h.hazard_type === typeFilter)

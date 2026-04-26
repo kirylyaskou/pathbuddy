@@ -23,7 +23,7 @@ import {
   type BabeleItemEntry,
 } from './pack-adapter'
 
-export type ItemKind = 'action' | 'feat' | 'item' | 'condition'
+export type ItemKind = 'action' | 'feat' | 'item' | 'condition' | 'hazard'
 
 export interface ItemTranslationRow {
   kind: ItemKind
@@ -47,6 +47,9 @@ const ITEM_PACK_KIND: Record<string, ItemKind> = {
   '/vendor/pf2e-locale-ru/pf2e/packs/spell-effects.json': 'item',
   '/vendor/pf2e-locale-ru/pf2e/packs/feat-effects.json': 'item',
   '/vendor/pf2e-locale-ru/pf2e/packs/bestiary-effects.json': 'item',
+  // Hazards pack uses a slightly different Babele schema — `descriptionHazard`
+  // instead of `description`. adaptBabeleItemEntry handles the fallback.
+  '/vendor/pf2e-locale-ru/pf2e/packs/hazards.json': 'hazard',
 }
 
 export interface MonsterTranslationRow {

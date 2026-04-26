@@ -1,8 +1,10 @@
 import { getDb } from '@/shared/db'
+import { getCurrentLocale } from '@/shared/i18n/get-locale'
 
 export interface HazardRow {
   id: string
   name: string
+  name_loc: string | null
   level: number
   is_complex: number
   hazard_type: string
@@ -21,11 +23,13 @@ export interface HazardRow {
   actions_json: string | null
 }
 
+const HAZARD_NAME_LOC_SUBQUERY = `(SELECT t.name_loc FROM translations t WHERE t.kind='hazard' AND t.name_key=h.name COLLATE NOCASE AND t.locale=?) AS name_loc`
+
 export async function getAllHazards(): Promise<HazardRow[]> {
   const db = await getDb()
   return await db.select<HazardRow[]>(
-    'SELECT * FROM hazards ORDER BY level ASC, name ASC',
-    []
+    `SELECT h.*, ${HAZARD_NAME_LOC_SUBQUERY} FROM hazards h ORDER BY h.level ASC, h.name ASC`,
+    [getCurrentLocale()]
   )
 }
 
@@ -33,21 +37,21 @@ export async function searchHazards(query: string, limit = 50): Promise<HazardRo
   const db = await getDb()
   if (!query.trim()) {
     return await db.select<HazardRow[]>(
-      'SELECT * FROM hazards ORDER BY level ASC, name ASC LIMIT ?',
-      [limit]
+      `SELECT h.*, ${HAZARD_NAME_LOC_SUBQUERY} FROM hazards h ORDER BY h.level ASC, h.name ASC LIMIT ?`,
+      [getCurrentLocale(), limit]
     )
   }
   return await db.select<HazardRow[]>(
-    `SELECT * FROM hazards WHERE name LIKE ? ORDER BY level ASC, name ASC LIMIT ?`,
-    [`%${query.trim()}%`, limit]
+    `SELECT h.*, ${HAZARD_NAME_LOC_SUBQUERY} FROM hazards h WHERE h.name LIKE ? ORDER BY h.level ASC, h.name ASC LIMIT ?`,
+    [getCurrentLocale(), `%${query.trim()}%`, limit]
   )
 }
 
 export async function getHazardById(id: string): Promise<HazardRow | null> {
   const db = await getDb()
   const rows = await db.select<HazardRow[]>(
-    'SELECT * FROM hazards WHERE id = ? LIMIT 1',
-    [id]
+    `SELECT h.*, ${HAZARD_NAME_LOC_SUBQUERY} FROM hazards h WHERE h.id = ? LIMIT 1`,
+    [getCurrentLocale(), id]
   )
   return rows[0] ?? null
 }

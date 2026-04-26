@@ -190,6 +190,13 @@ export function adaptBestiarySpellItem(
 export interface BabeleItemEntry {
   name?: string
   description?: string
+  /**
+   * Hazards pack uses `descriptionHazard` instead of `description` per the
+   * Babele mapping schema (`system.details.description` is exposed under
+   * the alias `descriptionHazard`). Adapter falls back to this field so
+   * hazards can route through the same item-shape ingest path.
+   */
+  descriptionHazard?: string
   [key: string]: unknown
 }
 
@@ -199,9 +206,15 @@ export function adaptBabeleItemEntry(
   if (entry === null || typeof entry !== 'object') {
     throw new Error('Invalid Babele item entry: not an object')
   }
+  const description =
+    typeof entry.description === 'string'
+      ? entry.description
+      : typeof entry.descriptionHazard === 'string'
+        ? entry.descriptionHazard
+        : ''
   return {
     name: typeof entry.name === 'string' ? entry.name : '',
-    description: typeof entry.description === 'string' ? entry.description : '',
+    description,
   }
 }
 
