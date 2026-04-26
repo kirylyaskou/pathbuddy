@@ -1,45 +1,49 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7.1
-milestone_name: — pf2-locale-ru Migration
-status: executing
-stopped_at: Phase 90 (replanned) context gathered
-last_updated: "2026-04-25T18:11:09.470Z"
-last_activity: 2026-04-25
+milestone: v1.7.5
+milestone_name: AP Bestiaries + Item-id RU + Special Abilities Coverage
+status: defining_requirements
+stopped_at: ~
+last_updated: "2026-04-26T00:00:00.000Z"
+last_activity: 2026-04-26
 progress:
-  total_phases: 52
-  completed_phases: 2
-  total_plans: 21
-  completed_plans: 11
-  percent: 52
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-04-24 for v1.7.1 kickoff)
+See: `.planning/PROJECT.md` (updated 2026-04-26 для v1.7.5 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** Phase 91 — ingest-adapter-db-population
+**Current focus:** v1.7.5 — расширить translation ingest до полного pack coverage (72 vendor packs vs текущие 19); item-id RU lookup для всех packs; special abilities mapping из creature `entries.<creature>.items[]`.
 
 ## Current Position
 
-Milestone: v1.7.1 Translation Dictionaries
-Phase: 999.1
-Plan: Not started
-Status: Executing Phase 91
-Last activity: 2026-04-25
+Milestone: v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-26 — Milestone v1.7.5 started, cleanup completed (MILESTONES.md sync, v1.7.{1,2,3,4} archive stubs created)
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Accumulated Context
 
-### Shipped Milestones
+### Shipped + Feature-Complete Milestones
 
-- v1.7.0 — Monster Translation (Phases 84-89) — archived [v1.7.0-ROADMAP.md](./milestones/v1.7.0-ROADMAP.md)
-- v1.6.0 — Spellcasting Deep Fix (Phases 77-83) — archived [v1.6.0-ROADMAP.md](./milestones/v1.6.0-ROADMAP.md), audit [v1.6.0-MILESTONE-AUDIT.md](./milestones/v1.6.0-MILESTONE-AUDIT.md)
-- v1.5.0 — In-App Updater (Phases 71-76) — archived retroactively [v1.5.0-ROADMAP.md](./milestones/v1.5.0-ROADMAP.md)
+- v1.7.4 — Broad i18n Coverage + Tech Cleanup (Phase 108 + sweep) — feature-complete 2026-04-26, NOT TAGGED — [archive](./milestones/v1.7.4-ROADMAP.md)
+- v1.7.3 — Strike Names + UI Shell + Item Surface Audit (Phases 102-107) — feature-complete 2026-04-26, NOT TAGGED — [archive](./milestones/v1.7.3-ROADMAP.md)
+- v1.7.2 — Translation Polish + Tech Debt (Phases 96-101) — feature-complete 2026-04-25, NOT TAGGED — [archive](./milestones/v1.7.2-ROADMAP.md)
+- v1.7.1 — pf2-locale-ru Migration (Phases 90-95) — feature-complete 2026-04-25, NOT TAGGED — [archive](./milestones/v1.7.1-ROADMAP.md)
+- v1.7.0 — Monster Translation (Phases 84-89) — shipped 2026-04-24, tag `v1.7.0` — [archive](./milestones/v1.7.0-ROADMAP.md)
+- v1.6.0 — Spellcasting Deep Fix (Phases 77-83) — archived [v1.6.0-ROADMAP.md](./milestones/v1.6.0-ROADMAP.md)
+- v1.5.0 — In-App Updater (Phases 71-76) — archived [v1.5.0-ROADMAP.md](./milestones/v1.5.0-ROADMAP.md)
 
 ### Carry-forward architectural invariants
 
@@ -47,29 +51,33 @@ Progress: [░░░░░░░░░░] 0%
 - FSD: `useShallow` mandatory для Zustand object selectors
 - `shared/api/` — единственный Tauri IPC boundary
 - Engine остаётся вне FSD, `@engine` alias
-- `import.meta.glob` для Drizzle migrations
+- `import.meta.glob` для Drizzle migrations + для vendor pack ingest (`@vendor` alias)
 - No IIFE в JSX; derived state через `useMemo`; декомпозиция по FSD (`lib → model → ui`)
-- **Translation IPC boundary:** `shared/api/translations.ts` — единственный consumer DB translations; `shared/i18n/use-content-translation.ts` — единственный React-hook
+- Translation IPC boundary: `shared/api/translations.ts` — единственный consumer DB translations; `shared/i18n/use-content-translation.ts` — единственный React-hook
+- `entity_items` table denormalization для id-based item RU lookup (Phase 102)
+- LICENSES requirement: vendor pack additions требуют OGL Section 15 update + COPYRIGHT chain check
 
-### v1.7.0 Technical Decisions
+### v1.7.x Translation Architecture (current state)
 
-- **HTML parser:** native `DOMParser` (доступен в Tauri WebView) — zero new deps, stable querySelector API, safer than regex
-- **Migration:** `0041_translation_structured_json.sql` добавляет `structured_json TEXT NULL` на `translations` table **и** ренеймит `0038_translations.sql` → `0041_translations.sql` в том же touch (resolve migration 0038 collision с Phase 79's `0038_spell_overrides_heightened.sql`)
-- **Matching strategy:** EN/RU парсинг парой (оба HTML), match abilities по index (порядок гарантирован в pf2.ru source), fallback на bolded-name match через normalized lowercase
-- **Runtime:** zero parsing в UI — `useContentTranslation` returns ready-made structured object; parser живёт только в `shared/i18n/pf2e-content/` loader code path
-- **Phase 85 schema decisions:** `_migrations` cleanup идёт в `0042_*` (не в `0041_*`) — ALTER TABLE должен выполняться после CREATE TABLE; `structuredJson: string | null` в raw SQL pattern — JSON.parse деферред в Phase 87; `migrations.debug.ts` co-located в `shared/db/` без новых deps
+**Vendor:** `pf2-locale-ru/pf2e/packs/*.json` (Babele format) — 72 packs total в repo, **19 ingested** (base PF2e content); 50+ AP-specific packs **NOT ingested** → v1.7.5 scope.
 
-### Known Tech Debt (v1.6.0 audit carryover — scoped into v1.7.0)
+**Pipeline:** vendor pack → `pack-adapter.ts` → `MonsterStructuredLoc | SpellStructuredLoc | ItemStructuredLoc` → DB `translations.structured_json` → `useContentTranslation` hook → UI render через SafeHtml + dictionary getters (TraitPill, getTraitLabel, getSkillLabel, etc.).
 
-- ✓ Migration 0038 collision → fix в Phase 85 (DEBT via rename in same migration touch)
-- ✓ `use-spellcasting.ts` = 119 строк → trim <100 (DEBT-01, Phase 89)
-- ✓ Per-phase SUMMARY/VERIFICATION/UAT artifacts reinstated (DEBT-02, process-level for each v1.7 phase)
-- → Integration regression tests для FSD-миграций — deferred to v1.8+
-- → Post-milestone hotfixes (UAT gap в description rendering) — covered by DEBT-02 UAT discipline
+**Per-instance items:** Pack `entries.<creature>.items[]` array содержит {id, name, description?} для weapons + special abilities. Phase 102 `entity_items` table denormalizes id→name lookup для weapons. **Special abilities (kind=action items с description) НЕ маппятся** на ability rows → English fallback в AbilityCard / strike row → v1.7.5 scope.
+
+### v1.7.4 Known Tech Debt → v1.7.5 Scope
+
+1. AP-specific bestiaries packs (`outlaws-of-alkenstar-bestiary`, `abomination-vaults-bestiary`, etc., 50+ файлов) НЕ ingested → монстры рендерятся EN с 🚫RU несмотря на наличие RU в vendor
+2. Item-id RU lookup только для weapons из base packs
+3. Special ability descriptions (Brute Strength, Финт негодяя, Внезапная атака) НЕ переведены — даже когда есть в pack `entries.<creature>.items[]`
+4. AP-specific spell entries в bestiary `items[]` (kind=spell) не подхватываются как spell rows
+
+Reference repro: `"Lucky" Lanks` из `outlaws-of-alkenstar-bestiary.json` — full RU entry в vendor (name "Счастливчик Лэнкс" + 9 items + 2 abilities), но рендерится EN с 🚫RU badge.
 
 ### Pending Todos
 
-- Push `614172c5` (v1.6.0 archive commit) на origin/master — ожидание решения пользователя
+- Push накопленные v1.7.1-v1.7.4 commits на origin/master — ожидание решения пользователя
+- Tag всех v1.7.x после v1.7.5 (combined release decision)
 
 ### Blockers/Concerns
 
@@ -84,6 +92,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-25T04:32:31.389Z
-Stopped at: Phase 90 (replanned) context gathered
-Next step: Draft REQUIREMENTS.md → ROADMAP.md → commit kickoff → `/gsd-discuss-phase 84` or `/gsd-plan-phase 84`.
+Last session: 2026-04-26
+Stopped at: v1.7.5 milestone init — cleanup completed, REQUIREMENTS.md pending
+Next step: Probe v1.7.5 scope details → write REQUIREMENTS.md → spawn roadmapper → commit kickoff → `/gsd-discuss-phase 109` или `/gsd-plan-phase 109`.

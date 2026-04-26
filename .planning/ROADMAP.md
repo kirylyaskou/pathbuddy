@@ -24,7 +24,11 @@
 - ✅ **v1.5.0 — In-App Updater** — Phases 71-76 (shipped 2026-04-23, [archive](./milestones/v1.5.0-ROADMAP.md))
 - ✅ **v1.6.0 — Spellcasting Deep Fix** — Phases 77-83 (shipped 2026-04-23, [archive](./milestones/v1.6.0-ROADMAP.md), [audit](./milestones/v1.6.0-MILESTONE-AUDIT.md))
 - ✅ **v1.7.0 — Monster Translation** — Phases 84-89 (shipped 2026-04-24, [archive](./milestones/v1.7.0-ROADMAP.md))
-- 🚧 **v1.7.1 — pf2-locale-ru Migration** — Phases 90-95 (replanned 2026-04-25 after rollback)
+- ✅ **v1.7.1 — pf2-locale-ru Migration** — Phases 90-95 (feature-complete 2026-04-25, replanned after rollback, NOT TAGGED, [archive](./milestones/v1.7.1-ROADMAP.md))
+- ✅ **v1.7.2 — Translation Polish + Tech Debt** — Phases 96-101 (feature-complete 2026-04-25, NOT TAGGED, [archive](./milestones/v1.7.2-ROADMAP.md))
+- ✅ **v1.7.3 — Strike Names + UI Shell + Item Surface Audit** — Phases 102-107 (feature-complete 2026-04-26, NOT TAGGED, [archive](./milestones/v1.7.3-ROADMAP.md))
+- ✅ **v1.7.4 — Broad i18n Coverage + Tech Cleanup** — Phase 108 + global i18n sweep (feature-complete 2026-04-26, NOT TAGGED, [archive](./milestones/v1.7.4-ROADMAP.md))
+- 🚧 **v1.7.5 — AP Bestiaries + Item-id RU + Special Abilities Coverage** — Phases 109+ (in planning, 2026-04-26)
 
 ## Phases
 
