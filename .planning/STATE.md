@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.7.5
-milestone_name: AP Bestiaries + Item-id RU + Special Abilities Coverage
-status: ready_to_plan
-stopped_at: ~
-last_updated: "2026-04-26T00:00:00.000Z"
-last_activity: 2026-04-26
+milestone_name: — AP Bestiaries + Item-id RU + Special Abilities Coverage
+status: executing
+stopped_at: "Phase 109 Plan 01 complete — 47 vendor packs, SHA ebd1a53"
+last_updated: "2026-04-26T15:20:00.000Z"
+last_activity: 2026-04-26 -- Phase 109 Plan 01 executed (28 AP bestiary packs vendored)
 progress:
-  total_phases: 6
+  total_phases: 71
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)
@@ -21,17 +21,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-26 для v1.7.5 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** v1.7.5 — расширить translation ingest до полного pack coverage (55 vendor packs vs текущие 19); item-id RU lookup для всех packs; special abilities mapping из creature `entries.<creature>.items[]`.
+**Current focus:** Phase 109 — Vendor Pack Expansion + License Compliance
 
 ## Current Position
 
 Milestone: v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage
-Phase: 109 (Vendor Pack Expansion + License Compliance) — Next
-Plan: —
-Status: Ready to plan (ROADMAP.md committed, 6 phases mapped, 22 atomic + 1 process requirement covered)
-Last activity: 2026-04-26 — ROADMAP.md drafted (Phases 109-114), traceability filled, STATE.md updated
+Phase: 109 (Vendor Pack Expansion + License Compliance) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 109
+Last activity: 2026-04-26 -- Phase 109 Plan 01 complete (47 packs vendored)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ### Phase Map (v1.7.5)
 
@@ -91,6 +91,11 @@ Reference repro: `"Lucky" Lanks` из `outlaws-of-alkenstar-bestiary.json` — f
 
 - Push накопленные v1.7.1-v1.7.4 commits на origin/master — ожидание решения пользователя
 - Tag всех v1.7.x после v1.7.5 (combined release decision)
+
+### Decisions
+
+- 109-01: SHA ebd1a53a9ab072b12ef8d86c055cd23714334026 confirmed from local pf2-locale-ru checkout
+- 109-01: Byte-identical vendor copy — no JSON reformatting; LF/CRLF handled by git autocrlf
 
 ### Blockers/Concerns
 

@@ -615,7 +615,8 @@ Plans:
 
 - [x] **Phase 34: Items Catalog Overhaul** — Fix search/filter bugs, add Favorites tab, ItemReferenceDrawer, full filter panel (type/level/rarity/traits/source/subcategory), column sorting, EquipmentBlock item links
  (completed 2026-04-03)
-- [x] **Phase 35: UX Polish + Starfinder Purge + Encounter Tabs** — Items table proportional flex columns + Rarity, Starfinder content purge, trait filter chips, VS Code-style encounter tabs with independent combat state (completed 2026-04-03)
+- [x] **Phase 35: UX Polish + Starfinder Purge + Encounter Tabs** — Items table proportional flex columns + Rarity, Starfinder content purge, trait filter chips, VS Code-style encounter tabs with independent combat state
+ (completed 2026-04-03)
 
 ### Phase 34: Items Catalog Overhaul
 **Goal**: Items page is a production-quality reference catalog — FTS5 search and filter bugs fixed, Favorites system with SQLite persistence, ItemReferenceDrawer showing full item details, multi-filter panel (type/level/rarity/traits/source/subcategory), column sorting by level and price, and EquipmentBlock item names clickable to open the drawer
@@ -1401,31 +1402,29 @@ Carryover to v1.7.1: UI Translation Dictionaries (structural labels HP/AC/Saves,
 3. Milestone snapshot archived
 4. Final tsc + lint + vite build clean
 
-
----
-
 ## v1.7.5 — AP Bestiaries + Item-id RU + Special Abilities Coverage
 
 **Milestone Goal:** Закрыть translation coverage gaps: AP-specific bestiary packs (50+ файлов) подхватываются автоматически; per-instance creature items (weapons + special abilities) хранят RU description через расширение `entity_items` schema; AbilityCard / CreatureAbilityRow / strike rows читают RU description через новый `getCreatureItem` API; bestiary `items[]` spell entries (kind=spell) маппятся на spell rows. После v1.7.5 — все известные creature surfaces рендерятся RU когда vendor pack содержит запись; ready для combined v1.7.x tag.
 
 ### Phase 109: Vendor Pack Expansion + License Compliance
-**Goal**: 36 AP bestiary packs (+ npc-gallery, battlecry-bestiary) скопированы из upstream `pf2-locale-ru/pf2e/packs/*` в vendor; LICENSES обновлены per-AP copyright lines; existing `isActorPack` glob filter автоматически подхватывает новые packs без code change.
+**Goal**: 28 AP bestiary packs (incl. battlecry-bestiary) скопированы из upstream `pf2-locale-ru/pf2e/packs/*` в vendor; LICENSES обновлены per-AP copyright lines; existing `isActorPack` glob filter автоматически подхватывает новые packs без code change.
 **Depends on**: Phase 100 / Phase 102 (existing `isActorPack` + `entity_items` loader)
 **Requirements**: PACK-01, PACK-02, PACK-03, PACK-04
 **Files**:
-- `vendor/pf2e-locale-ru/pf2e/packs/*-bestiary.json` (36 new files)
-- `vendor/pf2e-locale-ru/pf2e/packs/npc-gallery.json`
+- `vendor/pf2e-locale-ru/pf2e/packs/*-bestiary.json` (28 new files)
 - `vendor/pf2e-locale-ru/pf2e/packs/battlecry-bestiary.json`
 - `vendor/pf2e-locale-ru/VERSION.txt` (upstream SHA + scope note)
 - `LICENSES/pf2-locale-ru-CONTRIBUTORS.md` (version SHA + scope note)
-- `LICENSES/OGL-SECTION-15.md` (per-AP copyright lines from upstream `COPYRIGHT.md`)
+- `LICENSES/OGL-SECTION-15.md` (per-AP copyright lines)
 
 **Success Criteria** (what must be TRUE):
   1. After warm boot: translations table contains creature rows from AP bestiaries (e.g., `"Lucky" Lanks` → "Счастливчик Лэнкс" present in DB query)
-  2. `vendor/pf2e-locale-ru/pf2e/packs/` size grows from 19 to 55 packs
+  2. `vendor/pf2e-locale-ru/pf2e/packs/` size grows from 19 to 47 packs (reality: upstream offers 28 not-yet-vendored bestiary packs, not 36)
   3. `LICENSES/OGL-SECTION-15.md` lists per-AP copyright entries for each AP whose bestiary is now ingested
   4. Existing 19 base packs still ingest cleanly (no regression in base creature translations)
-**Plans**: TBD
+**Plans**: 2 plans
+- [x] 109-01-PLAN.md — Copy 28 bestiary packs to vendor, sync VERSION.txt + CONTRIBUTORS.md (PACK-01..03)
+- [ ] 109-02-PLAN.md — Append per-AP copyright entries to OGL-SECTION-15.md for license compliance (PACK-04)
 
 ### Phase 110: Cold-Boot Performance Validation
 **Goal**: Замер baseline + post-PACK seed time. Если регрессия превышает +50%, ввести chunked seed timeslicing между packs (microtask yield) чтобы UI splash оставался responsive. Если в пределах допуска — no code change.

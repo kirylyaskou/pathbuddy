@@ -23,7 +23,7 @@
 ### Vendor Pack Expansion (`PACK-*`)
 
 - [ ] **PACK-01**: 36 bestiary packs скопированы из upstream `pf2-locale-ru/pf2e/packs/*-bestiary.json` + `npc-gallery.json` + `battlecry-bestiary.json` в `vendor/pf2e-locale-ru/pf2e/packs/`
-- [ ] **PACK-02**: `vendor/pf2e-locale-ru/VERSION.txt` обновлён — новый upstream SHA + date + scope note ("expanded to 55 packs")
+- [ ] **PACK-02**: `vendor/pf2e-locale-ru/VERSION.txt` обновлён — новый upstream SHA + date + scope note ("expanded to 47 packs")
 - [ ] **PACK-03**: `LICENSES/pf2-locale-ru-CONTRIBUTORS.md` обновлён — version SHA + scope note
 - [ ] **PACK-04**: `LICENSES/OGL-SECTION-15.md` манипулировано — per-AP copyright lines добавлены из upstream `pf2-locale-ru/COPYRIGHT.md` для каждого добавленного pack (Outlaws of Alkenstar, Abomination Vaults, Agents of Edgewatch, Age of Ashes, Blood Lords, Kingmaker, Gatewalkers, Extinction Curse, Fists of the Ruby Phoenix, Quest for the Frozen Flame, Strength of Thousands, Howl of the Wild, Rage of Elements, Battlecry, etc.)
 
