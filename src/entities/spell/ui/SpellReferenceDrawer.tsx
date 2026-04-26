@@ -59,6 +59,11 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
     }
   }, [translation?.structuredJson])
 
+  const descriptionNode = useMemo(
+    () => renderDescription(resolveFoundryTokens(spell?.description ?? '', { itemLevel: spell?.rank ?? undefined })),
+    [spell?.description, spell?.rank],
+  )
+
   return (
     <Sheet open={!!spellId} onOpenChange={(open) => { if (!open) onClose() }}>
       <SheetContent side="right" className="w-[420px] sm:w-[480px] overflow-y-auto flex flex-col gap-0 p-0">

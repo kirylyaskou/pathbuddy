@@ -56,6 +56,14 @@
   --pf-rarity-rare: oklch(0.50 0.18 285);
   --pf-rarity-unique: oklch(0.52 0.18 320);
   --pf-skill-expert: oklch(0.50 0.16 235);
+  /* PF2e degree-of-success — used in spell/item/ability description rendering.
+     Colors picked to align with PF2e community conventions: crit-success = vivid
+     green, success = blue (matches skill-expert hue), failure = red (matches blood
+     hue but distinct), crit-failure = darker burgundy red. */
+  --pf-degree-crit-success: oklch(0.50 0.16 145);
+  --pf-degree-success:      oklch(0.50 0.16 235);
+  --pf-degree-failure:      oklch(0.50 0.18 25);
+  --pf-degree-crit-failure: oklch(0.38 0.20 20);
 }
 
 .dark {
@@ -112,6 +120,10 @@
   --pf-rarity-rare: oklch(0.58 0.20 285);
   --pf-rarity-unique: oklch(0.60 0.20 320);
   --pf-skill-expert: oklch(0.60 0.18 235);
+  --pf-degree-crit-success: oklch(0.65 0.18 145);
+  --pf-degree-success:      oklch(0.62 0.18 235);
+  --pf-degree-failure:      oklch(0.62 0.22 25);
+  --pf-degree-crit-failure: oklch(0.50 0.22 20);
 }
 
 @theme inline {
@@ -169,6 +181,10 @@
   --color-pf-rarity-rare: var(--pf-rarity-rare);
   --color-pf-rarity-unique: var(--pf-rarity-unique);
   --color-pf-skill-expert: var(--pf-skill-expert);
+  --color-pf-degree-crit-success: var(--pf-degree-crit-success);
+  --color-pf-degree-success: var(--pf-degree-success);
+  --color-pf-degree-failure: var(--pf-degree-failure);
+  --color-pf-degree-crit-failure: var(--pf-degree-crit-failure);
 }
 
 @layer base {
@@ -477,3 +493,13 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+
+/* Degree-of-success label highlighting in description rendering.
+   Bold + color coding so GM can scan outcome branches at a glance. */
+.pf2e-degree {
+  font-weight: 700;
+}
+.pf2e-degree--crit-success { color: var(--pf-degree-crit-success); }
+.pf2e-degree--success      { color: var(--pf-degree-success); }
+.pf2e-degree--failure      { color: var(--pf-degree-failure); }
+.pf2e-degree--crit-failure { color: var(--pf-degree-crit-failure); }
