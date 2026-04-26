@@ -66,12 +66,28 @@ const packGlob = import.meta.glob('/vendor/pf2e-locale-ru/pf2e/packs/*.json', {
 }) as Record<string, () => Promise<BabelePackFile>>
 
 async function loadAllPacks(): Promise<[string, BabelePackFile][]> {
+  const isDev = import.meta.env.DEV
+  const t0 = isDev ? performance.now() : 0
+  const packPaths = Object.keys(packGlob)
+  if (isDev) {
+    console.log(`[perf] loadAllPacks: ${packPaths.length} packs found by import.meta.glob`)
+  }
   const entries = await Promise.all(
     Object.entries(packGlob).map(async ([path, load]) => {
+      const tPack = isDev ? performance.now() : 0
       const pack = await load()
+      if (isDev) {
+        const ms = performance.now() - tPack
+        const entryCount = pack.entries ? Object.keys(pack.entries).length : 0
+        console.log(`[perf] pack ${path.split('/').pop()}: ${ms.toFixed(1)}ms (${entryCount} entries)`)
+      }
       return [path, pack] as [string, BabelePackFile]
     }),
   )
+  if (isDev) {
+    const total = performance.now() - t0
+    console.log(`[perf] loadAllPacks total: ${total.toFixed(1)}ms across ${entries.length} packs`)
+  }
   return entries
 }
 
