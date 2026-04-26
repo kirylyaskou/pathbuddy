@@ -1460,7 +1460,8 @@ Carryover to v1.7.1: UI Translation Dictionaries (structural labels HP/AC/Saves,
   3. `getCreatureItem("Счастливчик Лэнкс", "<rogue-feint-id>", "ru")` returns `{ name: "Финт негодяя", description: "Когда Лэнкс успешно Финтит..." }`
   4. `getCreatureItem` returns `null` when no entry exists (allowing UI fallback chain)
   5. Existing `getEntityItemName` callers продолжают работать (backward compat)
-**Plans**: TBD
+**Plans**: 1 plan
+- [x] 111-01-PLAN.md — Migration 0047 + loader description_loc + getCreatureItem API (ITEM-ID-01..03, DEBT-02)
 
 ### Phase 112: Special Ability Surface Wiring
 **Goal**: AbilityCard / CreatureAbilityRow / strike row для special abilities consume `getCreatureItem(creatureName, itemId, locale)` для отображения RU name + RU description вместе. Existing fallback chain (actionspf2e dictionary → engine EN) preserved.

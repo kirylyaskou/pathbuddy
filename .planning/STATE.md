@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.7.5
 milestone_name: — AP Bestiaries + Item-id RU + Special Abilities Coverage
-status: executing
-stopped_at: v1.7.5 ROADMAP.md drafted (Phases 109-114, 6 phases, 22 atomic + 1 process requirement mapped 100% coverage)
-last_updated: "2026-04-26T15:46:29.045Z"
-last_activity: 2026-04-26 -- Phase 110 execution started
+status: verifying
+stopped_at: Completed 111-01-PLAN.md — migration 0047 + loader description_loc + getCreatureItem API
+last_updated: "2026-04-26T16:09:10.306Z"
+last_activity: 2026-04-26
 progress:
   total_phases: 71
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 2
-  percent: 50
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 4
+  percent: 80
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)
@@ -21,15 +21,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-26 для v1.7.5 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** Phase 110 — Cold-Boot Performance Validation
+**Current focus:** Phase 111 — Item-ID Description Schema + API
 
 ## Current Position
 
 Milestone: v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage
-Phase: 110 (Cold-Boot Performance Validation) — EXECUTING
-Plan: 2 of 2
-Status: Awaiting PERF-MEASUREMENT.md fill-in before Plan 02
-Last activity: 2026-04-26 -- Phase 110 Plan 01 complete (instrumentation added)
+Phase: 111 (Item-ID Description Schema + API) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-26
 
 Progress: [█████░░░░░] 50%
 
@@ -100,6 +100,7 @@ Reference repro: `"Lucky" Lanks` из `outlaws-of-alkenstar-bestiary.json` — f
 - 109-02: Year omitted for Revenge of the Runelords, Malevolence, Hellbreakers — insufficient certainty; OGL §6 minimum satisfied by Title + Copyright Holder
 - 110-01: DEV gate via PERF_DEV constant (import.meta.env.DEV) — Vite tree-shakes all perf logs in prod build
 - 110-01: PERF-MEASUREMENT.md not committed — .planning/ is gitignored per CLAUDE.md project rules
+- [Phase 111]: locale: string (not SupportedLocale) in getCreatureItem — consistency with getStrikeRuName; dual skip-gate covers post-migration reseed scenario; CHUNK_SIZE 240→199 for 5-col rows
 
 ### Blockers/Concerns
 
@@ -114,6 +115,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-26
-Stopped at: Completed 110-01-PLAN.md — DEV-gated [perf] instrumentation added to seed pipeline, PERF-MEASUREMENT.md template created
+Last session: 2026-04-26T16:09:10.302Z
+Stopped at: Completed 111-01-PLAN.md — migration 0047 + loader description_loc + getCreatureItem API
 Next step: Fill PERF-MEASUREMENT.md with cold-boot dev run timings, then execute 110-02-PLAN.md (read verdict, strip instrumentation or add microtask yields).

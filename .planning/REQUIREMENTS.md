@@ -41,9 +41,9 @@
 
 ### Item-ID RU Coverage Extension (`ITEM-ID-*`)
 
-- [ ] **ITEM-ID-01**: Migration `0045_entity_items_description.sql` — `ALTER TABLE entity_items ADD COLUMN description_loc TEXT NULL`
-- [ ] **ITEM-ID-02**: `entity_items` loader (Phase 102 code path) populates `description_loc` для каждого item в creature `entries.<creature>.items[]` где description присутствует (special abilities mostly — weapons обычно без description override)
-- [ ] **ITEM-ID-03**: `getCreatureItem(creatureName: string, itemId: string, locale: SupportedLocale): { name: string; description: string | null } | null` API в `src/shared/api/translations.ts` (расширение existing `getEntityItemName`)
+- [x] **ITEM-ID-01**: Migration `0045_entity_items_description.sql` — `ALTER TABLE entity_items ADD COLUMN description_loc TEXT NULL`
+- [x] **ITEM-ID-02**: `entity_items` loader (Phase 102 code path) populates `description_loc` для каждого item в creature `entries.<creature>.items[]` где description присутствует (special abilities mostly — weapons обычно без description override)
+- [x] **ITEM-ID-03**: `getCreatureItem(creatureName: string, itemId: string, locale: SupportedLocale): { name: string; description: string | null } | null` API в `src/shared/api/translations.ts` (расширение existing `getEntityItemName`)
 
 ### Ability Surface Wiring (`ABIL-*`)
 
