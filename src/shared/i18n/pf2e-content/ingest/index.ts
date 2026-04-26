@@ -14,8 +14,10 @@ import {
   adaptBabeleActorEntry,
   adaptBabeleSpellEntry,
   adaptBabeleItemEntry,
+  adaptBestiarySpellItem,
   isActorPack,
   isSpellPack,
+  isSpellShapedActorItem,
   type BabelePackFile,
   type BabeleSpellEntry,
   type BabeleItemEntry,
@@ -177,6 +179,75 @@ export async function collectSpellTranslations(): Promise<SpellTranslationRow[]>
         console.warn(`[ingest] ${path}: spell adapter failed for "${packKey}": ${msg}`)
       }
     }
+  }
+
+  // Pass 2 — bestiary-derived spell-reference rows.
+  // Build RU-name → EN-key map from canonical dedup so bestiary items
+  // (which carry RU names in the Babele overlay) can resolve to the same
+  // EN packKey used by spells-srd. This keeps name_key column EN,
+  // matching the engine spell.name lookup in SpellReferenceDrawer.
+  const ruNameToEnKey = new Map<string, string>()
+  const knownSpellNamesRu = new Set<string>()
+  for (const row of dedup.values()) {
+    if (typeof row.nameLoc === 'string' && row.nameLoc.length > 0) {
+      const key = row.nameLoc.toLowerCase()
+      knownSpellNamesRu.add(key)
+      ruNameToEnKey.set(key, row.packKey)
+    }
+  }
+
+  let bestiaryAdded = 0
+  let bestiarySuppressed = 0
+  const isDev = import.meta.env.DEV
+
+  for (const [path, pack] of allPacks) {
+    if (!isActorPack(pack)) continue
+    if (!pack.entries || typeof pack.entries !== 'object') continue
+    for (const [entryKey, entry] of Object.entries(pack.entries)) {
+      if (!entry || typeof entry !== 'object' || !Array.isArray(entry.items)) continue
+      for (const item of entry.items) {
+        if (!item || typeof item !== 'object') continue
+        if (typeof item.id !== 'string' || typeof item.name !== 'string') continue
+        if (!isSpellShapedActorItem(item, knownSpellNamesRu)) continue
+
+        // Signal C — collision check: spells-srd canonical row always wins;
+        // bestiary alias is only created when EN key is absent from dedup.
+        const enKey = ruNameToEnKey.get(item.name.toLowerCase())
+        if (!enKey) continue // defensive — Signal A guarantees this exists
+        const dedupKey = enKey.toLowerCase()
+        if (dedup.has(dedupKey)) {
+          bestiarySuppressed++
+          if (isDev) {
+            console.log(
+              `[ingest] spell collision suppressed (canonical wins): "${item.name}" in entry ${entryKey} of ${path}`,
+            )
+          }
+          continue
+        }
+
+        try {
+          const adapted = adaptBestiarySpellItem(item)
+          dedup.set(dedupKey, {
+            packKey: enKey,
+            packLabel: pack.label,
+            packPath: path,
+            nameLoc: adapted.name,
+            textLoc: adapted.description,
+            structured: adapted.structured,
+          })
+          bestiaryAdded++
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          console.warn(`[ingest] ${path}: bestiary-spell adapter failed for "${item.name}": ${msg}`)
+        }
+      }
+    }
+  }
+
+  if (isDev) {
+    console.log(
+      `[ingest] bestiary-derived spell rows: added=${bestiaryAdded}, suppressed=${bestiarySuppressed}`,
+    )
   }
 
   return Array.from(dedup.values())
