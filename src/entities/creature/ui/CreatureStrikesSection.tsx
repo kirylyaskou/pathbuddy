@@ -30,18 +30,22 @@ export function CreatureStrikesSection({
       <SectionHeader>{t('statblock.strikes')}</SectionHeader>
       <CollapsibleContent>
         <div className="px-4 py-3 space-y-3">
-          {strikes.map((strike, i) => (
-            <CreatureStrikeRow
-              key={`${strike.name}-${i}`}
-              strike={strike}
-              creatureName={creatureName}
-              encounterId={encounterId}
-              currentMapIndex={currentMapIndex}
-              isMapTracked={isMapTracked}
-              onAttackClick={onAttackClick}
-              nameLoc={strike.id ? itemsLocById?.get(strike.id)?.name : undefined}
-            />
-          ))}
+          {strikes.map((strike, i) => {
+            const loc = strike.id ? itemsLocById?.get(strike.id) : undefined
+            return (
+              <CreatureStrikeRow
+                key={`${strike.name}-${i}`}
+                strike={strike}
+                creatureName={creatureName}
+                encounterId={encounterId}
+                currentMapIndex={currentMapIndex}
+                isMapTracked={isMapTracked}
+                onAttackClick={onAttackClick}
+                nameLoc={loc?.name}
+                descriptionLoc={loc?.description}
+              />
+            )
+          })}
         </div>
       </CollapsibleContent>
     </Collapsible>

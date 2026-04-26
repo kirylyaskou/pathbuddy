@@ -8,6 +8,7 @@ import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
 import { TraitPill } from '@/shared/ui/trait-pill'
 import { useCurrentLocale } from '@/shared/i18n'
 import { getTraitLabel } from '@/shared/i18n/pf2e-content'
+import { SafeHtml } from '@/shared/lib/safe-html'
 import type { EffectiveStrike } from '../model/use-effective-strikes'
 
 interface CreatureStrikeRowProps {
@@ -20,6 +21,10 @@ interface CreatureStrikeRowProps {
   /** Localized strike name from pack `items[]` lookup by Foundry _id;
    *  parent owns the lookup so multiple strikes share a single Map traversal. */
   nameLoc?: string
+  /** Localized description from pack `items[]` for special strike abilities
+   *  (e.g. Финт негодяя, Brute Strength). Absent for plain weapon strikes —
+   *  engine does not carry strike descriptions, so nothing is rendered. */
+  descriptionLoc?: string
 }
 
 export function CreatureStrikeRow({
@@ -30,6 +35,7 @@ export function CreatureStrikeRow({
   isMapTracked,
   onAttackClick,
   nameLoc,
+  descriptionLoc,
 }: CreatureStrikeRowProps) {
   const {
     name, modifier, traits, group, additionalDamage,
@@ -166,6 +172,15 @@ export function CreatureStrikeRow({
             <TraitPill key={trait} trait={trait} />
           ))}
         </div>
+      )}
+      {descriptionLoc && descriptionLoc.trim().length > 0 && (
+        // Special strike abilities (e.g. Финт негодяя, Brute Strength) carry
+        // a free-text description from vendor pack items[]. Render through
+        // SafeHtml since pf2-locale-ru ships HTML <p>/<strong> structure.
+        <SafeHtml
+          html={descriptionLoc}
+          className="mt-2 text-sm text-foreground/80 leading-relaxed"
+        />
       )}
     </div>
   )
