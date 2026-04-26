@@ -1516,4 +1516,5 @@ Carryover to v1.7.1: UI Translation Dictionaries (structural labels HP/AC/Saves,
   3. Migration chain 0044 → 0045 runs cleanly on warm boot (existing `entity_items` rows preserved, new column NULL для старых rows)
   4. 🚫RU badge count для creatures из NEW packs становится near-zero (PACK expansion automatically reduces badge surface)
   5. Final tsc + lint + vite build clean; no regressions в base bestiaries (Phase 109 SC4 carryover)
-**Plans**: TBD
+**Plans**: 1 plan
+- [x] 114-01-PLAN.md — Verification surface (SMOKE-LIST + AUTOMATED-VERIFY + HUMAN-UAT version-bump gate) for v1.7.5 (UNTRANS-01..02, VERIFY-01..03, DEBT-02)

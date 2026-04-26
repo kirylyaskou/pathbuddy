@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.7.5
 milestone_name: — AP Bestiaries + Item-id RU + Special Abilities Coverage
-status: executing
-stopped_at: Completed 113-01-PLAN.md — bestiary spell detector + collision-safe second pass
-last_updated: "2026-04-26T16:50:00Z"
-last_activity: 2026-04-26 -- Phase 113 Plan 01 complete
+status: verifying
+stopped_at: Completed 114-01-PLAN.md — SMOKE-LIST.md + AUTOMATED-VERIFY.md + HUMAN-UAT.md for v1.7.5 verification surface
+last_updated: "2026-04-26T17:11:16.941Z"
+last_activity: 2026-04-26
 progress:
   total_phases: 71
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 5
-  percent: 71
+  completed_phases: 5
+  total_plans: 8
+  completed_plans: 7
+  percent: 88
 ---
 
 # STATE.md - PathMaid (Pathfinder 2e DM Assistant)
@@ -26,10 +26,10 @@ See: `.planning/PROJECT.md` (updated 2026-04-26 для v1.7.5 kickoff)
 ## Current Position
 
 Milestone: v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage
-Phase: 114 (Verification + Untranslated Regression) — NEXT
-Plan: 113/1 complete
-Status: Phase 113 complete, moving to Phase 114
-Last activity: 2026-04-26 -- Phase 113 Plan 01 complete
+Phase: 114 (Verification + Untranslated Regression) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-26
 
 Progress: [█████░░░░░] 50%
 
@@ -107,6 +107,8 @@ Reference repro: `"Lucky" Lanks` из `outlaws-of-alkenstar-bestiary.json` — f
 - [Phase 113]: SPELL_REF_DESC_MAX_CHARS=180 — covers reference notes without admitting ability-length descriptions (250+ chars)
 - [Phase 113]: Signal C at call site (not in detector) — collision check requires canonical dedup map in scope
 - [Phase 113]: bestiaryAdded=0 expected — by construction Signal A → name in canonical → collision suppressed; zero rows is correct conservative outcome
+- [Phase 114-01]: Version bump 1.7.4→1.7.5 user-gated — executor made no version file edits; HUMAN-UAT.md Option 1/2/3 deferred to user
+- [Phase 114-01]: Task 3 checkpoint:human-verify auto-approved (auto_advance=true) — HUMAN-UAT.md template created, plan marked complete
 
 ### Blockers/Concerns
 
@@ -121,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-26T16:09:10.302Z
-Stopped at: Completed 111-01-PLAN.md — migration 0047 + loader description_loc + getCreatureItem API
+Last session: 2026-04-26T17:11:16.937Z
+Stopped at: Completed 114-01-PLAN.md — SMOKE-LIST.md + AUTOMATED-VERIFY.md + HUMAN-UAT.md for v1.7.5 verification surface
 Next step: Fill PERF-MEASUREMENT.md with cold-boot dev run timings, then execute 110-02-PLAN.md (read verdict, strip instrumentation or add microtask yields).

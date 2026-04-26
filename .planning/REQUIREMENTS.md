@@ -54,14 +54,14 @@
 
 ### Untranslated Detection (`UNTRANS-*`)
 
-- [ ] **UNTRANS-01**: 🚫RU badge logic unchanged — based on `useContentTranslation('creature', name, level) === null`. Pack expansion automatically reduces badge count (creatures из new packs становятся translated).
-- [ ] **UNTRANS-02**: Custom (homebrew) creatures без vendor entry continue to show 🚫RU. Никакого fabrication, никаких heuristics.
+- [x] **UNTRANS-01**: 🚫RU badge logic unchanged — based on `useContentTranslation('creature', name, level) === null`. Pack expansion automatically reduces badge count (creatures из new packs становятся translated).
+- [x] **UNTRANS-02**: Custom (homebrew) creatures без vendor entry continue to show 🚫RU. Никакого fabrication, никаких heuristics.
 
 ### Verification (`VERIFY-*`)
 
-- [ ] **VERIFY-01**: Smoke test — manual list of 10+ AP creatures (по 1 на каждый major AP pack) renders RU при locale=ru (name + subtitle + items + abilities)
-- [ ] **VERIFY-02**: Smoke test — homebrew creature (custom encounter) показывает 🚫RU (regression check для UNTRANS-02)
-- [ ] **VERIFY-03**: Migration chain `0044_entity_items.sql` → `0045_entity_items_description.sql` runs cleanly on warm boot (existing column preserved, new column NULL для старых rows)
+- [x] **VERIFY-01**: Smoke test — manual list of 10+ AP creatures (по 1 на каждый major AP pack) renders RU при locale=ru (name + subtitle + items + abilities)
+- [x] **VERIFY-02**: Smoke test — homebrew creature (custom encounter) показывает 🚫RU (regression check для UNTRANS-02)
+- [x] **VERIFY-03**: Migration chain `0044_entity_items.sql` → `0045_entity_items_description.sql` runs cleanly on warm boot (existing column preserved, new column NULL для старых rows)
 
 ### Process (`DEBT-*`)
 
