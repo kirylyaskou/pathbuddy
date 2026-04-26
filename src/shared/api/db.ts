@@ -22,6 +22,7 @@ export async function initDatabase(): Promise<void> {
     await db.execute('PRAGMA foreign_keys=OFF', [])
     await runMigrations(db)
     await db.execute('PRAGMA foreign_keys=ON', [])
+
     // Seed bundled content translations (Phase 78). Idempotent via unique
     // index + INSERT OR REPLACE — safe to re-run on every startup.
     // Silent-fail: translation loader errors must not block app init.

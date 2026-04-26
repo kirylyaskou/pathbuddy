@@ -57,20 +57,34 @@ export interface SpellTranslationRow {
   structured: SpellStructuredLoc
 }
 
-const packFiles = import.meta.glob('/vendor/pf2e-locale-ru/pf2e/packs/*.json', {
-  eager: true,
+// Lazy glob — files are NOT parsed at module load time. Each dynamic import
+// resolves only when the seeder explicitly needs that pack (cold boot).
+// On warm boot the guard in loadContentTranslations returns before any
+// collect* call fires, so these imports never execute.
+const packGlob = import.meta.glob('/vendor/pf2e-locale-ru/pf2e/packs/*.json', {
   import: 'default',
-}) as Record<string, BabelePackFile>
+}) as Record<string, () => Promise<BabelePackFile>>
 
-export function collectMonsterTranslations(): MonsterTranslationRow[] {
+async function loadAllPacks(): Promise<[string, BabelePackFile][]> {
+  const entries = await Promise.all(
+    Object.entries(packGlob).map(async ([path, load]) => {
+      const pack = await load()
+      return [path, pack] as [string, BabelePackFile]
+    }),
+  )
+  return entries
+}
+
+export async function collectMonsterTranslations(): Promise<MonsterTranslationRow[]> {
   // Dedupe by lowercase packKey — the DB primary key uses NOCASE collation
   // on name_key, so monsters with the same name across multiple packs
   // (e.g. "Zombie" appearing in both monster-core and bestiary-1) collapse
   // to a single DB row via INSERT OR REPLACE. Reflecting this here keeps
   // the skip-gate count == DB count.
   const dedup = new Map<string, MonsterTranslationRow>()
+  const allPacks = await loadAllPacks()
 
-  for (const [path, pack] of Object.entries(packFiles)) {
+  for (const [path, pack] of allPacks) {
     if (!isActorPack(pack)) continue
 
     if (!pack.entries || typeof pack.entries !== 'object') {
@@ -108,14 +122,11 @@ export function collectMonsterTranslations(): MonsterTranslationRow[] {
   return Array.from(dedup.values())
 }
 
-export function collectSpellTranslations(): SpellTranslationRow[] {
+export async function collectSpellTranslations(): Promise<SpellTranslationRow[]> {
   const dedup = new Map<string, SpellTranslationRow>()
-  const spellPackFiles = packFiles as unknown as Record<
-    string,
-    BabelePackFile & { entries: Record<string, BabeleSpellEntry> }
-  >
+  const allPacks = await loadAllPacks()
 
-  for (const [path, pack] of Object.entries(spellPackFiles)) {
+  for (const [path, pack] of allPacks) {
     if (!isSpellPack(pack)) continue
 
     if (!pack.entries || typeof pack.entries !== 'object') {
@@ -123,7 +134,9 @@ export function collectSpellTranslations(): SpellTranslationRow[] {
       continue
     }
 
-    for (const [packKey, entry] of Object.entries(pack.entries)) {
+    const spellPack = pack as BabelePackFile & { entries: Record<string, BabeleSpellEntry> }
+
+    for (const [packKey, entry] of Object.entries(spellPack.entries)) {
       if (!entry || typeof entry !== 'object') {
         console.warn(`[ingest] ${path}: skipping non-object spell entry "${packKey}"`)
         continue
@@ -153,16 +166,13 @@ export function collectSpellTranslations(): SpellTranslationRow[] {
   return Array.from(dedup.values())
 }
 
-export function collectItemKindTranslations(): ItemTranslationRow[] {
+export async function collectItemKindTranslations(): Promise<ItemTranslationRow[]> {
   // Dedupe by (kind, lowercase packKey) — DB primary key uses NOCASE on
   // name_key, so duplicate entry names within a pack collapse to one row.
   const dedup = new Map<string, ItemTranslationRow>()
-  const itemPackFiles = packFiles as unknown as Record<
-    string,
-    BabelePackFile & { entries: Record<string, BabeleItemEntry> }
-  >
+  const allPacks = await loadAllPacks()
 
-  for (const [path, pack] of Object.entries(itemPackFiles)) {
+  for (const [path, pack] of allPacks) {
     const kind = ITEM_PACK_KIND[path]
     if (!kind) continue
 
@@ -171,7 +181,9 @@ export function collectItemKindTranslations(): ItemTranslationRow[] {
       continue
     }
 
-    for (const [packKey, entry] of Object.entries(pack.entries)) {
+    const itemPack = pack as BabelePackFile & { entries: Record<string, BabeleItemEntry> }
+
+    for (const [packKey, entry] of Object.entries(itemPack.entries)) {
       if (!entry || typeof entry !== 'object') {
         console.warn(`[ingest] ${path}: skipping non-object entry "${packKey}"`)
         continue

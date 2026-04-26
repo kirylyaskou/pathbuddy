@@ -37,6 +37,13 @@ const SOURCE = 'pf2-locale-ru'
 const KIND_MONSTER = 'monster' as const
 const KIND_SPELL = 'spell' as const
 
+// Bump this string whenever vendor pack content or adapter logic changes
+// in a way that requires re-seeding existing DBs. The warm boot guard
+// compares this against sync_metadata so collect* and INSERT loops are
+// skipped entirely when the DB is already up to date.
+const SEED_VERSION = '1'
+const SEED_VERSION_KEY = 'seed.translations.version'
+
 // SQLite parameter limit is 999. With 9 columns per row, 110 rows per
 // chunk = 990 params — just under the limit and roughly 10% fewer IPC
 // roundtrips than the previous 100-row chunk size.
@@ -97,22 +104,71 @@ async function seedKind(
  * have rebuilt the entities table since last seed, clearing name_loc.
  */
 export async function loadContentTranslations(db: Database): Promise<void> {
-  // Stale rows from the v1.7.0 HTML-parser seed had source='pf2.ru'. The
-  // adapter pipeline writes source='pf2-locale-ru'; INSERT OR REPLACE
-  // only overwrites rows that share (kind, name_key, level, locale), so
-  // stale rows whose pack key no longer matches sit inert in the table.
-  // Clear them once on every boot — cheap when none remain (after first
-  // post-upgrade boot) and harmless on subsequent calls.
+  // Warm boot guard: if sync_metadata already records the current
+  // SEED_VERSION, all packs were ingested on a previous boot and the DB
+  // is up to date. Skip collect* (no JSON parsing, no heap allocation)
+  // and go straight to FTS rebuild which is always cheap and necessary
+  // because Foundry sync may have cleared entities.name_loc since last seed.
+  const versionRows = await db.select<{ value: string }[]>(
+    'SELECT value FROM sync_metadata WHERE key = ?',
+    [SEED_VERSION_KEY],
+  )
+  const storedVersion = versionRows[0]?.value ?? null
+  if (storedVersion === SEED_VERSION) {
+    console.log(`[translations] Warm boot — seed version ${SEED_VERSION} already present, skipping ingest`)
+    // Check whether any entity rows are missing a translated name — the only
+    // case that happens is when Foundry sync added new creatures after the last
+    // boot. If every entity already has name_loc populated we skip the
+    // correlated UPDATE (was 77 000 ms on a 13 K-row table) and the FTS
+    // rebuild entirely, cutting warm-boot cost to near zero.
+    const nullRows = await db.select<{ n: number }[]>(
+      'SELECT COUNT(*) AS n FROM entities WHERE name_loc IS NULL',
+    )
+    const missingCount = nullRows[0]?.n ?? 0
+    if (missingCount === 0) {
+      console.log('[translations] Warm boot — name_loc fully populated, skipping UPDATE+FTS rebuild')
+      return
+    }
+    // Partial update: only touch entities that still lack a translated name.
+    // This happens after a Foundry sync that imported new creatures but
+    // did not bump SEED_VERSION (translations pack unchanged).
+    //
+    // COALESCE sentinel: entities without a matching translation receive ''
+    // (empty string) rather than NULL. NULL means "not yet attempted"; ''
+    // means "attempted, no translation exists". The null-check above uses
+    // IS NULL so sentinel rows are never revisited on subsequent boots,
+    // breaking the infinite-retry cycle for the ~24 K entities that have
+    // no Russian translation (non-monster kinds, untranslated bestiary
+    // entries, etc.).
+    //
+    // Display code reads name_loc only from the `translations` table via
+    // useContentTranslation — entities.name_loc is used exclusively for
+    // FTS5 search. An empty string in FTS5 produces no tokens, which is
+    // correct: untranslated creatures simply won't match Russian queries.
+    await db.execute(
+      `UPDATE entities
+         SET name_loc = COALESCE(
+           (SELECT name_loc FROM translations
+             WHERE translations.kind = 'monster'
+               AND translations.locale = ?
+               AND translations.name_key = entities.name COLLATE NOCASE
+             LIMIT 1),
+           ''
+         )
+       WHERE name_loc IS NULL`,
+      [LOCALE],
+    )
+    await db.execute(`INSERT INTO entities_fts(entities_fts) VALUES('rebuild')`, [])
+    return
+  }
+
+  // One-shot cleanup: stale rows from prior seed sources and incomplete
+  // spell rows that predate structured_json. Runs only on cold boot so
+  // warm boot pays no full-scan cost on the translations table.
   await db.execute(
     "DELETE FROM translations WHERE source = 'pf2.ru'",
     [],
   )
-
-  // Pre-overlay spell rows from the initial Phase 95 seed had no
-  // structured_json. The skip-gate compares only row counts, so without
-  // this purge the loader would never reseed those rows after the
-  // structured shape was added. Drop incomplete spell rows so the
-  // skip-gate misfires and reseeds them with structured fields.
   await db.execute(
     `DELETE FROM translations
        WHERE kind = 'spell'
@@ -121,8 +177,8 @@ export async function loadContentTranslations(db: Database): Promise<void> {
     [SOURCE],
   )
 
-  const monsterRows = collectMonsterTranslations()
-  const spellRows = collectSpellTranslations()
+  const monsterRows = await collectMonsterTranslations()
+  const spellRows = await collectSpellTranslations()
 
   await seedKind(db, KIND_MONSTER, monsterRows.length, async () => {
     for (let i = 0; i < monsterRows.length; i += CHUNK_SIZE) {
@@ -181,7 +237,7 @@ export async function loadContentTranslations(db: Database): Promise<void> {
   // Item-shaped kinds (action / feat / item / condition) share a uniform
   // text-overlay shape with spells. Group rows by kind and feed each
   // group through seedKind so per-kind skip-gates work independently.
-  const itemRows = collectItemKindTranslations()
+  const itemRows = await collectItemKindTranslations()
   const grouped = new Map<ItemKind, typeof itemRows>()
   for (const row of itemRows) {
     const bucket = grouped.get(row.kind) ?? []
@@ -219,12 +275,13 @@ export async function loadContentTranslations(db: Database): Promise<void> {
 
   await db.execute(
     `UPDATE entities
-       SET name_loc = (
-         SELECT name_loc FROM translations
-          WHERE translations.kind = 'monster'
-            AND translations.locale = ?
-            AND translations.name_key = entities.name COLLATE NOCASE
-          LIMIT 1
+       SET name_loc = COALESCE(
+         (SELECT name_loc FROM translations
+           WHERE translations.kind = 'monster'
+             AND translations.locale = ?
+             AND translations.name_key = entities.name COLLATE NOCASE
+           LIMIT 1),
+         ''
        )`,
     [LOCALE],
   )
@@ -281,6 +338,12 @@ export async function loadContentTranslations(db: Database): Promise<void> {
       }
     }
   }
+
+  // Record seed version so warm boot guard fires on next launch.
+  await db.execute(
+    'INSERT OR REPLACE INTO sync_metadata (key, value) VALUES (?, ?)',
+    [SEED_VERSION_KEY, SEED_VERSION],
+  )
 
   const counts = await db.select<{ kind: string; locale: string; n: number }[]>(
     'SELECT kind, locale, COUNT(*) as n FROM translations GROUP BY kind, locale',
