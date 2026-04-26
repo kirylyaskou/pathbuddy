@@ -1,6 +1,6 @@
 // shared types for the import pipeline.
 
-export type ImportFormat = 'dashboard' | 'pathmaiden' | 'unknown'
+export type ImportFormat = 'dashboard' | 'pathmaiden' | 'pathmaid-bundle' | 'unknown'
 
 export interface ParsedCombatant {
   /** What appears in the initiative list — preserves the GM's local moniker
