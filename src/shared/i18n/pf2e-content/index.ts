@@ -134,15 +134,29 @@ export async function loadContentTranslations(db: Database): Promise<void> {
     // Partial update: only touch entities that still lack a translated name.
     // This happens after a Foundry sync that imported new creatures but
     // did not bump SEED_VERSION (translations pack unchanged).
+    //
+    // COALESCE sentinel: entities without a matching translation receive ''
+    // (empty string) rather than NULL. NULL means "not yet attempted"; ''
+    // means "attempted, no translation exists". The null-check above uses
+    // IS NULL so sentinel rows are never revisited on subsequent boots,
+    // breaking the infinite-retry cycle for the ~24 K entities that have
+    // no Russian translation (non-monster kinds, untranslated bestiary
+    // entries, etc.).
+    //
+    // Display code reads name_loc only from the `translations` table via
+    // useContentTranslation — entities.name_loc is used exclusively for
+    // FTS5 search. An empty string in FTS5 produces no tokens, which is
+    // correct: untranslated creatures simply won't match Russian queries.
     const _tw0 = performance.now()
     await db.execute(
       `UPDATE entities
-         SET name_loc = (
-           SELECT name_loc FROM translations
-            WHERE translations.kind = 'monster'
-              AND translations.locale = ?
-              AND translations.name_key = entities.name COLLATE NOCASE
-            LIMIT 1
+         SET name_loc = COALESCE(
+           (SELECT name_loc FROM translations
+             WHERE translations.kind = 'monster'
+               AND translations.locale = ?
+               AND translations.name_key = entities.name COLLATE NOCASE
+             LIMIT 1),
+           ''
          )
        WHERE name_loc IS NULL`,
       [LOCALE],
@@ -267,12 +281,13 @@ export async function loadContentTranslations(db: Database): Promise<void> {
 
   await db.execute(
     `UPDATE entities
-       SET name_loc = (
-         SELECT name_loc FROM translations
-          WHERE translations.kind = 'monster'
-            AND translations.locale = ?
-            AND translations.name_key = entities.name COLLATE NOCASE
-          LIMIT 1
+       SET name_loc = COALESCE(
+         (SELECT name_loc FROM translations
+           WHERE translations.kind = 'monster'
+             AND translations.locale = ?
+             AND translations.name_key = entities.name COLLATE NOCASE
+           LIMIT 1),
+         ''
        )`,
     [LOCALE],
   )
