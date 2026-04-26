@@ -101,18 +101,35 @@
 
 ## Traceability
 
-_Roadmapper fills this section after ROADMAP.md creation._
+_Filled by roadmapper 2026-04-26 — Phases 109-114 mapped from REQUIREMENTS, 22 atomic + 1 process requirement, 100% coverage, no orphans._
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| PACK-01..04 | TBD | Not started |
-| PERF-01..03 | TBD | Not started |
-| SPELL-AP-01..03 | TBD | Not started |
-| ITEM-ID-01..03 | TBD | Not started |
-| ABIL-01..04 | TBD | Not started |
-| UNTRANS-01..02 | TBD | Not started |
-| VERIFY-01..03 | TBD | Not started |
-| DEBT-02 | All phases | Process-level |
+| PACK-01 | Phase 109 | Not started |
+| PACK-02 | Phase 109 | Not started |
+| PACK-03 | Phase 109 | Not started |
+| PACK-04 | Phase 109 | Not started |
+| PERF-01 | Phase 110 | Not started |
+| PERF-02 | Phase 110 | Not started |
+| PERF-03 | Phase 110 | Not started |
+| ITEM-ID-01 | Phase 111 | Not started |
+| ITEM-ID-02 | Phase 111 | Not started |
+| ITEM-ID-03 | Phase 111 | Not started |
+| ABIL-01 | Phase 112 | Not started |
+| ABIL-02 | Phase 112 | Not started |
+| ABIL-03 | Phase 112 | Not started |
+| ABIL-04 | Phase 112 | Not started |
+| SPELL-AP-01 | Phase 113 | Not started |
+| SPELL-AP-02 | Phase 113 | Not started |
+| SPELL-AP-03 | Phase 113 | Not started |
+| UNTRANS-01 | Phase 114 | Not started |
+| UNTRANS-02 | Phase 114 | Not started |
+| VERIFY-01 | Phase 114 | Not started |
+| VERIFY-02 | Phase 114 | Not started |
+| VERIFY-03 | Phase 114 | Not started |
+| DEBT-02 | All phases (109-114) | Process-level |
+
+**Coverage:** 22/22 atomic + 1/1 process = 100%, no orphans, no duplicates.
 
 ---
 
@@ -129,3 +146,4 @@ _Roadmapper fills this section after ROADMAP.md creation._
 ---
 
 _Created: 2026-04-26 — v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage_
+_Traceability filled: 2026-04-26 — Phases 109-114 mapped (roadmapper)_

@@ -1401,3 +1401,115 @@ Carryover to v1.7.1: UI Translation Dictionaries (structural labels HP/AC/Saves,
 3. Milestone snapshot archived
 4. Final tsc + lint + vite build clean
 
+
+---
+
+## v1.7.5 — AP Bestiaries + Item-id RU + Special Abilities Coverage
+
+**Milestone Goal:** Закрыть translation coverage gaps: AP-specific bestiary packs (50+ файлов) подхватываются автоматически; per-instance creature items (weapons + special abilities) хранят RU description через расширение `entity_items` schema; AbilityCard / CreatureAbilityRow / strike rows читают RU description через новый `getCreatureItem` API; bestiary `items[]` spell entries (kind=spell) маппятся на spell rows. После v1.7.5 — все известные creature surfaces рендерятся RU когда vendor pack содержит запись; ready для combined v1.7.x tag.
+
+### Phase 109: Vendor Pack Expansion + License Compliance
+**Goal**: 36 AP bestiary packs (+ npc-gallery, battlecry-bestiary) скопированы из upstream `pf2-locale-ru/pf2e/packs/*` в vendor; LICENSES обновлены per-AP copyright lines; existing `isActorPack` glob filter автоматически подхватывает новые packs без code change.
+**Depends on**: Phase 100 / Phase 102 (existing `isActorPack` + `entity_items` loader)
+**Requirements**: PACK-01, PACK-02, PACK-03, PACK-04
+**Files**:
+- `vendor/pf2e-locale-ru/pf2e/packs/*-bestiary.json` (36 new files)
+- `vendor/pf2e-locale-ru/pf2e/packs/npc-gallery.json`
+- `vendor/pf2e-locale-ru/pf2e/packs/battlecry-bestiary.json`
+- `vendor/pf2e-locale-ru/VERSION.txt` (upstream SHA + scope note)
+- `LICENSES/pf2-locale-ru-CONTRIBUTORS.md` (version SHA + scope note)
+- `LICENSES/OGL-SECTION-15.md` (per-AP copyright lines from upstream `COPYRIGHT.md`)
+
+**Success Criteria** (what must be TRUE):
+  1. After warm boot: translations table contains creature rows from AP bestiaries (e.g., `"Lucky" Lanks` → "Счастливчик Лэнкс" present in DB query)
+  2. `vendor/pf2e-locale-ru/pf2e/packs/` size grows from 19 to 55 packs
+  3. `LICENSES/OGL-SECTION-15.md` lists per-AP copyright entries for each AP whose bestiary is now ingested
+  4. Existing 19 base packs still ingest cleanly (no regression in base creature translations)
+**Plans**: TBD
+
+### Phase 110: Cold-Boot Performance Validation
+**Goal**: Замер baseline + post-PACK seed time. Если регрессия превышает +50%, ввести chunked seed timeslicing между packs (microtask yield) чтобы UI splash оставался responsive. Если в пределах допуска — no code change.
+**Depends on**: Phase 109
+**Requirements**: PERF-01, PERF-02, PERF-03
+**Files**:
+- `src/shared/i18n/pf2e-content/index.ts` (conditional: yield between pack iterations via `queueMicrotask` / `requestIdleCallback`)
+- (no other code changes if PERF-02 ≤ +50%)
+
+**Success Criteria** (what must be TRUE):
+  1. Baseline cold-boot seed time documented (current 19 packs, ms)
+  2. Post-PACK cold-boot seed time documented (55 packs, ms)
+  3. Regression ≤ +50% — либо без code change, либо после chunked-seed introduction
+  4. UI splash screen остаётся responsive в течение всего seed (no >500ms блок main thread)
+  5. Warm-boot skip preserved (`localStorage` seed marker не повреждён добавлением packs)
+**Plans**: TBD
+
+### Phase 111: Item-ID Description Schema + API
+**Goal**: Расширить `entity_items` table колонкой `description_loc` для хранения RU description per-instance items (special abilities в creature `entries.<creature>.items[]`). Loader Phase 102 populates новую колонку. Новый API `getCreatureItem(creatureName, itemId, locale): { name, description | null } | null` расширяет existing `getEntityItemName`.
+**Depends on**: Phase 109 (vendor packs in place — иначе loader нечем populate)
+**Requirements**: ITEM-ID-01, ITEM-ID-02, ITEM-ID-03
+**Files**:
+- `src/shared/db/migrations/0045_entity_items_description.sql` (ALTER TABLE ADD COLUMN description_loc TEXT NULL)
+- `src/shared/i18n/pf2e-content/index.ts` (loader extension — populate description_loc for items where description present)
+- `src/shared/i18n/pf2e-content/ingest/pack-adapter.ts` (extract item description if present in Babele entry)
+- `src/shared/api/translations.ts` (new `getCreatureItem` helper extending `getEntityItemName`)
+
+**Success Criteria** (what must be TRUE):
+  1. Migration 0045 runs cleanly on warm boot — existing `entity_items` rows preserved with `description_loc = NULL`
+  2. After re-seed: `entity_items` rows для special abilities (например, "Финт негодяя" для Lucky Lanks) имеют non-null `description_loc`
+  3. `getCreatureItem("Счастливчик Лэнкс", "<rogue-feint-id>", "ru")` returns `{ name: "Финт негодяя", description: "Когда Лэнкс успешно Финтит..." }`
+  4. `getCreatureItem` returns `null` when no entry exists (allowing UI fallback chain)
+  5. Existing `getEntityItemName` callers продолжают работать (backward compat)
+**Plans**: TBD
+
+### Phase 112: Special Ability Surface Wiring
+**Goal**: AbilityCard / CreatureAbilityRow / strike row для special abilities consume `getCreatureItem(creatureName, itemId, locale)` для отображения RU name + RU description вместе. Existing fallback chain (actionspf2e dictionary → engine EN) preserved.
+**Depends on**: Phase 111 (consumes new API)
+**Requirements**: ABIL-01, ABIL-02, ABIL-03, ABIL-04
+**Files**:
+- `src/entities/creature/ui/AbilityCard.tsx` (consume `getCreatureItem` lookup chain when creature context present)
+- `src/entities/creature/ui/CreatureAbilityRow.tsx` (single-query RU name + description, no N+1)
+- `src/entities/creature/ui/strike/StrikeRow.tsx` (description text для special strike abilities)
+- `src/shared/i18n/use-content-translation.ts` (potential extension for creature-scoped item lookup hook)
+
+**Success Criteria** (what must be TRUE):
+  1. Reference repro: Lucky Lanks renders "Финт негодяя" с full RU description ("Когда Лэнкс успешно Финтит, его цель Застигнута врасплох...")
+  2. Reference repro: Abendego Brute renders "Brute Strength" с full RU description
+  3. Ability rows do NOT trigger N+1 queries (single lookup per ability surface)
+  4. EN fallback intact: ability без vendor entry показывает English description (no blank cards)
+  5. tsc + lint + vite build green
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 113: AP Spell Coverage Extension
+**Goal**: Bestiary pack `entries.<creature>.items[]` элементы с `kind=spell` маппятся на spell rows в translations table. Lookup chain `spells-srd[name]` → bestiary per-creature spells → engine EN. Untranslated detection работает для AP-only spells.
+**Depends on**: Phase 109 (vendor packs in place)
+**Requirements**: SPELL-AP-01, SPELL-AP-02, SPELL-AP-03
+**Files**:
+- `src/shared/i18n/pf2e-content/ingest/pack-adapter.ts` (detect kind=spell items в bestiary entries; route as spell translations)
+- `src/shared/i18n/pf2e-content/index.ts` (extend collectSpellTranslations to merge bestiary-derived spells)
+- `src/entities/spell/ui/SpellReferenceDrawer.tsx` (verify lookup chain works для AP spells)
+
+**Success Criteria** (what must be TRUE):
+  1. After re-seed: translations table contains spell rows derived from bestiary `items[]` (kind=spell), in addition to base `spells-srd` entries
+  2. Reference repro: AP-specific spell from outlaws-of-alkenstar bestiary creature renders RU в SpellReferenceDrawer when vendor entry exists
+  3. Spell name collision policy documented — base `spells-srd[name]` wins over bestiary per-creature override (single source of truth)
+  4. Untranslated spell badge (Phase 98) continues to fire для truly untranslated spells (no false negatives)
+  5. EN fallback intact for AP spells without vendor entry
+**Plans**: TBD
+
+### Phase 114: Verification + Untranslated Regression
+**Goal**: Manual smoke test 10+ AP creatures (по 1 на каждый major AP pack) renders RU end-to-end. Homebrew creature regression check — 🚫RU badge остаётся для creatures без vendor entry. Migration chain 0044 → 0045 верифицирована на warm boot. Final v1.7.5 acceptance.
+**Depends on**: Phase 109, 110, 111, 112, 113 (verifies the entire stack)
+**Requirements**: UNTRANS-01, UNTRANS-02, VERIFY-01, VERIFY-02, VERIFY-03
+**Files**:
+- `.planning/phases/114-verify/SMOKE-LIST.md` (manual checklist of 10+ AP creatures)
+- `.planning/phases/114-verify/VERIFICATION.md` (results + screenshots if needed)
+- `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (version bump 1.7.4 → 1.7.5 при готовности к combined tag)
+
+**Success Criteria** (what must be TRUE):
+  1. Manual smoke list: ≥10 AP creatures renders RU at locale=ru (name + subtitle + items + abilities), 1 per major AP pack
+  2. Homebrew creature без vendor entry показывает 🚫RU badge (no fabrication, no heuristics) — UNTRANS-02 regression check passes
+  3. Migration chain 0044 → 0045 runs cleanly on warm boot (existing `entity_items` rows preserved, new column NULL для старых rows)
+  4. 🚫RU badge count для creatures из NEW packs становится near-zero (PACK expansion automatically reduces badge surface)
+  5. Final tsc + lint + vite build clean; no regressions в base bestiaries (Phase 109 SC4 carryover)
+**Plans**: TBD

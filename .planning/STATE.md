@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.7.5
 milestone_name: AP Bestiaries + Item-id RU + Special Abilities Coverage
-status: defining_requirements
+status: ready_to_plan
 stopped_at: ~
 last_updated: "2026-04-26T00:00:00.000Z"
 last_activity: 2026-04-26
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,17 +21,30 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-26 для v1.7.5 kickoff)
 
 **Core value:** Точность + скорость — чистый TS engine для PF2e-математики + React frontend с live Foundry-данными.
-**Current focus:** v1.7.5 — расширить translation ingest до полного pack coverage (72 vendor packs vs текущие 19); item-id RU lookup для всех packs; special abilities mapping из creature `entries.<creature>.items[]`.
+**Current focus:** v1.7.5 — расширить translation ingest до полного pack coverage (55 vendor packs vs текущие 19); item-id RU lookup для всех packs; special abilities mapping из creature `entries.<creature>.items[]`.
 
 ## Current Position
 
 Milestone: v1.7.5 AP Bestiaries + Item-id RU + Special Abilities Coverage
-Phase: Not started (defining requirements)
+Phase: 109 (Vendor Pack Expansion + License Compliance) — Next
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-26 — Milestone v1.7.5 started, cleanup completed (MILESTONES.md sync, v1.7.{1,2,3,4} archive stubs created)
+Status: Ready to plan (ROADMAP.md committed, 6 phases mapped, 22 atomic + 1 process requirement covered)
+Last activity: 2026-04-26 — ROADMAP.md drafted (Phases 109-114), traceability filled, STATE.md updated
 
 Progress: [░░░░░░░░░░] 0%
+
+### Phase Map (v1.7.5)
+
+| Phase | Name | Requirements |
+|-------|------|--------------|
+| 109 | Vendor Pack Expansion + License Compliance | PACK-01..04 |
+| 110 | Cold-Boot Performance Validation | PERF-01..03 |
+| 111 | Item-ID Description Schema + API | ITEM-ID-01..03 |
+| 112 | Special Ability Surface Wiring | ABIL-01..04 |
+| 113 | AP Spell Coverage Extension | SPELL-AP-01..03 |
+| 114 | Verification + Untranslated Regression | UNTRANS-01..02, VERIFY-01..03 |
+
+DEBT-02 — process invariant, applied across all 6 phases.
 
 ## Accumulated Context
 
@@ -54,23 +67,23 @@ Progress: [░░░░░░░░░░] 0%
 - `import.meta.glob` для Drizzle migrations + для vendor pack ingest (`@vendor` alias)
 - No IIFE в JSX; derived state через `useMemo`; декомпозиция по FSD (`lib → model → ui`)
 - Translation IPC boundary: `shared/api/translations.ts` — единственный consumer DB translations; `shared/i18n/use-content-translation.ts` — единственный React-hook
-- `entity_items` table denormalization для id-based item RU lookup (Phase 102)
+- `entity_items` table denormalization для id-based item RU lookup (Phase 102) — расширяется в Phase 111 колонкой `description_loc`
 - LICENSES requirement: vendor pack additions требуют OGL Section 15 update + COPYRIGHT chain check
 
 ### v1.7.x Translation Architecture (current state)
 
-**Vendor:** `pf2-locale-ru/pf2e/packs/*.json` (Babele format) — 72 packs total в repo, **19 ingested** (base PF2e content); 50+ AP-specific packs **NOT ingested** → v1.7.5 scope.
+**Vendor:** `pf2-locale-ru/pf2e/packs/*.json` (Babele format) — 72 packs total в repo, **19 ingested** (base PF2e content); 50+ AP-specific packs **NOT ingested** → v1.7.5 Phase 109 scope.
 
 **Pipeline:** vendor pack → `pack-adapter.ts` → `MonsterStructuredLoc | SpellStructuredLoc | ItemStructuredLoc` → DB `translations.structured_json` → `useContentTranslation` hook → UI render через SafeHtml + dictionary getters (TraitPill, getTraitLabel, getSkillLabel, etc.).
 
-**Per-instance items:** Pack `entries.<creature>.items[]` array содержит {id, name, description?} для weapons + special abilities. Phase 102 `entity_items` table denormalizes id→name lookup для weapons. **Special abilities (kind=action items с description) НЕ маппятся** на ability rows → English fallback в AbilityCard / strike row → v1.7.5 scope.
+**Per-instance items:** Pack `entries.<creature>.items[]` array содержит {id, name, description?} для weapons + special abilities. Phase 102 `entity_items` table denormalizes id→name lookup для weapons. **Special abilities (kind=action items с description) НЕ маппятся** на ability rows → English fallback в AbilityCard / strike row → v1.7.5 Phase 111+112 scope.
 
 ### v1.7.4 Known Tech Debt → v1.7.5 Scope
 
-1. AP-specific bestiaries packs (`outlaws-of-alkenstar-bestiary`, `abomination-vaults-bestiary`, etc., 50+ файлов) НЕ ingested → монстры рендерятся EN с 🚫RU несмотря на наличие RU в vendor
-2. Item-id RU lookup только для weapons из base packs
-3. Special ability descriptions (Brute Strength, Финт негодяя, Внезапная атака) НЕ переведены — даже когда есть в pack `entries.<creature>.items[]`
-4. AP-specific spell entries в bestiary `items[]` (kind=spell) не подхватываются как spell rows
+1. AP-specific bestiaries packs (`outlaws-of-alkenstar-bestiary`, `abomination-vaults-bestiary`, etc., 50+ файлов) НЕ ingested → монстры рендерятся EN с 🚫RU несмотря на наличие RU в vendor → **Phase 109**
+2. Item-id RU lookup только для weapons из base packs → **Phase 109 (data) + Phase 111 (description col)**
+3. Special ability descriptions (Brute Strength, Финт негодяя, Внезапная атака) НЕ переведены — даже когда есть в pack `entries.<creature>.items[]` → **Phase 111 (API) + Phase 112 (UI wiring)**
+4. AP-specific spell entries в bestiary `items[]` (kind=spell) не подхватываются как spell rows → **Phase 113**
 
 Reference repro: `"Lucky" Lanks` из `outlaws-of-alkenstar-bestiary.json` — full RU entry в vendor (name "Счастливчик Лэнкс" + 9 items + 2 abilities), но рендерится EN с 🚫RU badge.
 
@@ -93,5 +106,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-26
-Stopped at: v1.7.5 milestone init — cleanup completed, REQUIREMENTS.md pending
-Next step: Probe v1.7.5 scope details → write REQUIREMENTS.md → spawn roadmapper → commit kickoff → `/gsd-discuss-phase 109` или `/gsd-plan-phase 109`.
+Stopped at: v1.7.5 ROADMAP.md drafted (Phases 109-114, 6 phases, 22 atomic + 1 process requirement mapped 100% coverage)
+Next step: `/gsd-discuss-phase 109` или `/gsd-plan-phase 109` — Phase 109 (Vendor Pack Expansion + License Compliance) ready to plan.
