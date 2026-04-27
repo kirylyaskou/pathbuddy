@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Hammer, Plus, Copy as CloneIcon, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -30,6 +31,7 @@ import type { CharacterRecord } from '@/shared/api'
 import { CustomCreatureListRow } from './CustomCreatureListRow'
 
 export function CustomCreaturesListPage() {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const [rows, setRows] = useState<CustomCreatureRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,8 +43,8 @@ export function CustomCreaturesListPage() {
 
   // Debounce search 200ms (UI-SPEC micro-interactions)
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(query), 200)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDebouncedQuery(query), 200)
+    return () => clearTimeout(timer)
   }, [query])
 
   const reload = useCallback(async () => {
@@ -72,7 +74,7 @@ export function CustomCreaturesListPage() {
       const id = await createCustomCreature({} as CreatureStatBlockData, 'scratch')
       navigate(PATHS.CUSTOM_CREATURE_EDIT(id))
     } catch (e) {
-      toast.error(`Failed to create creature: ${(e as Error).message}`)
+      toast.error(`${t('customCreatureBuilder.listPage.failedCreate')}: ${(e as Error).message}`)
     }
   }
 
@@ -83,11 +85,11 @@ export function CustomCreaturesListPage() {
   async function handleCloneSelected(data: CreatureStatBlockData) {
     try {
       const id = await createCustomCreature(data, 'foundry_clone')
-      toast(`${data.name} cloned`)
+      toast(t('customCreatureBuilder.listPage.clonedToast', { name: data.name }))
       await reload()
       navigate(PATHS.CUSTOM_CREATURE_EDIT(id))
     } catch (e) {
-      toast.error(`Failed to clone: ${(e as Error).message}`)
+      toast.error(`${t('customCreatureBuilder.listPage.failedClone')}: ${(e as Error).message}`)
     }
   }
 
@@ -100,19 +102,17 @@ export function CustomCreaturesListPage() {
       // Bestiary flow uses. Pitfall 8 parity: force source='custom'.
       const entityRow = await fetchPregenCreatureByName(pregen.name)
       if (!entityRow) {
-        toast.error(
-          `No bestiary twin found for ${pregen.name}. Run sync to refresh Paizo data.`,
-        )
+        toast.error(t('customCreatureBuilder.listPage.noBestiaryTwin', { name: pregen.name }))
         return
       }
       const mapped = toCreatureStatBlockData(entityRow)
       const normalized: CreatureStatBlockData = { ...mapped, source: 'custom' }
       const id = await createCustomCreature(normalized, 'foundry_clone')
-      toast(`Cloned ${pregen.name} as new custom creature`)
+      toast(t('customCreatureBuilder.listPage.clonedPregenToast', { name: pregen.name }))
       await reload()
       navigate(PATHS.CUSTOM_CREATURE_EDIT(id))
     } catch (e) {
-      toast.error(`Failed to clone pregen: ${(e as Error).message}`)
+      toast.error(`${t('customCreatureBuilder.listPage.failedClonePregen')}: ${(e as Error).message}`)
     }
   }
 
@@ -120,11 +120,11 @@ export function CustomCreaturesListPage() {
     if (!deleteTarget) return
     try {
       await deleteCustomCreature(deleteTarget.id)
-      toast(`${deleteTarget.name} deleted`)
+      toast(t('customCreatureBuilder.listPage.deletedToast', { name: deleteTarget.name }))
       setDeleteTarget(null)
       await reload()
     } catch (e) {
-      toast.error(`Failed to delete: ${(e as Error).message}`)
+      toast.error(`${t('customCreatureBuilder.listPage.failedDelete')}: ${(e as Error).message}`)
     }
   }
 
@@ -132,19 +132,19 @@ export function CustomCreaturesListPage() {
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-base font-semibold">Custom Creatures</h1>
+        <h1 className="text-base font-semibold">{t('customCreatureBuilder.listPage.heading')}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setPregenOpen(true)}>
             <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            Use Pregen
+            {t('customCreatureBuilder.listPage.usePregen')}
           </Button>
           <Button variant="outline" size="sm" onClick={handleCloneFromBestiary}>
             <CloneIcon className="w-3.5 h-3.5 mr-1.5" />
-            Clone from Bestiary
+            {t('customCreatureBuilder.listPage.cloneFromBestiary')}
           </Button>
           <Button size="sm" onClick={handleNewCreature}>
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            New Creature
+            {t('customCreatureBuilder.listPage.newCreature')}
           </Button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function CustomCreaturesListPage() {
         <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search custom creatures…"
+          placeholder={t('customCreatureBuilder.listPage.searchPlaceholder')}
           className="h-8 text-sm max-w-md"
         />
       </div>
@@ -162,28 +162,28 @@ export function CustomCreaturesListPage() {
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         {loading && (
-          <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t('customCreatureBuilder.listPage.loading')}</p>
         )}
         {!loading && rows.length === 0 && (
           <div className="flex flex-col items-center justify-center text-center py-12 gap-4">
             <Hammer className="w-10 h-10 text-muted-foreground/30" />
             <div className="space-y-1">
-              <p className="text-base font-semibold">No custom creatures yet</p>
+              <p className="text-base font-semibold">{t('customCreatureBuilder.listPage.emptyHeading')}</p>
               <p className="text-sm text-muted-foreground max-w-md">
-                Build an NPC from benchmarks or start by cloning a bestiary entry.
+                {t('customCreatureBuilder.listPage.emptyDesc')}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleCloneFromBestiary}>
-                Clone from Bestiary
+                {t('customCreatureBuilder.listPage.cloneFromBestiaryEmpty')}
               </Button>
-              <Button size="sm" onClick={handleNewCreature}>New Creature</Button>
+              <Button size="sm" onClick={handleNewCreature}>{t('customCreatureBuilder.listPage.newCreatureEmpty')}</Button>
             </div>
           </div>
         )}
         {!loading && rows.length > 0 && filtered.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No creatures match "{debouncedQuery}".
+            {t('customCreatureBuilder.listPage.noMatchText', { query: debouncedQuery })}
           </p>
         )}
         {!loading && filtered.length > 0 && (
@@ -206,18 +206,18 @@ export function CustomCreaturesListPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete creature?</AlertDialogTitle>
+            <AlertDialogTitle>{t('customCreatureBuilder.listPage.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {`"${deleteTarget?.name ?? ''}" will be removed from custom creatures. Encounters using this creature will fall back to the bestiary copy if one exists. This cannot be undone.`}
+              {t('customCreatureBuilder.listPage.deleteDesc', { name: deleteTarget?.name ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('customCreatureBuilder.listPage.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('customCreatureBuilder.listPage.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

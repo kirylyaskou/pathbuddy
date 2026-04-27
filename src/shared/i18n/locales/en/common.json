@@ -665,7 +665,15 @@
       "deleteTitle": "Delete Creature",
       "deleteDesc": "Are you sure you want to delete \"{{name}}\"?",
       "cancel": "Cancel",
-      "delete": "Delete"
+      "delete": "Delete",
+      "clonedToast": "{{name}} cloned",
+      "clonedPregenToast": "Cloned {{name}} as new custom creature",
+      "deletedToast": "{{name}} deleted",
+      "failedCreate": "Failed to create creature",
+      "failedClone": "Failed to clone",
+      "failedClonePregen": "Failed to clone pregen",
+      "failedDelete": "Failed to delete",
+      "noBestiaryTwin": "No bestiary twin found for {{name}}. Run sync to refresh Paizo data."
     },
     "listRow": {
       "editAriaLabel": "Edit creature",

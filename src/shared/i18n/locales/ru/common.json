@@ -683,7 +683,15 @@
       "deleteTitle": "Удалить существо",
       "deleteDesc": "Вы уверены, что хотите удалить «{{name}}»?",
       "cancel": "Отмена",
-      "delete": "Удалить"
+      "delete": "Удалить",
+      "clonedToast": "{{name}} клонировано",
+      "clonedPregenToast": "{{name}} клонирован как новое существо",
+      "deletedToast": "{{name}} удалён",
+      "failedCreate": "Не удалось создать существо",
+      "failedClone": "Не удалось клонировать",
+      "failedClonePregen": "Не удалось клонировать шаблон",
+      "failedDelete": "Не удалось удалить",
+      "noBestiaryTwin": "Нет дубля в бестиарии для {{name}}. Выполните синхронизацию."
     },
     "listRow": {
       "editAriaLabel": "Редактировать существо",
