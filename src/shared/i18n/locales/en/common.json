@@ -284,6 +284,7 @@
       "name": "Name *",
       "hp": "HP *",
       "ac": "AC",
+      "perception": "Perception",
       "submit": "Add to Combat"
     },
     "conditions": {

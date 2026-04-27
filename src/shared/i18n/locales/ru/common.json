@@ -301,6 +301,7 @@
       "name": "Имя *",
       "hp": "HP *",
       "ac": "AC",
+      "perception": "Восприятие",
       "submit": "Добавить в бой"
     },
     "conditions": {

@@ -33,6 +33,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
   const [initiative, setInitiative] = useState('')
   const [hp, setHp] = useState('')
   const [ac, setAc] = useState('')
+  const [perception, setPerception] = useState('')
   const addCombatant = useCombatantStore((s) => s.addCombatant)
   const combatants = useCombatantStore((s) => s.combatants)
 
@@ -41,6 +42,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
     setInitiative('')
     setHp('')
     setAc('')
+    setPerception('')
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -50,6 +52,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
     const parsedHp = Math.max(1, parseInt(hp, 10) || 1)
     const parsedInit = parseInt(initiative, 10) || 0
     const parsedAc = ac ? Math.max(0, parseInt(ac, 10) || 0) : undefined
+    const parsedPerception = perception ? parseInt(perception, 10) || 0 : undefined
 
     addCombatant({
       kind: mode === 'creature' ? 'npc' : 'pc',
@@ -61,6 +64,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
       maxHp: parsedHp,
       tempHp: 0,
       ...(mode === 'creature' && parsedAc !== undefined ? { ac: parsedAc } : {}),
+      ...(mode === 'creature' && parsedPerception !== undefined ? { perception: parsedPerception } : {}),
     })
     reset()
     setOpen(false)
@@ -123,17 +127,31 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
             </div>
           </div>
           {mode === 'creature' && (
-            <div>
-              <Label htmlFor="qa-ac">{t('combatTracker.quickAdd.ac')}</Label>
-              <Input
-                id="qa-ac"
-                type="number"
-                value={ac}
-                onChange={(e) => setAc(e.target.value)}
-                placeholder="10"
-                min={0}
-                max={99}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="qa-ac">{t('combatTracker.quickAdd.ac')}</Label>
+                <Input
+                  id="qa-ac"
+                  type="number"
+                  value={ac}
+                  onChange={(e) => setAc(e.target.value)}
+                  placeholder="10"
+                  min={0}
+                  max={99}
+                />
+              </div>
+              <div>
+                <Label htmlFor="qa-perception">{t('combatTracker.quickAdd.perception')}</Label>
+                <Input
+                  id="qa-perception"
+                  type="number"
+                  value={perception}
+                  onChange={(e) => setPerception(e.target.value)}
+                  placeholder="0"
+                  min={-99}
+                  max={99}
+                />
+              </div>
             </div>
           )}
           <Button

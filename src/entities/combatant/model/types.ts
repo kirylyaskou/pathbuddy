@@ -24,6 +24,8 @@ export interface NpcCombatant extends CombatantBase {
   creatureRef: string  // creature entity id; empty string for session-only quick-add
   // Session-only AC for Quick Add creatures (not stored in DB, not tied to creatureRef).
   ac?: number
+  // Session-only Perception for Quick Add creatures (not stored in DB, not tied to creatureRef).
+  perception?: number
   // Shield Raised toggle (session-only). shieldAcBonus holds the actual bonus from item data.
   shieldRaised?: boolean
   // AC bonus from the equipped shield — set when creature stat block is loaded.
