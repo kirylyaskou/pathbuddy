@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Modifier, InactiveModifier } from '@engine'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 
@@ -35,6 +36,7 @@ export function ModifierTooltip({
   showInactive = false,
   children,
 }: ModifierTooltipProps) {
+  const { t } = useTranslation('common')
   const hasInactive = showInactive && (inactiveModifiers?.length ?? 0) > 0
   if (modifiers.length === 0 && !hasInactive) return children
 
@@ -52,7 +54,7 @@ export function ModifierTooltip({
         ))}
         {modifiers.length > 0 && (
           <div className="border-t border-border mt-1 pt-1 flex justify-between">
-            <span className="text-muted-foreground">Total</span>
+            <span className="text-muted-foreground">{t('shared.modifier.total')}</span>
             <span className={netModifier < 0 ? 'text-pf-blood' : 'text-pf-threat-low'}>
               {finalDisplay}
             </span>

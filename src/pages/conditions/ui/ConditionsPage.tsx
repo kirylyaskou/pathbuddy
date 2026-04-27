@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ShieldAlert } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { SearchInput } from '@/shared/ui/search-input'
 import { getAllConditions } from '@/shared/api'
 import type { ConditionRow } from '@/shared/api'
@@ -113,6 +114,7 @@ function ConditionCard({ condition, expanded, onToggle }: {
 }
 
 export function ConditionsPage() {
+  const { t } = useTranslation('common')
   const [allConditions, setAllConditions] = useState<ConditionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -148,7 +150,7 @@ export function ConditionsPage() {
       <div className="p-3 border-b border-border/50 space-y-2 shrink-0">
         {/* Search */}
         <SearchInput
-          placeholder="Search conditions…"
+          placeholder={t('pages.conditions.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-8 text-sm"

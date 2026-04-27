@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, RotateCcw, Columns2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useDroppable } from '@dnd-kit/core'
 import { useEncounterTabsStore } from '@/features/combat-tracker'
 import type { EncounterTab } from '@/features/combat-tracker'
@@ -15,6 +16,7 @@ interface DroppableTabProps {
 }
 
 function DroppableTab({ tab, isActive, onSelect, onClose, onReset }: DroppableTabProps) {
+  const { t } = useTranslation('common')
   const { setNodeRef, isOver } = useDroppable({
     id: `tab-drop-${tab.id}`,
     disabled: isActive,
@@ -37,7 +39,7 @@ function DroppableTab({ tab, isActive, onSelect, onClose, onReset }: DroppableTa
       <button
         className="w-4 h-4 opacity-0 group-hover:opacity-100 rounded hover:bg-amber-500/20 flex items-center justify-center transition-opacity"
         onClick={onReset}
-        title="Reset to blueprint"
+        title={t('pages.combat.resetToBlueprint')}
       >
         <RotateCcw className="w-3 h-3" />
       </button>
@@ -53,6 +55,7 @@ function DroppableTab({ tab, isActive, onSelect, onClose, onReset }: DroppableTa
 }
 
 export function EncounterTabBar() {
+  const { t } = useTranslation('common')
   const openTabs = useEncounterTabsStore((s) => s.openTabs)
   const activeTabId = useEncounterTabsStore((s) => s.activeTabId)
   const setActiveTab = useEncounterTabsStore((s) => s.setActiveTab)
@@ -86,7 +89,7 @@ export function EncounterTabBar() {
       <button
         className="px-2 h-full flex items-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0 text-lg leading-none"
         onClick={() => setShowSelector(true)}
-        title="Open encounter"
+        title={t('pages.combat.openEncounter')}
       >
         +
       </button>

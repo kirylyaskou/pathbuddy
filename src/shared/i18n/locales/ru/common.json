@@ -183,7 +183,8 @@
       "syncing": "Синхронизация...",
       "importLocalButton": "Импорт локально (refs/)",
       "lastSynced": "Последняя синхронизация: {{date}} — {{count}} записей",
-      "noData": "Данные ещё не импортированы. Запустите синхронизацию для загрузки."
+      "noData": "Данные ещё не импортированы. Запустите синхронизацию для загрузки.",
+      "syncProgress": "Прогресс синхронизации"
     },
     "updates": {
       "title": "Обновления",
@@ -728,6 +729,8 @@
       "selectCreatureStatBlock": "Выберите существо для просмотра",
       "notStarted": "Не начат",
       "clickToFocus": "(нажмите для фокуса)",
+      "resetToBlueprint": "Сбросить к чертежу",
+      "openEncounter": "Открыть встречу",
       "blueprint": {
         "title": "Открыть встречу",
         "blankEncounter": "Пустая встреча",
@@ -777,6 +780,12 @@
       "edit": {
         "backToList": "К списку"
       }
+    },
+    "actions": {
+      "searchPlaceholder": "Поиск действий…"
+    },
+    "conditions": {
+      "searchPlaceholder": "Поиск состояний…"
     }
   },
   "entities": {
@@ -845,7 +854,8 @@
       "chosen": "Выбран",
       "fortuneKeepHigher": "Удача — оставить большее",
       "misfortuneKeepLower": "Неудача — оставить меньшее",
-      "rollN": "Бросок {{n}}"
+      "rollN": "Бросок {{n}}",
+      "rollD20": "Бросок d20"
     }
   }
 }

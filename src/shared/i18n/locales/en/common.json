@@ -168,7 +168,8 @@
       "syncing": "Syncing...",
       "importLocalButton": "Import Local (refs/)",
       "lastSynced": "Last synced: {{date}} — {{count}} entities",
-      "noData": "No data imported yet. Run a sync to load entities."
+      "noData": "No data imported yet. Run a sync to load entities.",
+      "syncProgress": "Sync progress"
     },
     "updates": {
       "title": "Updates",
@@ -709,6 +710,8 @@
       "selectCreatureStatBlock": "Select a creature to view its stat block",
       "notStarted": "Not started",
       "clickToFocus": "(click to focus)",
+      "resetToBlueprint": "Reset to blueprint",
+      "openEncounter": "Open encounter",
       "blueprint": {
         "title": "Open Encounter",
         "blankEncounter": "Blank Encounter",
@@ -756,6 +759,12 @@
       "edit": {
         "backToList": "Back to list"
       }
+    },
+    "actions": {
+      "searchPlaceholder": "Search actions…"
+    },
+    "conditions": {
+      "searchPlaceholder": "Search conditions…"
     }
   },
   "entities": {
@@ -824,7 +833,8 @@
       "chosen": "Chosen",
       "fortuneKeepHigher": "Fortune — keep higher",
       "misfortuneKeepLower": "Misfortune — keep lower",
-      "rollN": "Roll {{n}}"
+      "rollN": "Roll {{n}}",
+      "rollD20": "Roll d20"
     }
   }
 }

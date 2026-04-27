@@ -191,7 +191,7 @@ export function SettingsPage() {
           <Progress
             value={progressPercent}
             className="h-2 w-64"
-            aria-label="Sync progress"
+            aria-label={t('settings.dataSource.syncProgress')}
           />
         </div>
       )}

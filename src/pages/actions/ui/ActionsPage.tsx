@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Zap } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { SearchInput } from '@/shared/ui/search-input'
 import { getAllActions } from '@/shared/api'
 import type { ActionRow } from '@/shared/api'
@@ -113,6 +114,7 @@ function ActionCard({ action, expanded, onToggle }: {
 }
 
 export function ActionsPage() {
+  const { t } = useTranslation('common')
   const [allActions, setAllActions] = useState<ActionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -143,7 +145,7 @@ export function ActionsPage() {
       {/* Toolbar */}
       <div className="p-3 border-b border-border/50 space-y-2 shrink-0">
         <SearchInput
-          placeholder="Search actions…"
+          placeholder={t('pages.actions.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-8 text-sm"

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Dices } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Roll } from '@engine'
 import { useRoll } from '@/shared/hooks'
 import { cn } from '@/shared/lib/utils'
@@ -24,6 +25,7 @@ const QUANTITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
  * tabletop tool, no cryptographic requirement.
  */
 export function DicePanel() {
+  const { t } = useTranslation('common')
   const [quantity, setQuantity] = useState(1)
   const [lastRoll, setLastRoll] = useState<Roll | null>(null)
   const roll = useRoll()
@@ -41,12 +43,12 @@ export function DicePanel() {
     <div className="p-3 space-y-3 w-64">
       <div className="flex items-center gap-1.5 text-xs">
         <Dices className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="font-semibold text-muted-foreground uppercase tracking-wider">Dice Roller</span>
+        <span className="font-semibold text-muted-foreground uppercase tracking-wider">{t('shared.dicePanel.title')}</span>
       </div>
 
       {/* Quantity selector */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Quantity</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('shared.dicePanel.quantity')}</span>
         <div className="flex flex-wrap gap-1">
           {QUANTITIES.map((n) => (
             <button
@@ -68,7 +70,7 @@ export function DicePanel() {
 
       {/* Die buttons */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Die</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('shared.dicePanel.die')}</span>
         <div className="grid grid-cols-4 gap-1.5">
           {DICE.map(({ sides, label }) => (
             <button

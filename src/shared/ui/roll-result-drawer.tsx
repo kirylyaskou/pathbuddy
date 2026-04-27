@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
@@ -8,6 +9,8 @@ import { DiceCubeAnimation } from './dice-cube-animation'
 import type { Roll } from '@engine'
 
 function RollBreakdown({ roll }: { roll: Roll }) {
+  const { t } = useTranslation('common')
+
   // fortune / misfortune rolls render a dedicated two-row
   // breakdown (one line per independent d20 roll) so the drawer mirrors the
   // toast layout.
@@ -43,10 +46,10 @@ function RollBreakdown({ roll }: { roll: Roll }) {
             <span className="text-xs text-primary/70">— {roll.source}</span>
           )}
           {isNat20 && (
-            <span className="text-xs font-bold" style={{ color: 'var(--pf-gold)' }}>Critical!</span>
+            <span className="text-xs font-bold" style={{ color: 'var(--pf-gold)' }}>{t('shared.roll.critical')}</span>
           )}
           {isNat1 && (
-            <span className="text-xs font-bold" style={{ color: 'var(--pf-blood)' }}>Fumble</span>
+            <span className="text-xs font-bold" style={{ color: 'var(--pf-blood)' }}>{t('shared.roll.fumble')}</span>
           )}
         </div>
 
@@ -78,8 +81,9 @@ function RollBreakdown({ roll }: { roll: Roll }) {
 }
 
 function FortuneRollBreakdown({ roll }: { roll: Roll }) {
+  const { t } = useTranslation('common')
   const fortune = roll.fortune!
-  const kindLabel = fortune.kind === 'fortune' ? 'Fortune — keep higher' : 'Misfortune — keep lower'
+  const kindLabel = fortune.kind === 'fortune' ? t('shared.roll.fortuneKeepHigher') : t('shared.roll.misfortuneKeepLower')
 
   return (
     <div className="flex items-start gap-4 flex-wrap">
@@ -121,7 +125,7 @@ function FortuneRollBreakdown({ roll }: { roll: Roll }) {
                 )}
               >
                 <span className="text-[11px] font-mono text-muted-foreground shrink-0">
-                  Roll {idx + 1}
+                  {t('shared.roll.rollN', { n: idx + 1 })}
                 </span>
                 <span className="w-6 h-6 flex items-center justify-center rounded border border-border bg-card font-mono text-[13px] shrink-0">
                   {entry.d20}
@@ -136,13 +140,13 @@ function FortuneRollBreakdown({ roll }: { roll: Roll }) {
                   {entry.total}
                 </span>
                 {isNat20 && (
-                  <span className="text-[10px] font-semibold" style={{ color: 'var(--pf-gold)' }}>Critical!</span>
+                  <span className="text-[10px] font-semibold" style={{ color: 'var(--pf-gold)' }}>{t('shared.roll.critical')}</span>
                 )}
                 {isNat1 && (
-                  <span className="text-[10px] font-semibold" style={{ color: 'var(--pf-blood)' }}>Fumble</span>
+                  <span className="text-[10px] font-semibold" style={{ color: 'var(--pf-blood)' }}>{t('shared.roll.fumble')}</span>
                 )}
                 {isChosen && (
-                  <span className="ml-auto text-[10px] uppercase tracking-wider text-pf-gold shrink-0">Chosen</span>
+                  <span className="ml-auto text-[10px] uppercase tracking-wider text-pf-gold shrink-0">{t('shared.roll.chosen')}</span>
                 )}
               </div>
             )
