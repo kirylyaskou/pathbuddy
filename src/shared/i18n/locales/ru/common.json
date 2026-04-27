@@ -477,13 +477,13 @@
     },
     "applyRole": {
       "buttonLabel": "Применить роль",
-      "dialogTitle": "Применить роль",
-      "dialogDesc": "Применить корректировки характеристик на основе роли существа",
+      "dialogTitle": "Применить роль «{{role}}»?",
+      "dialogDesc": "Это перезапишет следующие поля на уровне {{level}}. Остальные поля останутся без изменений.",
       "abilityMods": "Модификаторы характеристик",
       "stats": "Параметры",
-      "noOverrides": "Нет изменений для этой роли",
+      "noOverrides": "У этой роли нет изменений для данного уровня.",
       "cancel": "Отмена",
-      "apply": "Применить",
+      "apply": "Применить роль",
       "perception": "Восприятие",
       "ac": "КД",
       "hp": "ОЗ",
@@ -494,16 +494,16 @@
       "strikeDamage": "Урон удара",
       "spellDc": "Сл заклинаний",
       "spellAttack": "Атака заклинаниями",
-      "skillLabel": "Навыки",
-      "abilityModLabel": "Модификатор {{ability}}",
+      "skillLabel": "Навык (применяется к существующим навыкам)",
+      "abilityModLabel": "Мод {{ability}}",
       "roleLabels": {
         "brute": "Громила",
         "skirmisher": "Застрельщик",
         "sniper": "Снайпер",
         "soldier": "Солдат",
         "spellcaster": "Заклинатель",
-        "guard": "Страж",
-        "artillery": "Артиллерия"
+        "skillParagon": "Мастер навыков",
+        "magicalStriker": "Магический боец"
       }
     },
     "cloneDialog": {

@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,57 +20,73 @@ interface Props {
   onConfirm: () => void
 }
 
-const ROLE_LABELS: Record<RoleId, string> = {
-  brute: 'Brute',
-  soldier: 'Soldier',
-  skirmisher: 'Skirmisher',
-  sniper: 'Sniper',
-  spellcaster: 'Spellcaster',
-  skillParagon: 'Skill Paragon',
-  magicalStriker: 'Magical Striker',
-}
-
 type AbilityKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 
 export function ApplyRoleConfirmDialog({ roleId, level, onCancel, onConfirm }: Props) {
+  const { t } = useTranslation('common')
+
+  const roleLabels = useMemo<Record<RoleId, string>>(
+    () => ({
+      brute: t('customCreatureBuilder.applyRole.roleLabels.brute'),
+      soldier: t('customCreatureBuilder.applyRole.roleLabels.soldier'),
+      skirmisher: t('customCreatureBuilder.applyRole.roleLabels.skirmisher'),
+      sniper: t('customCreatureBuilder.applyRole.roleLabels.sniper'),
+      spellcaster: t('customCreatureBuilder.applyRole.roleLabels.spellcaster'),
+      skillParagon: t('customCreatureBuilder.applyRole.roleLabels.skillParagon'),
+      magicalStriker: t('customCreatureBuilder.applyRole.roleLabels.magicalStriker'),
+    }),
+    [t],
+  )
+
   const preset = ROLE_PRESETS[roleId]
   const values = applyRole(roleId, level)
 
   // Build a list of field→(tier, value) rows reflecting ONLY the keys the preset defines.
-  const rows: { label: string; tier: string; value: string }[] = []
+  const rows = useMemo(() => {
+    const result: { label: string; tier: string; value: string }[] = []
 
-  const addRow = (
-    label: string,
-    tier: string | undefined,
-    value: string | number | undefined,
-  ) => {
-    if (tier !== undefined && value !== undefined) {
-      rows.push({ label, tier, value: String(value) })
-    }
-  }
-
-  addRow('Perception', preset.perception, values.perception)
-  addRow('AC', preset.ac, values.ac)
-  addRow('HP', preset.hp, values.hp)
-  addRow('Fort', preset.saves?.fort, values.fort)
-  addRow('Ref', preset.saves?.ref, values.ref)
-  addRow('Will', preset.saves?.will, values.will)
-  addRow('Strike attack', preset.strikeAttackBonus, values.strikeAttackBonus)
-  addRow('Strike damage', preset.strikeDamage, values.strikeDamage?.formula)
-  addRow('Spell DC', preset.spellDC, values.spellDC)
-  addRow('Spell attack', preset.spellAttack, values.spellAttack)
-  addRow('Skill (applied to existing skills)', preset.skill, values.skill)
-
-  const abilityRows: { label: string; tier: string; value: number }[] = []
-  if (preset.abilities) {
-    const abilityEntries = Object.entries(preset.abilities) as Array<[AbilityKey, string]>
-    for (const [k, t] of abilityEntries) {
-      const v = values.abilityMods[k]
-      if (v !== undefined) {
-        abilityRows.push({ label: `${k.toUpperCase()} mod`, tier: t, value: v })
+    const addRow = (
+      label: string,
+      tier: string | undefined,
+      value: string | number | undefined,
+    ) => {
+      if (tier !== undefined && value !== undefined) {
+        result.push({ label, tier, value: String(value) })
       }
     }
-  }
+
+    addRow(t('customCreatureBuilder.applyRole.perception'), preset.perception, values.perception)
+    addRow(t('customCreatureBuilder.applyRole.ac'), preset.ac, values.ac)
+    addRow(t('customCreatureBuilder.applyRole.hp'), preset.hp, values.hp)
+    addRow(t('customCreatureBuilder.applyRole.fort'), preset.saves?.fort, values.fort)
+    addRow(t('customCreatureBuilder.applyRole.ref'), preset.saves?.ref, values.ref)
+    addRow(t('customCreatureBuilder.applyRole.will'), preset.saves?.will, values.will)
+    addRow(t('customCreatureBuilder.applyRole.strikeAttack'), preset.strikeAttackBonus, values.strikeAttackBonus)
+    addRow(t('customCreatureBuilder.applyRole.strikeDamage'), preset.strikeDamage, values.strikeDamage?.formula)
+    addRow(t('customCreatureBuilder.applyRole.spellDc'), preset.spellDC, values.spellDC)
+    addRow(t('customCreatureBuilder.applyRole.spellAttack'), preset.spellAttack, values.spellAttack)
+    addRow(t('customCreatureBuilder.applyRole.skillLabel'), preset.skill, values.skill)
+
+    return result
+  }, [t, preset, values])
+
+  const abilityRows = useMemo(() => {
+    const result: { label: string; tier: string; value: number }[] = []
+    if (preset.abilities) {
+      const abilityEntries = Object.entries(preset.abilities) as Array<[AbilityKey, string]>
+      for (const [k, tier] of abilityEntries) {
+        const v = values.abilityMods[k]
+        if (v !== undefined) {
+          result.push({
+            label: t('customCreatureBuilder.applyRole.abilityModLabel', { ability: k.toUpperCase() }),
+            tier,
+            value: v,
+          })
+        }
+      }
+    }
+    return result
+  }, [t, preset, values])
 
   return (
     <AlertDialog
@@ -79,10 +97,11 @@ export function ApplyRoleConfirmDialog({ roleId, level, onCancel, onConfirm }: P
     >
       <AlertDialogContent className="max-w-2xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>{`Apply role "${ROLE_LABELS[roleId]}"?`}</AlertDialogTitle>
+          <AlertDialogTitle>
+            {t('customCreatureBuilder.applyRole.dialogTitle', { role: roleLabels[roleId] })}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            This will overwrite the following fields at level {level}. Other fields (traits,
-            IWR, auras, free-text abilities, added skills' names) are left untouched.
+            {t('customCreatureBuilder.applyRole.dialogDesc', { level })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -90,7 +109,7 @@ export function ApplyRoleConfirmDialog({ roleId, level, onCancel, onConfirm }: P
           {abilityRows.length > 0 && (
             <div className="pt-1">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Ability mods
+                {t('customCreatureBuilder.applyRole.abilityMods')}
               </div>
               {abilityRows.map((r) => (
                 <div
@@ -108,7 +127,7 @@ export function ApplyRoleConfirmDialog({ roleId, level, onCancel, onConfirm }: P
           {rows.length > 0 && (
             <div className="pt-2">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Stats
+                {t('customCreatureBuilder.applyRole.stats')}
               </div>
               {rows.map((r) => (
                 <div
@@ -125,14 +144,16 @@ export function ApplyRoleConfirmDialog({ roleId, level, onCancel, onConfirm }: P
           )}
           {abilityRows.length === 0 && rows.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              This role has no overrides for this level.
+              {t('customCreatureBuilder.applyRole.noOverrides')}
             </p>
           )}
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Apply Role</AlertDialogAction>
+          <AlertDialogCancel onClick={onCancel}>{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>
+            {t('customCreatureBuilder.applyRole.apply')}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
