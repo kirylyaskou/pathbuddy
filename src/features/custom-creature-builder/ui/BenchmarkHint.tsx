@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { useTranslation } from 'react-i18next'
 import { classifyStat, getBenchmark } from '@engine'
 import type { StatKind, Tier } from '@engine'
 import { TIER_COLORS, TIER_LABEL, TIER_ORDER } from '../lib/tier-colors'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function BenchmarkHint({ stat, level, value, onSelectTier, compact }: Props) {
+  const { t } = useTranslation('common')
   const currentTier = classifyStat(stat, level, value)
   const currentColors = TIER_COLORS[currentTier]
 
@@ -32,10 +34,10 @@ export function BenchmarkHint({ stat, level, value, onSelectTier, compact }: Pro
         <button
           type="button"
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] uppercase tracking-wider font-semibold transition-colors hover:brightness-110 ${currentColors.text} ${currentColors.bg} ${currentColors.border}`}
-          title={`Current: ${TIER_LABEL[currentTier]} — click to set a different tier`}
+          title={t('customCreatureBuilder.benchmarkHint.title', { tier: TIER_LABEL[currentTier] })}
         >
           {!compact && (
-            <span className="text-muted-foreground font-medium normal-case tracking-normal">Tier:</span>
+            <span className="text-muted-foreground font-medium normal-case tracking-normal">{t('customCreatureBuilder.benchmarkHint.tierLabel')}:</span>
           )}
           <span>{TIER_LABEL[currentTier]}</span>
         </button>

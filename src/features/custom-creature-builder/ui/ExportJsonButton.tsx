@@ -1,5 +1,6 @@
 import { Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
 import { getCustomCreatureById } from '@/shared/api/custom-creatures'
 import { exportCreatureJson } from '../model/exportJson'
@@ -13,24 +14,26 @@ interface Props {
 // Pitfall 3: pull the stat block from the PERSISTED record (not the in-memory
 // builder form) so exports always match the last-saved state.
 export function ExportJsonButton({ creatureId, disabled }: Props) {
+  const { t } = useTranslation('common')
+
   async function handleExport() {
     try {
       const record = await getCustomCreatureById(creatureId)
       if (!record) {
-        toast.error('Creature not found')
+        toast.error(t('customCreatureBuilder.exportJson.creatureNotFound'))
         return
       }
       const filename = exportCreatureJson(record.statBlock)
-      toast(`Exported ${filename}`)
+      toast(t('customCreatureBuilder.exportJson.exported', { filename }))
     } catch (e) {
-      toast.error(`Failed to export: ${(e as Error).message}`)
+      toast.error(`${t('customCreatureBuilder.exportJson.failedToExport')}: ${(e as Error).message}`)
     }
   }
 
   return (
     <Button variant="outline" size="sm" onClick={() => void handleExport()} disabled={disabled}>
       <Download className="w-3.5 h-3.5 mr-1.5" />
-      Export JSON
+      {t('customCreatureBuilder.exportJson.buttonLabel')}
     </Button>
   )
 }
