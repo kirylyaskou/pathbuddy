@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,24 +25,25 @@ interface Props {
  * Semantic roles of Action/Cancel are DELIBERATELY swapped from Radix defaults.
  */
 export function DirtyGuardDialog({ onKeepEditing, onDiscard }: Props) {
+  const { t } = useTranslation('common')
   return (
     <AlertDialog open>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+          <AlertDialogTitle>{t('customCreatureBuilder.dirtyGuard.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            You have unsaved edits to this creature. Leaving now will lose them.
+            {t('customCreatureBuilder.dirtyGuard.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction onClick={onKeepEditing}>
-            Keep editing
+            {t('customCreatureBuilder.dirtyGuard.keepEditing')}
           </AlertDialogAction>
           <AlertDialogCancel
             onClick={onDiscard}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Discard changes
+            {t('customCreatureBuilder.dirtyGuard.discardChanges')}
           </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>

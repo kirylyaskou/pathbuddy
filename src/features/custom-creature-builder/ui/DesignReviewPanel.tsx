@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ChevronDown, Info } from 'lucide-react'
 import {
   Collapsible,
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function DesignReviewPanel({ form }: Props) {
+  const { t } = useTranslation('common')
   const [issues, setIssues] = useState<SanityIssue[]>([])
 
   // Debounce 150ms — UI-SPEC Micro-interactions .
@@ -65,9 +67,9 @@ export function DesignReviewPanel({ form }: Props) {
             className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold hover:bg-secondary/30"
           >
             <span className="flex items-center gap-2">
-              Design Review
+              {t('customCreatureBuilder.designReview.title')}
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {warnCount} warn · {infoCount} info
+                {t('customCreatureBuilder.designReview.counter', { warnCount, infoCount })}
               </span>
             </span>
             <ChevronDown

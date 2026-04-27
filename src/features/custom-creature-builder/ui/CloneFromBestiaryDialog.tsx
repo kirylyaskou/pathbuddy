@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ interface Props {
 // Pitfall 8: reset `source` to 'custom' on the mapped stat block so a later
 // export does not carry the Foundry pack name (e.g. "Monster Core").
 export function CloneFromBestiaryDialog({ open, onOpenChange, onClone }: Props) {
+  const { t } = useTranslation('common')
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [results, setResults] = useState<CreatureRow[]>([])
@@ -93,9 +95,9 @@ export function CloneFromBestiaryDialog({ open, onOpenChange, onClone }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="text-base">Clone from Bestiary</DialogTitle>
+          <DialogTitle className="text-base">{t('customCreatureBuilder.cloneDialog.title')}</DialogTitle>
           <DialogDescription className="text-xs">
-            Pick a bestiary creature to copy into your custom library. You can edit it afterwards.
+            {t('customCreatureBuilder.cloneDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -103,7 +105,7 @@ export function CloneFromBestiaryDialog({ open, onOpenChange, onClone }: Props) 
           <SearchInput
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search creatures by name…"
+            placeholder={t('customCreatureBuilder.cloneDialog.searchPlaceholder')}
             className="h-8 text-sm bg-secondary/30"
             loading={loading}
             autoFocus
@@ -112,14 +114,14 @@ export function CloneFromBestiaryDialog({ open, onOpenChange, onClone }: Props) 
 
         <ScrollArea className="flex-1 p-2 min-h-0">
           {loading && (
-            <p className="text-sm text-muted-foreground text-center py-8">Searching…</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('customCreatureBuilder.cloneDialog.searching')}</p>
           )}
           {!loading && debounced.trim() && results.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No creatures found</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('customCreatureBuilder.cloneDialog.noCreaturesFound')}</p>
           )}
           {!loading && !debounced.trim() && (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Start typing a name.
+              {t('customCreatureBuilder.cloneDialog.startTyping')}
             </p>
           )}
           <div className="space-y-1">
@@ -136,7 +138,7 @@ export function CloneFromBestiaryDialog({ open, onOpenChange, onClone }: Props) 
                   disabled={cloning === row.id}
                   onClick={() => void handlePick(row)}
                 >
-                  {cloning === row.id ? 'Cloning…' : 'Clone'}
+                  {cloning === row.id ? t('customCreatureBuilder.cloneDialog.cloning') : t('customCreatureBuilder.cloneDialog.clone')}
                 </Button>
               </div>
             ))}
