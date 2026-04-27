@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,19 +27,20 @@ const EMPTY_STRIKE: Strike = {
 }
 
 export function StrikesTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Strikes</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.strikesTab.heading')}</h2>
       {form.strikes.length === 0 && (
         <div className="flex items-center justify-between p-4 rounded-md border border-dashed border-border/50 bg-secondary/20">
-          <p className="text-sm text-muted-foreground">No strikes defined.</p>
+          <p className="text-sm text-muted-foreground">{t('customCreatureBuilder.strikesTab.noStrikesDefined')}</p>
           <Button
             size="sm"
             onClick={() => dispatch({ type: 'ADD_STRIKE', strike: { ...EMPTY_STRIKE } })}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Add Strike
+            {t('customCreatureBuilder.strikesTab.addStrike')}
           </Button>
         </div>
       )}
@@ -64,7 +66,7 @@ export function StrikesTab({ state, dispatch }: BuilderTabsProps) {
           }
         >
           <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Strike
+          {t('customCreatureBuilder.strikesTab.addStrike')}
         </Button>
       )}
     </div>
@@ -80,12 +82,13 @@ interface StrikeEditorProps {
 }
 
 function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) {
+  const { t } = useTranslation('common')
   const [traitInput, setTraitInput] = useState('')
 
   function addTrait() {
-    const t = traitInput.trim()
-    if (!t || strike.traits.includes(t)) return
-    onChange({ ...strike, traits: [...strike.traits, t] })
+    const val = traitInput.trim()
+    if (!val || strike.traits.includes(val)) return
+    onChange({ ...strike, traits: [...strike.traits, val] })
     setTraitInput('')
   }
   function removeTrait(idx: number) {
@@ -121,12 +124,12 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
         <Input
           value={strike.name}
           onChange={(e) => onChange({ ...strike, name: e.target.value })}
-          placeholder="Strike name (e.g. Claw)"
+          placeholder={t('customCreatureBuilder.strikesTab.strikeNamePlaceholder')}
           className="flex-1"
         />
         <button
           type="button"
-          aria-label="Remove strike"
+          aria-label={t('customCreatureBuilder.strikesTab.removeStrikeAriaLabel')}
           onClick={onRemove}
           className="p-1 text-muted-foreground hover:text-destructive"
         >
@@ -137,7 +140,7 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label>Attack modifier</Label>
+            <Label>{t('customCreatureBuilder.strikesTab.attackModifier')}</Label>
             <BenchmarkHint
               stat="attackBonus"
               level={level}
@@ -154,15 +157,15 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label>Damage (first row)</Label>
+            <Label>{t('customCreatureBuilder.strikesTab.damage')}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] uppercase tracking-wider font-semibold text-muted-foreground border-border/60 bg-secondary/30 hover:bg-secondary/50"
-                  title="Set damage formula to benchmark tier"
+                  title={t('customCreatureBuilder.strikesTab.setToBenchmarkTitle')}
                 >
-                  Set to tier…
+                  {t('customCreatureBuilder.strikesTab.setToTier')}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[200px]">
@@ -206,7 +209,7 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
                 />
                 <button
                   type="button"
-                  aria-label="Remove damage row"
+                  aria-label={t('customCreatureBuilder.strikesTab.removeDamageRowAriaLabel')}
                   onClick={() => removeDamageRow(di)}
                   className="p-1 text-muted-foreground hover:text-destructive"
                   disabled={strike.damage.length <= 1}
@@ -217,19 +220,19 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
             ))}
             <Button size="sm" variant="outline" onClick={addDamageRow}>
               <Plus className="w-3 h-3 mr-1" />
-              Add damage row
+              {t('customCreatureBuilder.strikesTab.addDamageRow')}
             </Button>
           </div>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Traits</Label>
+        <Label>{t('customCreatureBuilder.strikesTab.traits')}</Label>
         <div className="flex items-center gap-2">
           <Input
             value={traitInput}
             onChange={(e) => setTraitInput(e.target.value)}
-            placeholder="Add trait…"
+            placeholder={t('customCreatureBuilder.strikesTab.addTraitPlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -238,20 +241,20 @@ function StrikeEditor({ strike, level, onChange, onRemove }: StrikeEditorProps) 
             }}
           />
           <Button size="sm" variant="outline" onClick={addTrait}>
-            Add
+            {t('customCreatureBuilder.strikesTab.addTraitButton')}
           </Button>
         </div>
         {strike.traits.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {strike.traits.map((t, ti) => (
+            {strike.traits.map((trait, ti) => (
               <span
-                key={`${t}-${ti}`}
+                key={`${trait}-${ti}`}
                 className="inline-flex items-center gap-1 text-xs rounded bg-secondary/50 border border-border/50 px-2 py-0.5"
               >
-                {t}
+                {trait}
                 <button
                   type="button"
-                  aria-label={`Remove ${t}`}
+                  aria-label={t('customCreatureBuilder.strikesTab.removeTraitAriaLabel', { name: trait })}
                   onClick={() => removeTrait(ti)}
                   className="hover:text-destructive"
                 >

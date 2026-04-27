@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
@@ -9,6 +10,7 @@ const COMMON_SPEEDS = ['land', 'fly', 'swim', 'burrow', 'climb'] as const
 type SpeedKey = typeof COMMON_SPEEDS[number]
 
 export function SpeedsSensesTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const [senseInput, setSenseInput] = useState('')
   const [langInput, setLangInput] = useState('')
@@ -50,10 +52,10 @@ export function SpeedsSensesTab({ state, dispatch }: BuilderTabsProps) {
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Speeds &amp; Senses</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.speedsSensesTab.heading')}</h2>
 
       <div className="space-y-2">
-        <Label>Speeds (feet)</Label>
+        <Label>{t('customCreatureBuilder.speedsSensesTab.speeds')}</Label>
         <div className="grid grid-cols-2 gap-3">
           {COMMON_SPEEDS.map((key) => {
             const raw = form.speeds[key]
@@ -74,23 +76,27 @@ export function SpeedsSensesTab({ state, dispatch }: BuilderTabsProps) {
       </div>
 
       <ChipList
-        label="Senses"
+        label={t('customCreatureBuilder.speedsSensesTab.senses')}
         input={senseInput}
         setInput={setSenseInput}
         items={form.senses}
         onAdd={addSense}
         onRemove={removeSense}
-        placeholder="e.g. darkvision, scent (imprecise) 30 ft"
+        placeholder={t('customCreatureBuilder.speedsSensesTab.sensesPlaceholder')}
+        removeAriaLabel={(name) => t('customCreatureBuilder.speedsSensesTab.removeAriaLabel', { name })}
+        addButtonLabel={t('customCreatureBuilder.speedsSensesTab.addButton')}
       />
 
       <ChipList
-        label="Languages"
+        label={t('customCreatureBuilder.speedsSensesTab.languages')}
         input={langInput}
         setInput={setLangInput}
         items={form.languages}
         onAdd={addLanguage}
         onRemove={removeLanguage}
-        placeholder="e.g. Common, Draconic"
+        placeholder={t('customCreatureBuilder.speedsSensesTab.languagesPlaceholder')}
+        removeAriaLabel={(name) => t('customCreatureBuilder.speedsSensesTab.removeAriaLabel', { name })}
+        addButtonLabel={t('customCreatureBuilder.speedsSensesTab.addButton')}
       />
     </div>
   )
@@ -104,9 +110,11 @@ interface ChipListProps {
   onAdd: () => void
   onRemove: (idx: number) => void
   placeholder: string
+  removeAriaLabel: (name: string) => string
+  addButtonLabel: string
 }
 
-function ChipList({ label, input, setInput, items, onAdd, onRemove, placeholder }: ChipListProps) {
+function ChipList({ label, input, setInput, items, onAdd, onRemove, placeholder, removeAriaLabel, addButtonLabel }: ChipListProps) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -123,7 +131,7 @@ function ChipList({ label, input, setInput, items, onAdd, onRemove, placeholder 
           }}
         />
         <Button size="sm" variant="outline" onClick={onAdd}>
-          Add
+          {addButtonLabel}
         </Button>
       </div>
       {items.length > 0 && (
@@ -136,7 +144,7 @@ function ChipList({ label, input, setInput, items, onAdd, onRemove, placeholder 
               {it}
               <button
                 type="button"
-                aria-label={`Remove ${it}`}
+                aria-label={removeAriaLabel(it)}
                 onClick={() => onRemove(i)}
                 className="hover:text-destructive"
               >

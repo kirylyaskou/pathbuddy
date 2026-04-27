@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
@@ -41,21 +42,22 @@ function newEntry(): SpellcastingSection {
 }
 
 export function SpellcastingTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const entries = form.spellcasting ?? []
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Spellcasting</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.spellcastingTab.heading')}</h2>
       {entries.length === 0 && (
         <div className="flex items-center justify-between p-4 rounded-md border border-dashed border-border/50 bg-secondary/20">
-          <p className="text-sm text-muted-foreground">No spellcasting entries.</p>
+          <p className="text-sm text-muted-foreground">{t('customCreatureBuilder.spellcastingTab.noSpellcastingEntries')}</p>
           <Button
             size="sm"
             onClick={() => dispatch({ type: 'ADD_SPELLCASTING_ENTRY', entry: newEntry() })}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Add Spellcasting Entry
+            {t('customCreatureBuilder.spellcastingTab.addEntry')}
           </Button>
         </div>
       )}
@@ -75,7 +77,7 @@ export function SpellcastingTab({ state, dispatch }: BuilderTabsProps) {
           onClick={() => dispatch({ type: 'ADD_SPELLCASTING_ENTRY', entry: newEntry() })}
         >
           <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Spellcasting Entry
+          {t('customCreatureBuilder.spellcastingTab.addEntry')}
         </Button>
       )}
     </div>
@@ -90,6 +92,7 @@ interface EditorProps {
 }
 
 function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorProps) {
+  const { t } = useTranslation('common')
   const [spellDialogOpen, setSpellDialogOpen] = useState(false)
   const [spellDialogRank, setSpellDialogRank] = useState(0)
 
@@ -169,7 +172,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
         />
         <button
           type="button"
-          aria-label="Remove entry"
+          aria-label={t('customCreatureBuilder.spellcastingTab.removeEntryAriaLabel')}
           onClick={onRemove}
           className="p-1 text-muted-foreground hover:text-destructive"
         >
@@ -179,7 +182,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Tradition</Label>
+          <Label>{t('customCreatureBuilder.spellcastingTab.tradition')}</Label>
           <Select
             value={entry.tradition}
             onValueChange={(v) => onChange({ ...entry, tradition: v })}
@@ -197,7 +200,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Cast type</Label>
+          <Label>{t('customCreatureBuilder.spellcastingTab.castType')}</Label>
           <Select
             value={entry.castType}
             onValueChange={(v) => onChange({ ...entry, castType: v })}
@@ -216,7 +219,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label>Spell DC</Label>
+            <Label>{t('customCreatureBuilder.spellcastingTab.spellDc')}</Label>
             <BenchmarkHint
               stat="spellDC"
               level={level}
@@ -233,7 +236,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label>Spell attack</Label>
+            <Label>{t('customCreatureBuilder.spellcastingTab.spellAttack')}</Label>
             <BenchmarkHint
               stat="spellAttack"
               level={level}
