@@ -19,6 +19,7 @@ import {
 } from '@/shared/ui/select'
 import { getPregenCharacters, type CharacterRecord } from '@/shared/api'
 import { filterPregens, derivePregenSources, sourceLabel } from '../model/filter'
+import { useTranslation } from 'react-i18next'
 
 // shared picker consumed by:
 //   - Characters page (mode='pc') → instantiates a user-owned PC.
@@ -36,6 +37,7 @@ interface Props {
 const ALL_SOURCES = '__all__'
 
 export function PregenPickerDialog({ open, onOpenChange, onPick, mode }: Props) {
+  const { t } = useTranslation('common')
   const [rows, setRows] = useState<CharacterRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
@@ -93,11 +95,8 @@ export function PregenPickerDialog({ open, onOpenChange, onPick, mode }: Props) 
     }
   }
 
-  const title = mode === 'pc' ? 'Use Pregen as Character' : 'Use Pregen as Enemy'
-  const description =
-    mode === 'pc'
-      ? 'Pick a Paizo iconic or pregen to copy into your characters.'
-      : 'Pick a Paizo iconic or pregen to clone into your custom creatures.'
+  const title = mode === 'pc' ? t('pregen.pcTitle') : t('pregen.npcTitle')
+  const description = mode === 'pc' ? t('pregen.pcDesc') : t('pregen.npcDesc')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,17 +110,17 @@ export function PregenPickerDialog({ open, onOpenChange, onPick, mode }: Props) 
           <SearchInput
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search pregens by name…"
+            placeholder={t('pregen.searchPlaceholder')}
             className="h-8 text-sm bg-secondary/30"
             autoFocus
           />
           {sources.length > 1 && (
             <Select value={source} onValueChange={setSource}>
-              <SelectTrigger className="h-8 text-xs" aria-label="Pregen source filter">
+              <SelectTrigger className="h-8 text-xs" aria-label={t('pregen.sourceFilterAria')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_SOURCES}>All sources</SelectItem>
+                <SelectItem value={ALL_SOURCES}>{t('pregen.allSources')}</SelectItem>
                 {sources.map((token) => (
                   <SelectItem key={token} value={token}>
                     {sourceLabel(token)}
@@ -134,16 +133,16 @@ export function PregenPickerDialog({ open, onOpenChange, onPick, mode }: Props) 
 
         <ScrollArea className="flex-1 p-2 min-h-0">
           {loading && (
-            <p className="text-sm text-muted-foreground text-center py-8">Loading pregens…</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('pregen.loading')}</p>
           )}
           {!loading && rows.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No pregens synced yet. Run sync to import Paizo iconics.
+              {t('pregen.noPregens')}
             </p>
           )}
           {!loading && rows.length > 0 && filtered.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No pregens match the current filter.
+              {t('pregen.noMatch')}
             </p>
           )}
           <div className="space-y-1">

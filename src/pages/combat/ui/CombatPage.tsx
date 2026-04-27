@@ -300,7 +300,7 @@ export function CombatPage() {
   const splitMode = useEncounterTabsStore((s) => s.splitMode)
   const setActiveTab = useEncounterTabsStore((s) => s.setActiveTab)
   const selectedCombatant = selectedId ? combatants.find((x) => x.id === selectedId) : null
-  const spellcastingEncounter = isEncounterBacked && combatId && selectedId
+  const spellcastingEncounter = combatId && selectedId
     ? {
         encounterId: combatId,
         combatantId: selectedId,

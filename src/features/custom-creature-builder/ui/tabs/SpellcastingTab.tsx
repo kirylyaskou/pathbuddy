@@ -167,7 +167,7 @@ function SpellcastingEntryEditor({ entry, level, onChange, onRemove }: EditorPro
         <Input
           value={entry.entryName}
           onChange={(e) => onChange({ ...entry, entryName: e.target.value })}
-          placeholder="Entry name"
+          placeholder={t('customCreatureBuilder.spellcastingTab.entryNamePlaceholder')}
           className="flex-1"
         />
         <button

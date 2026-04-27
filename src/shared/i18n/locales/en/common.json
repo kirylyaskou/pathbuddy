@@ -626,7 +626,8 @@
       "castType": "Cast Type",
       "spellDc": "Spell DC",
       "spellAttack": "Spell Attack",
-      "removeEntryAriaLabel": "Remove spellcasting entry"
+      "removeEntryAriaLabel": "Remove spellcasting entry",
+      "entryNamePlaceholder": "Entry name"
     },
     "abilitiesTab": {
       "heading": "Special Abilities",
@@ -869,5 +870,101 @@
       "rollN": "Roll {{n}}",
       "rollD20": "Roll d20"
     }
+  },
+  "bestiaryFilter": {
+    "lvl": "Lvl",
+    "min": "Min",
+    "max": "Max",
+    "allRarities": "All Rarities",
+    "allTypes": "All Types",
+    "allSources": "All Sources",
+    "reset": "Reset",
+    "rarity": "Rarity",
+    "type": "Type",
+    "source": "Source"
+  },
+  "commandPalette": {
+    "searchPages": "Search pages...",
+    "noResults": "No results.",
+    "pagesGroup": "Pages"
+  },
+  "pregen": {
+    "pcTitle": "Use Pregen as Character",
+    "pcDesc": "Pick a Paizo iconic or pregen to copy into your characters.",
+    "npcTitle": "Use Pregen as Enemy",
+    "npcDesc": "Pick a Paizo iconic or pregen to clone into your custom creatures.",
+    "searchPlaceholder": "Search pregens by name…",
+    "allSources": "All sources",
+    "loading": "Loading pregens…",
+    "noPregens": "No pregens synced yet. Run sync to import Paizo iconics.",
+    "noMatch": "No pregens match the current filter.",
+    "sourceFilterAria": "Pregen source filter"
+  },
+  "importEncounter": {
+    "title": "Import Encounter",
+    "bestiaryLookupName": "Bestiary lookup name",
+    "stepPickDesc": "Drop a JSON file or browse. Supported: PathMaid bundle, Pathmaiden export, Pathfinder Dashboard.",
+    "stepPreviewDesc": "Detected format: {{format}}. Review combatant matches, then Import.",
+    "committing": "Committing…",
+    "done": "Done.",
+    "dropHint": "Drop JSON file here",
+    "orClick": "or click to browse",
+    "parsing": "Parsing…",
+    "back": "Back",
+    "import": "Import {{count}}",
+    "toImport": "{{count}} to import",
+    "skippedSuffix": " · {{count}} skipped",
+    "importing": "Importing…",
+    "imported": "Imported."
+  },
+  "characterSheet": {
+    "coreStats": "Core Stats",
+    "abilityScores": "Ability Scores",
+    "savesPerception": "Saves & Perception",
+    "skills": "Skills",
+    "armor": "Armor",
+    "weapons": "Weapons",
+    "inventory": "Inventory",
+    "feats": "Feats",
+    "classFeatures": "Class Features",
+    "noEquipment": "No equipment recorded",
+    "noSpellcasting": "No spellcasting",
+    "noFeats": "No feats recorded",
+    "couldNotRead": "Could not read character data.",
+    "dmNotes": "DM notes for this character...",
+    "tabCore": "Core & Skills",
+    "tabEquipment": "Equipment",
+    "tabSpells": "Spells",
+    "tabFeats": "Feats",
+    "tabNotes": "Notes"
+  },
+  "importCharacter": {
+    "title": "Import Character",
+    "tabFile": "File",
+    "tabPaste": "Paste JSON",
+    "dropHint": "Drop your Pathbuilder export here",
+    "orClick": "or click to browse",
+    "pastePlaceholder": "Paste Pathbuilder JSON here...",
+    "importButton": "Import Character"
+  },
+  "deleteCharacter": {
+    "title": "Delete {{name}}?",
+    "description": "This action cannot be undone.",
+    "keep": "Keep Character",
+    "delete": "Delete"
+  },
+  "characterCard": {
+    "level": "Level {{level}}",
+    "viewSheet": "View sheet",
+    "addToCombat": "Add to combat",
+    "delete": "Delete"
+  },
+  "pcCombatCard": {
+    "skills": "Skills",
+    "strikes": "Strikes",
+    "damage": "Damage",
+    "featsFeatures": "Feats & Features",
+    "spellcasting": "Spellcasting",
+    "attack": "Attack"
   }
 }

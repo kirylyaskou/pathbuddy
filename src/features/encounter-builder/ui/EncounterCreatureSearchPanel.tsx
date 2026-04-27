@@ -164,7 +164,7 @@ export function EncounterCreatureSearchPanel({ encounterId, currentCombatants }:
               <div key={row.id}>
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/30">
                   <span className="flex-1 text-sm truncate">{row.name}</span>
-                  <span className="text-xs text-muted-foreground font-mono">Lv{baseLevel}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{t('bestiaryFilter.lvl')}{baseLevel}</span>
                   {/* [W][+][E] button group */}
                   <div className="flex gap-0.5">
                     <button

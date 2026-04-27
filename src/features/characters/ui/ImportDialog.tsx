@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Textarea } from '@/shared/ui/textarea'
 import { upsertCharacter } from '@/shared/api/characters'
 import type { PathbuilderExport } from '@engine'
+import { useTranslation } from 'react-i18next'
 
 interface ImportDialogProps {
   open: boolean
@@ -34,6 +35,7 @@ function validateExport(data: unknown): PathbuilderExport {
 }
 
 export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProps) {
+  const { t } = useTranslation('common')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeTab, setActiveTab] = useState<'file' | 'paste'>('file')
   const [pasteValue, setPasteValue] = useState('')
@@ -117,12 +119,12 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md flex flex-col max-h-[85vh]">
         <DialogHeader>
-          <DialogTitle>Import Character</DialogTitle>
+          <DialogTitle>{t('importCharacter.title')}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="file" onValueChange={(v) => { setActiveTab(v as 'file' | 'paste'); setError(null) }} className="flex flex-col flex-1 overflow-y-auto min-h-0">
           <TabsList className="w-full">
-            <TabsTrigger value="file" className="flex-1">File</TabsTrigger>
-            <TabsTrigger value="paste" className="flex-1">Paste JSON</TabsTrigger>
+            <TabsTrigger value="file" className="flex-1">{t('importCharacter.tabFile')}</TabsTrigger>
+            <TabsTrigger value="paste" className="flex-1">{t('importCharacter.tabPaste')}</TabsTrigger>
           </TabsList>
           <TabsContent value="file" className="mt-3">
             <div
@@ -137,8 +139,8 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Drop your Pathbuilder export here</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">or click to browse</p>
+              <p className="text-sm text-muted-foreground">{t('importCharacter.dropHint')}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t('importCharacter.orClick')}</p>
             </div>
             <input
               type="file"
@@ -151,7 +153,7 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
           </TabsContent>
           <TabsContent value="paste" className="mt-3">
             <Textarea
-              placeholder="Paste Pathbuilder JSON here..."
+              placeholder={t('importCharacter.pastePlaceholder')}
               className="h-48 max-h-72 font-mono text-xs resize-none overflow-y-auto"
               value={pasteValue}
               onChange={(e) => setPasteValue(e.target.value)}
@@ -161,11 +163,11 @@ export function ImportDialog({ open, onOpenChange, onSuccess }: ImportDialogProp
         </Tabs>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Close
+            {t('common.close')}
           </Button>
           <Button onClick={handleImportClick} disabled={importing}>
             {importing && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-            Import Character
+            {t('importCharacter.importButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

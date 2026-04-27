@@ -11,10 +11,12 @@ import { formatModifier } from '@/shared/lib/format'
 import { profRankLabel, PROF_RANK_CLASS } from '@/shared/lib/pf2e-display'
 import { SpellInlineCard } from '@/entities/spell'
 import { FeatInlineCard } from '@/entities/feat'
+import { useTranslation } from 'react-i18next'
 
 // ── Internal tab content stubs (filled in by Plans 02 and 03) ────────────
 
 function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
+  const { t } = useTranslation('common')
   const maxHp = calculatePCMaxHP(build)
   const ac = build.acTotal.acProfBonus + build.acTotal.acAbilityBonus + build.acTotal.acItemBonus
   const speed = build.attributes.speed + build.attributes.speedBonus
@@ -43,7 +45,7 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
 
       {/* HP / AC / Speed chips */}
       <div>
-        <h3 className="text-base font-semibold mb-3">Core Stats</h3>
+        <h3 className="text-base font-semibold mb-3">{t('characterSheet.coreStats')}</h3>
         <div className="flex gap-2">
           {([
             ['HP', `${maxHp} / ${maxHp}`],
@@ -60,7 +62,7 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
 
       {/* Ability scores 3×2 grid */}
       <div>
-        <h3 className="text-base font-semibold mb-3">Ability Scores</h3>
+        <h3 className="text-base font-semibold mb-3">{t('characterSheet.abilityScores')}</h3>
         <div className="grid grid-cols-3 gap-2">
           {ABILITY_DISPLAY.map(([label, key]) => {
             const score = abilities[key]
@@ -78,7 +80,7 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
 
       {/* Saves & Perception */}
       <div>
-        <h3 className="text-base font-semibold mb-3">Saves & Perception</h3>
+        <h3 className="text-base font-semibold mb-3">{t('characterSheet.savesPerception')}</h3>
         <div className="flex gap-2 flex-wrap">
           {saves.map(({ label, value }) => (
             <div key={label} className="flex-1 min-w-[60px] rounded-md border border-border bg-card px-3 py-2 flex flex-col items-center">
@@ -91,7 +93,7 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
 
       {/* Skills list */}
       <div>
-        <h3 className="text-base font-semibold mb-3">Skills</h3>
+        <h3 className="text-base font-semibold mb-3">{t('characterSheet.skills')}</h3>
         <div className="divide-y divide-border">
           {sortedSkills.map((skill) => {
             const abilityKey = SKILL_ABILITY[skill.name.toLowerCase()] ?? 'int'
@@ -128,6 +130,7 @@ function CoreSkillsContent({ build }: { build: PathbuilderBuild }) {
 }
 
 function EquipmentContent({ build }: { build: PathbuilderBuild }) {
+  const { t } = useTranslation('common')
   const armor = build.armor ?? []
   const weapons = build.weapons ?? []
   const equipment = build.equipment ?? []
@@ -135,7 +138,7 @@ function EquipmentContent({ build }: { build: PathbuilderBuild }) {
   if (armor.length === 0 && weapons.length === 0 && equipment.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-muted-foreground py-8">
-        No equipment recorded
+        {t('characterSheet.noEquipment')}
       </div>
     )
   }
@@ -145,7 +148,7 @@ function EquipmentContent({ build }: { build: PathbuilderBuild }) {
 
       {armor.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">Armor</h3>
+          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">{t('characterSheet.armor')}</h3>
           <div className="space-y-1">
             {armor.map((a, i) => (
               <div key={i} className="text-sm flex items-baseline gap-1">
@@ -165,7 +168,7 @@ function EquipmentContent({ build }: { build: PathbuilderBuild }) {
 
       {weapons.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">Weapons</h3>
+          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">{t('characterSheet.weapons')}</h3>
           <div className="space-y-1">
             {weapons.map((w, i) => (
               <div key={i} className="text-sm flex items-baseline gap-1">
@@ -185,7 +188,7 @@ function EquipmentContent({ build }: { build: PathbuilderBuild }) {
 
       {equipment.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">Inventory</h3>
+          <h3 className="text-base font-semibold border-b border-border pb-1 mb-2">{t('characterSheet.inventory')}</h3>
           <div className="space-y-0.5">
             {equipment.map(([name, qty, container], idx) => (
               <div key={idx} className="text-sm flex justify-between items-baseline">
@@ -207,12 +210,13 @@ function EquipmentContent({ build }: { build: PathbuilderBuild }) {
 }
 
 function SpellsContent({ build }: { build: PathbuilderBuild }) {
+  const { t } = useTranslation('common')
   const casters = build.spellCasters ?? []
 
   if (casters.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-muted-foreground py-8">
-        No spellcasting
+        {t('characterSheet.noSpellcasting')}
       </div>
     )
   }
@@ -271,6 +275,7 @@ function SpellsContent({ build }: { build: PathbuilderBuild }) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function FeatsContent({ build }: { build: PathbuilderBuild }) {
+  const { t } = useTranslation('common')
   const feats = build.feats ?? []
   const specials = (build.specials ?? []).filter(
     (s) => s !== 'Low-Light Vision' && s !== 'Darkvision'
@@ -279,7 +284,7 @@ function FeatsContent({ build }: { build: PathbuilderBuild }) {
   if (feats.length === 0 && specials.length === 0) {
     return (
       <div className="flex items-center justify-center text-sm text-muted-foreground py-8">
-        No feats recorded
+        {t('characterSheet.noFeats')}
       </div>
     )
   }
@@ -289,7 +294,7 @@ function FeatsContent({ build }: { build: PathbuilderBuild }) {
 
       {feats.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold mb-2">Feats</h3>
+          <h3 className="text-base font-semibold mb-2">{t('characterSheet.feats')}</h3>
           <div className="space-y-1">
             {feats.map(([name, , type, level, note], i) => (
               <FeatInlineCard
@@ -306,7 +311,7 @@ function FeatsContent({ build }: { build: PathbuilderBuild }) {
 
       {specials.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold mb-2">Class Features</h3>
+          <h3 className="text-base font-semibold mb-2">{t('characterSheet.classFeatures')}</h3>
           <div className="space-y-1">
             {specials.map((name, i) => (
               <FeatInlineCard key={i} featName={name} />
@@ -320,6 +325,7 @@ function FeatsContent({ build }: { build: PathbuilderBuild }) {
 }
 
 function NotesContent({ character }: { character: CharacterRecord }) {
+  const { t } = useTranslation('common')
   const [value, setValue] = useState(character.notes ?? '')
 
   async function handleBlur() {
@@ -330,7 +336,7 @@ function NotesContent({ character }: { character: CharacterRecord }) {
     <div>
       <Textarea
         className="w-full resize-none min-h-[200px] p-2 text-sm"
-        placeholder="DM notes for this character..."
+        placeholder={t('characterSheet.dmNotes')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleBlur}
@@ -347,6 +353,7 @@ interface PCSheetPanelProps {
 }
 
 export function PCSheetPanel({ character, onClose }: PCSheetPanelProps) {
+  const { t } = useTranslation('common')
   const build = useMemo(() => {
     if (!character) return null
     try {
@@ -372,16 +379,16 @@ export function PCSheetPanel({ character, onClose }: PCSheetPanelProps) {
 
         {build === null && character !== null ? (
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-            Could not read character data.
+            {t('characterSheet.couldNotRead')}
           </div>
         ) : build ? (
           <Tabs defaultValue="core" className="flex flex-col flex-1 min-h-0">
             <TabsList className="w-full rounded-none border-b border-border h-auto shrink-0 gap-0">
-              <TabsTrigger value="core" className="text-xs flex-1">Core & Skills</TabsTrigger>
-              <TabsTrigger value="equipment" className="text-xs flex-1">Equipment</TabsTrigger>
-              <TabsTrigger value="spells" className="text-xs flex-1">Spells</TabsTrigger>
-              <TabsTrigger value="feats" className="text-xs flex-1">Feats</TabsTrigger>
-              <TabsTrigger value="notes" className="text-xs flex-1">Notes</TabsTrigger>
+              <TabsTrigger value="core" className="text-xs flex-1">{t('characterSheet.tabCore')}</TabsTrigger>
+              <TabsTrigger value="equipment" className="text-xs flex-1">{t('characterSheet.tabEquipment')}</TabsTrigger>
+              <TabsTrigger value="spells" className="text-xs flex-1">{t('characterSheet.tabSpells')}</TabsTrigger>
+              <TabsTrigger value="feats" className="text-xs flex-1">{t('characterSheet.tabFeats')}</TabsTrigger>
+              <TabsTrigger value="notes" className="text-xs flex-1">{t('characterSheet.tabNotes')}</TabsTrigger>
             </TabsList>
             <ScrollArea className="flex-1">
               <div className="p-4">

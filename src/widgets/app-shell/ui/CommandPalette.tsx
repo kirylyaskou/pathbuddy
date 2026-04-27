@@ -5,6 +5,7 @@ import {
   CommandItem, CommandList,
 } from '@/shared/ui/command'
 import { NAV_ITEMS } from '@/shared/config/nav'
+import { useTranslation } from 'react-i18next'
 
 interface CommandPaletteProps {
   open: boolean
@@ -12,6 +13,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -32,10 +34,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search pages..." />
+      <CommandInput placeholder={t('commandPalette.searchPages')} />
       <CommandList>
-        <CommandEmpty>No results.</CommandEmpty>
-        <CommandGroup heading="Pages">
+        <CommandEmpty>{t('commandPalette.noResults')}</CommandEmpty>
+        <CommandGroup heading={t('commandPalette.pagesGroup')}>
           {NAV_ITEMS.map((page) => (
             <CommandItem
               key={page.href}

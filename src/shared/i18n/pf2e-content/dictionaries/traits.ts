@@ -148,14 +148,15 @@ for (const [k, v] of Object.entries(DAMAGE_TYPE_LABELS_RU)) {
 }
 
 // Weapon group labels — `spear`, `dart`, `sword`, … emitted by Foundry as
-// `system.group` on weapon items. Live in `Weapon.Group.*` in pf2e.json
-// under nested namespace; harvest flat.
-const WEAPON_GROUPS = (ROOT as { Weapon?: { Group?: Record<string, string> } }).Weapon?.Group
-if (WEAPON_GROUPS) {
-  for (const [k, v] of Object.entries(WEAPON_GROUPS)) {
-    if (typeof v === 'string' && !TRAIT_LABELS.has(k.toLowerCase())) {
-      TRAIT_LABELS.set(k.toLowerCase(), v)
-    }
+// `system.group` on weapon items. Stored as flat keys `WeaponGroup<Pascal>`
+// in pf2e.json (e.g. WeaponGroupSword → slug `sword`).
+for (const [key, value] of Object.entries(ROOT)) {
+  if (typeof value !== 'string') continue
+  // WeaponGroupLabel is a UI heading ("Группа"), not a weapon group slug — skip it.
+  const m = /^WeaponGroup([A-Z][a-z]+)$/.exec(key)
+  if (m && m[1] !== 'Label' && m[1] !== 'Groups') {
+    const slug = m[1].toLowerCase()
+    if (!TRAIT_LABELS.has(slug)) TRAIT_LABELS.set(slug, value)
   }
 }
 

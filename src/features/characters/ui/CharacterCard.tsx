@@ -2,6 +2,7 @@ import { Swords, X, Eye } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import type { CharacterRecord } from '@/shared/api/characters'
+import { useTranslation } from 'react-i18next'
 
 interface CharacterCardProps {
   character: CharacterRecord
@@ -24,6 +25,7 @@ function sourceLabel(src: string | null): string | null {
 }
 
 export function CharacterCard({ character, onAddToCombat, onDelete, onView }: CharacterCardProps) {
+  const { t } = useTranslation('common')
   const badge = sourceLabel(character.sourceAdventure)
   return (
     <div
@@ -40,7 +42,7 @@ export function CharacterCard({ character, onAddToCombat, onDelete, onView }: Ch
       )}
       <p className="font-semibold text-sm truncate">{character.name}</p>
       <p className="text-xs text-muted-foreground mt-0.5">
-        {character.class ?? '—'} • Level {character.level ?? '?'}
+        {character.class ?? '—'} • {t('characterCard.level', { level: character.level ?? '?' })}
       </p>
       <p className="text-xs text-muted-foreground">{character.ancestry ?? '—'}</p>
       <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -49,7 +51,7 @@ export function CharacterCard({ character, onAddToCombat, onDelete, onView }: Ch
             size="icon"
             variant="ghost"
             className="h-6 w-6"
-            title="View sheet"
+            title={t('characterCard.viewSheet')}
             onClick={(e) => { e.stopPropagation(); onView(character) }}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -59,7 +61,7 @@ export function CharacterCard({ character, onAddToCombat, onDelete, onView }: Ch
           size="icon"
           variant="ghost"
           className="h-6 w-6"
-          title="Add to combat"
+          title={t('characterCard.addToCombat')}
           onClick={(e) => { e.stopPropagation(); onAddToCombat(character) }}
         >
           <Swords className="w-3.5 h-3.5" />
@@ -68,7 +70,7 @@ export function CharacterCard({ character, onAddToCombat, onDelete, onView }: Ch
           size="icon"
           variant="ghost"
           className="h-6 w-6 text-destructive hover:text-destructive"
-          title="Delete"
+          title={t('characterCard.delete')}
           onClick={(e) => { e.stopPropagation(); onDelete(character) }}
         >
           <X className="w-3.5 h-3.5" />

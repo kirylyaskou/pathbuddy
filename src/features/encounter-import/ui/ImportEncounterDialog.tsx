@@ -12,6 +12,7 @@ import type { MatchedEncounter, ImportFormat } from '../lib/types'
 import { useEncounterBuilderStore } from '@/features/encounter-builder'
 import { useEncounterStore } from '@/entities/encounter'
 import { listEncounters } from '@/shared/api'
+import { useTranslation } from 'react-i18next'
 
 type Step = 'pick' | 'preview' | 'committing' | 'done'
 
@@ -19,6 +20,7 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
+  const { t } = useTranslation('common')
   const [step, setStep] = useState<Step>('pick')
   const [format, setFormat] = useState<ImportFormat>('unknown')
   const [matched, setMatched] = useState<MatchedEncounter[]>([])
@@ -118,13 +120,13 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
         <DialogHeader className="px-4 pt-4 pb-2">
           <DialogTitle className="text-sm flex items-center gap-2">
             <Upload className="w-4 h-4" />
-            Import Encounter
+            {t('importEncounter.title')}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {step === 'pick' && 'Drop a JSON file or browse. Supported: PathMaid bundle, Pathmaiden export, Pathfinder Dashboard.'}
-            {step === 'preview' && `Detected format: ${format}. Review combatant matches, then Import.`}
-            {step === 'committing' && 'Committing…'}
-            {step === 'done' && 'Done.'}
+            {step === 'pick' && t('importEncounter.stepPickDesc')}
+            {step === 'preview' && t('importEncounter.stepPreviewDesc', { format })}
+            {step === 'committing' && t('importEncounter.committing')}
+            {step === 'done' && t('importEncounter.done')}
           </DialogDescription>
         </DialogHeader>
 
@@ -144,8 +146,8 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
               }}
             >
               <FileJson className="w-8 h-8 text-muted-foreground" />
-              <p className="text-sm font-medium">Drop JSON file here</p>
-              <p className="text-xs text-muted-foreground">or click to browse</p>
+              <p className="text-sm font-medium">{t('importEncounter.dropHint')}</p>
+              <p className="text-xs text-muted-foreground">{t('importEncounter.orClick')}</p>
             </div>
             <input
               ref={inputRef}
@@ -165,7 +167,7 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
               </p>
             )}
             {busy && (
-              <p className="mt-3 text-xs text-muted-foreground">Parsing…</p>
+              <p className="mt-3 text-xs text-muted-foreground">{t('importEncounter.parsing')}</p>
             )}
           </div>
         )}
@@ -191,17 +193,17 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
             </ScrollArea>
             <div className="border-t border-border/40 px-4 py-3 flex items-center gap-3">
               <p className="text-xs text-muted-foreground flex-1">
-                {totalImportable} to import{totalSkipped > 0 ? ` · ${totalSkipped} skipped` : ''}
+                {t('importEncounter.toImport', { count: totalImportable })}{totalSkipped > 0 ? t('importEncounter.skippedSuffix', { count: totalSkipped }) : ''}
               </p>
               <Button variant="outline" size="sm" onClick={() => setStep('pick')}>
-                Back
+                {t('importEncounter.back')}
               </Button>
               <Button
                 size="sm"
                 onClick={handleCommit}
                 disabled={totalImportable === 0 || busy}
               >
-                Import {totalImportable || ''}
+                {t('importEncounter.import', { count: totalImportable || '' })}
               </Button>
             </div>
             {error && (
@@ -215,7 +217,7 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
 
         {(step === 'committing' || step === 'done') && (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            {step === 'committing' ? 'Importing…' : 'Imported.'}
+            {step === 'committing' ? t('importEncounter.importing') : t('importEncounter.imported')}
           </div>
         )}
       </DialogContent>
@@ -224,6 +226,7 @@ export function ImportEncounterDialog({ open, onOpenChange }: {
 }
 
 function CombatantMatchRow({ matched }: { matched: MatchedEncounter['combatants'][number] }) {
+  const { t } = useTranslation('common')
   const { parsed, match } = matched
   const badge = getBadge(match)
   return (
@@ -240,7 +243,7 @@ function CombatantMatchRow({ matched }: { matched: MatchedEncounter['combatants'
       </span>
       <span className="flex-1 truncate">{parsed.displayName}</span>
       {parsed.lookupName !== parsed.displayName && (
-        <span className="text-[10px] text-muted-foreground/70 font-mono truncate" title="Bestiary lookup name">
+        <span className="text-[10px] text-muted-foreground/70 font-mono truncate" title={t('importEncounter.bestiaryLookupName')}>
           ({parsed.lookupName})
         </span>
       )}

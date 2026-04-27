@@ -1,4 +1,5 @@
 import type { AppliedRoleValues } from '@engine'
+import { getBenchmark, classifyStat } from '@engine'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
 
 export interface BuilderState {
@@ -40,6 +41,7 @@ export type BuilderAction =
   | { type: 'UPDATE_SPELLCASTING_ENTRY'; index: number; entry: NonNullable<CreatureStatBlockData['spellcasting']>[number] }
   | { type: 'REMOVE_SPELLCASTING_ENTRY'; index: number }
   | { type: 'APPLY_ROLE_VALUES'; values: AppliedRoleValues }
+  | { type: 'SET_LEVEL_AND_RESCALE'; level: number }
 
 export function builderReducer(state: BuilderState, action: BuilderAction): BuilderState {
   switch (action.type) {
@@ -285,6 +287,75 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
       }
 
       return { form: patched }
+    }
+    case 'SET_LEVEL_AND_RESCALE': {
+      const oldLevel = state.form.level
+      const newLevel = action.level
+      if (oldLevel === newLevel) return state
+
+      const f = state.form
+
+      // Rescale each simple numeric stat by preserving its current tier at the new level.
+      function rescale(stat: Parameters<typeof classifyStat>[0], value: number): number {
+        const tier = classifyStat(stat, oldLevel, value)
+        return getBenchmark(stat, newLevel, tier)
+      }
+
+      const rescaledStrikes = f.strikes.map((s) => ({
+        ...s,
+        modifier: (() => {
+          const tier = classifyStat('attackBonus', oldLevel, s.modifier)
+          return getBenchmark('attackBonus', newLevel, tier)
+        })(),
+      }))
+
+      const rescaledSpellcasting = (f.spellcasting ?? []).map((entry) => ({
+        ...entry,
+        ...(entry.spellDc !== undefined
+          ? { spellDc: (() => {
+              const tier = classifyStat('spellDC', oldLevel, entry.spellDc)
+              return getBenchmark('spellDC', newLevel, tier)
+            })() }
+          : {}),
+        ...(entry.spellAttack !== undefined
+          ? { spellAttack: (() => {
+              const tier = classifyStat('spellAttack', oldLevel, entry.spellAttack)
+              return getBenchmark('spellAttack', newLevel, tier)
+            })() }
+          : {}),
+      }))
+
+      const rescaledSkills = f.skills.map((s) => ({
+        ...s,
+        modifier: (() => {
+          const tier = classifyStat('skill', oldLevel, s.modifier)
+          return getBenchmark('skill', newLevel, tier)
+        })(),
+      }))
+
+      return {
+        form: {
+          ...f,
+          level: newLevel,
+          ac: rescale('ac', f.ac),
+          hp: rescale('hp', f.hp),
+          fort: rescale('save', f.fort),
+          ref: rescale('save', f.ref),
+          will: rescale('save', f.will),
+          perception: rescale('perception', f.perception),
+          abilityMods: {
+            str: rescale('abilityMod', f.abilityMods.str),
+            dex: rescale('abilityMod', f.abilityMods.dex),
+            con: rescale('abilityMod', f.abilityMods.con),
+            int: rescale('abilityMod', f.abilityMods.int),
+            wis: rescale('abilityMod', f.abilityMods.wis),
+            cha: rescale('abilityMod', f.abilityMods.cha),
+          },
+          strikes: rescaledStrikes,
+          spellcasting: rescaledSpellcasting,
+          skills: rescaledSkills,
+        },
+      }
     }
   }
 }

@@ -646,7 +646,8 @@
       "castType": "Тип каста",
       "spellDc": "Сл заклинаний",
       "spellAttack": "Атака заклинаниями",
-      "removeEntryAriaLabel": "Убрать запись заклинаний"
+      "removeEntryAriaLabel": "Убрать запись заклинаний",
+      "entryNamePlaceholder": "Название записи"
     },
     "abilitiesTab": {
       "heading": "Особые способности",
@@ -892,5 +893,101 @@
       "rollN": "Бросок {{n}}",
       "rollD20": "Бросок d20"
     }
+  },
+  "bestiaryFilter": {
+    "lvl": "Ур.",
+    "min": "Мин",
+    "max": "Макс",
+    "allRarities": "Все редкости",
+    "allTypes": "Все типы",
+    "allSources": "Все источники",
+    "reset": "Сбросить",
+    "rarity": "Редкость",
+    "type": "Тип",
+    "source": "Источник"
+  },
+  "commandPalette": {
+    "searchPages": "Поиск страниц...",
+    "noResults": "Нет результатов.",
+    "pagesGroup": "Страницы"
+  },
+  "pregen": {
+    "pcTitle": "Использовать прегена как персонажа",
+    "pcDesc": "Выберите икону Paizo или прегена для копирования в персонажей.",
+    "npcTitle": "Использовать прегена как врага",
+    "npcDesc": "Выберите икону Paizo или прегена для клонирования в своих существ.",
+    "searchPlaceholder": "Поиск преген по имени…",
+    "allSources": "Все источники",
+    "loading": "Загрузка преген…",
+    "noPregens": "Прегены не синхронизированы. Запустите синхронизацию для импорта.",
+    "noMatch": "Нет преген по текущему фильтру.",
+    "sourceFilterAria": "Фильтр источника преген"
+  },
+  "importEncounter": {
+    "title": "Импорт энкаунтера",
+    "bestiaryLookupName": "Имя в бестиарии",
+    "stepPickDesc": "Перетащите JSON или выберите файл. Поддерживается: PathMaid bundle, Pathmaiden, Pathfinder Dashboard.",
+    "stepPreviewDesc": "Формат: {{format}}. Проверьте совпадения, затем импортируйте.",
+    "committing": "Сохраняем…",
+    "done": "Готово.",
+    "dropHint": "Перетащите JSON сюда",
+    "orClick": "или нажмите для выбора",
+    "parsing": "Разбор…",
+    "back": "Назад",
+    "import": "Импорт {{count}}",
+    "toImport": "{{count}} для импорта",
+    "skippedSuffix": " · {{count}} пропущено",
+    "importing": "Импортируем…",
+    "imported": "Импортировано."
+  },
+  "characterSheet": {
+    "coreStats": "Основные параметры",
+    "abilityScores": "Характеристики",
+    "savesPerception": "Спасброски и восприятие",
+    "skills": "Навыки",
+    "armor": "Доспехи",
+    "weapons": "Оружие",
+    "inventory": "Инвентарь",
+    "feats": "Черты",
+    "classFeatures": "Черты класса",
+    "noEquipment": "Снаряжение не записано",
+    "noSpellcasting": "Нет магии",
+    "noFeats": "Черты не записаны",
+    "couldNotRead": "Не удалось прочитать данные персонажа.",
+    "dmNotes": "Заметки Мастера...",
+    "tabCore": "Осн. и Навыки",
+    "tabEquipment": "Снаряжение",
+    "tabSpells": "Заклинания",
+    "tabFeats": "Черты",
+    "tabNotes": "Заметки"
+  },
+  "importCharacter": {
+    "title": "Импорт персонажа",
+    "tabFile": "Файл",
+    "tabPaste": "Вставить JSON",
+    "dropHint": "Перетащите экспорт Pathbuilder сюда",
+    "orClick": "или нажмите для выбора",
+    "pastePlaceholder": "Вставьте JSON Pathbuilder сюда...",
+    "importButton": "Импортировать"
+  },
+  "deleteCharacter": {
+    "title": "Удалить {{name}}?",
+    "description": "Это действие нельзя отменить.",
+    "keep": "Оставить",
+    "delete": "Удалить"
+  },
+  "characterCard": {
+    "level": "Уровень {{level}}",
+    "viewSheet": "Просмотр листа",
+    "addToCombat": "Добавить в бой",
+    "delete": "Удалить"
+  },
+  "pcCombatCard": {
+    "skills": "Навыки",
+    "strikes": "Удары",
+    "damage": "Урон",
+    "featsFeatures": "Черты и способности",
+    "spellcasting": "Магия",
+    "attack": "Атака"
   }
 }

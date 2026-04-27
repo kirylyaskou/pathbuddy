@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { Separator } from '@/shared/ui/separator'
 import {
@@ -112,6 +113,7 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
   combatantId: string
   handleRoll: (formula: string, label?: string) => void
 }) {
+  const { t } = useTranslation('common')
   const tradition = caster.magicTradition.toLowerCase()
   const typeLabel = caster.spellcastingType === 'focus' ? 'Focus'
     : caster.spellcastingType.charAt(0).toUpperCase() + caster.spellcastingType.slice(1)
@@ -149,7 +151,7 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
     <Collapsible defaultOpen>
       <div className="flex items-center w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-primary/40">
         <CollapsibleTrigger className="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity">
-          <span className="font-semibold text-sm text-foreground">Spellcasting</span>
+          <span className="font-semibold text-sm text-foreground">{t('pcCombatCard.spellcasting')}</span>
           <span className={cn(
             'px-1.5 py-0.5 text-[10px] rounded border uppercase tracking-wider font-semibold',
             TRADITION_COLORS[tradition] ?? 'bg-secondary text-secondary-foreground border-border',
@@ -168,7 +170,7 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
                 <span className={cn('font-mono font-bold', dcCol)}>{finalSpellDC}</span>
               </ModifierTooltip>
             </span>
-            <span className="text-muted-foreground">Attack{' '}
+            <span className="text-muted-foreground">{t('pcCombatCard.attack')}{' '}
               <ModifierTooltip modifiers={spellMod.modifiers} netModifier={spellMod.netModifier} finalDisplay={formatModifier(finalSpellAtk)}>
                 {atkBtn}
               </ModifierTooltip>
@@ -202,6 +204,7 @@ function PCSpellCaster({ caster, abilities, level, combatantId, handleRoll }: {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProps) {
+  const { t } = useTranslation('common')
   const handleRoll = useRoll(build.name, encounterId)
   const { abilities, proficiencies, level } = build
 
@@ -318,7 +321,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
 
         {/* Skills */}
         <Collapsible defaultOpen>
-          <SectionHeader>Skills</SectionHeader>
+          <SectionHeader>{t('pcCombatCard.skills')}</SectionHeader>
           <CollapsibleContent>
             <div className="px-4 pb-4 pt-2">
               <div className="flex flex-wrap gap-x-3 gap-y-1.5">
@@ -392,7 +395,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
           <>
             <Separator />
             <Collapsible defaultOpen>
-              <SectionHeader>Strikes</SectionHeader>
+              <SectionHeader>{t('pcCombatCard.strikes')}</SectionHeader>
               <CollapsibleContent>
                 <div className="px-4 py-3 space-y-3">
                   {weapons.map((w, i) => {
@@ -433,7 +436,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
                           </ModifierTooltip>
                         </div>
                         <div className="mt-1 text-sm">
-                          <span className="font-semibold">Damage </span>
+                          <span className="font-semibold">{t('pcCombatCard.damage')} </span>
                           <button
                             onClick={() => handleRoll(`${dice}${w.die}${dmgBonus}`, `${w.name} damage`)}
                             title={`Roll ${dice}${w.die}${dmgBonus}`}
@@ -490,7 +493,7 @@ export function PCCombatCard({ build, combatant, encounterId }: PCCombatCardProp
           <>
             <Separator />
             <Collapsible defaultOpen={false}>
-              <SectionHeader>Feats & Features</SectionHeader>
+              <SectionHeader>{t('pcCombatCard.featsFeatures')}</SectionHeader>
               <CollapsibleContent>
                 <div className="px-4 py-3 space-y-1">
                   {feats.map(([name, , type, lvl, note], i) => (

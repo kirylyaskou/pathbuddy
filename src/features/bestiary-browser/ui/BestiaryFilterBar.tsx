@@ -12,6 +12,7 @@ import { RotateCcw } from 'lucide-react'
 import { useBestiaryStore } from '../model/store'
 import { fetchDistinctSources } from '@/shared/api'
 import { useShallow } from 'zustand/react/shallow'
+import { useTranslation } from 'react-i18next'
 
 const RARITIES = ['common', 'uncommon', 'rare', 'unique'] as const
 const CREATURE_TYPES = [
@@ -21,6 +22,7 @@ const CREATURE_TYPES = [
 ] as const
 
 export function BestiaryFilterBar() {
+  const { t } = useTranslation('common')
   const { filters, setFilter, resetFilters } = useBestiaryStore(
     useShallow((s) => ({ filters: s.filters, setFilter: s.setFilter, resetFilters: s.resetFilters }))
   )
@@ -41,12 +43,12 @@ export function BestiaryFilterBar() {
     <div className="flex flex-wrap items-center gap-2 p-3 border-b border-border/50 bg-card/50">
       {/* Level range */}
       <div className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground">Lvl</span>
+        <span className="text-xs text-muted-foreground">{t('bestiaryFilter.lvl')}</span>
         <Input
           type="number"
           min={-1}
           max={25}
-          placeholder="Min"
+          placeholder={t('bestiaryFilter.min')}
           value={filters.levelMin ?? ''}
           onChange={(e) => setFilter('levelMin', e.target.value ? Number(e.target.value) : null)}
           className="w-16 h-7 text-xs"
@@ -56,7 +58,7 @@ export function BestiaryFilterBar() {
           type="number"
           min={-1}
           max={25}
-          placeholder="Max"
+          placeholder={t('bestiaryFilter.max')}
           value={filters.levelMax ?? ''}
           onChange={(e) => setFilter('levelMax', e.target.value ? Number(e.target.value) : null)}
           className="w-16 h-7 text-xs"
@@ -69,10 +71,10 @@ export function BestiaryFilterBar() {
         onValueChange={(v) => setFilter('rarity', v === '__all__' ? null : v)}
       >
         <SelectTrigger className="w-[110px] h-7 text-xs">
-          <SelectValue placeholder="Rarity" />
+          <SelectValue placeholder={t('bestiaryFilter.rarity')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__all__">All Rarities</SelectItem>
+          <SelectItem value="__all__">{t('bestiaryFilter.allRarities')}</SelectItem>
           {RARITIES.map((r) => (
             <SelectItem key={r} value={r} className="capitalize">
               {r}
@@ -87,10 +89,10 @@ export function BestiaryFilterBar() {
         onValueChange={(v) => setFilter('traits', v === '__all__' ? [] : [v])}
       >
         <SelectTrigger className="w-[120px] h-7 text-xs">
-          <SelectValue placeholder="Type" />
+          <SelectValue placeholder={t('bestiaryFilter.type')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__all__">All Types</SelectItem>
+          <SelectItem value="__all__">{t('bestiaryFilter.allTypes')}</SelectItem>
           {CREATURE_TYPES.map((t) => (
             <SelectItem key={t} value={t} className="capitalize">
               {t}
@@ -110,10 +112,10 @@ export function BestiaryFilterBar() {
           onValueChange={(v) => setFilter('source', v === '__all__' ? null : v)}
         >
           <SelectTrigger className="w-[140px] h-7 text-xs">
-            <SelectValue placeholder="Source" />
+            <SelectValue placeholder={t('bestiaryFilter.source')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">All Sources</SelectItem>
+            <SelectItem value="__all__">{t('bestiaryFilter.allSources')}</SelectItem>
             {sources.map((s) => (
               <SelectItem key={`${s.pack}|${s.name}`} value={s.name}>
                 {s.name}
@@ -127,7 +129,7 @@ export function BestiaryFilterBar() {
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={resetFilters}>
           <RotateCcw className="w-3 h-3 mr-1" />
-          Reset
+          {t('bestiaryFilter.reset')}
         </Button>
       )}
     </div>

@@ -65,7 +65,7 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
             className="font-mono"
             value={form.level}
             onChange={(e) =>
-              dispatch({ type: 'SET_FIELD', path: 'level', value: Number(e.target.value) })
+              dispatch({ type: 'SET_LEVEL_AND_RESCALE', level: Number(e.target.value) })
             }
           />
         </div>
