@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
@@ -25,6 +26,7 @@ function newRitual(): RitualEntry {
 }
 
 export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const auras = form.auras ?? []
   const rituals = form.rituals ?? []
@@ -32,11 +34,11 @@ export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
 
   return (
     <div className="p-4 space-y-5">
-      <h2 className="text-base font-semibold">Auras &amp; Rituals</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.aurasRitualsTab.heading')}</h2>
 
       {allEmpty && (
         <div className="p-4 rounded-md border border-dashed border-border/50 bg-secondary/20 flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">No auras or rituals.</p>
+          <p className="text-sm text-muted-foreground">{t('customCreatureBuilder.aurasRitualsTab.noAurasRituals')}</p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
@@ -44,7 +46,7 @@ export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
               onClick={() => dispatch({ type: 'ADD_AURA', entry: newAura() })}
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Aura
+              {t('customCreatureBuilder.aurasRitualsTab.addAura')}
             </Button>
             <Button
               size="sm"
@@ -52,7 +54,7 @@ export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
               onClick={() => dispatch({ type: 'ADD_RITUAL', entry: newRitual() })}
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Ritual
+              {t('customCreatureBuilder.aurasRitualsTab.addRitual')}
             </Button>
           </div>
         </div>
@@ -62,14 +64,14 @@ export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
       {auras.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Auras</Label>
+            <Label>{t('customCreatureBuilder.aurasRitualsTab.aurasLabel')}</Label>
             <Button
               size="sm"
               variant="outline"
               onClick={() => dispatch({ type: 'ADD_AURA', entry: newAura() })}
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Aura
+              {t('customCreatureBuilder.aurasRitualsTab.addAura')}
             </Button>
           </div>
           {auras.map((aura, i) => (
@@ -87,14 +89,14 @@ export function AurasRitualsTab({ state, dispatch }: BuilderTabsProps) {
       {rituals.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Rituals</Label>
+            <Label>{t('customCreatureBuilder.aurasRitualsTab.ritualsLabel')}</Label>
             <Button
               size="sm"
               variant="outline"
               onClick={() => dispatch({ type: 'ADD_RITUAL', entry: newRitual() })}
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Ritual
+              {t('customCreatureBuilder.aurasRitualsTab.addRitual')}
             </Button>
           </div>
           {rituals.map((rit, i) => (
@@ -118,12 +120,13 @@ interface AuraEditorProps {
 }
 
 function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
+  const { t } = useTranslation('common')
   const [traitInput, setTraitInput] = useState('')
 
   function addTrait() {
-    const t = traitInput.trim()
-    if (!t || aura.traits.includes(t)) return
-    onChange({ ...aura, traits: [...aura.traits, t] })
+    const traitVal = traitInput.trim()
+    if (!traitVal || aura.traits.includes(traitVal)) return
+    onChange({ ...aura, traits: [...aura.traits, traitVal] })
     setTraitInput('')
   }
 
@@ -133,10 +136,10 @@ function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
         <Input
           value={aura.name}
           onChange={(e) => onChange({ ...aura, name: e.target.value })}
-          placeholder="Aura name"
+          placeholder={t('customCreatureBuilder.aurasRitualsTab.auraNamePlaceholder')}
           className="flex-1"
         />
-        <span className="text-xs text-muted-foreground">Radius (ft)</span>
+        <span className="text-xs text-muted-foreground">{t('customCreatureBuilder.aurasRitualsTab.radius')}</span>
         <Input
           type="number"
           className="font-mono w-20"
@@ -145,7 +148,7 @@ function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
         />
         <button
           type="button"
-          aria-label="Remove aura"
+          aria-label={t('customCreatureBuilder.aurasRitualsTab.removeAuraAriaLabel')}
           onClick={onRemove}
           className="p-1 text-muted-foreground hover:text-destructive"
         >
@@ -154,7 +157,7 @@ function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Effect</Label>
+        <Label>{t('customCreatureBuilder.aurasRitualsTab.effect')}</Label>
         <Textarea
           rows={3}
           value={aura.effect}
@@ -163,12 +166,12 @@ function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Traits</Label>
+        <Label>{t('customCreatureBuilder.aurasRitualsTab.traits')}</Label>
         <div className="flex items-center gap-2">
           <Input
             value={traitInput}
             onChange={(e) => setTraitInput(e.target.value)}
-            placeholder="Add trait…"
+            placeholder={t('customCreatureBuilder.aurasRitualsTab.addTraitPlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -177,20 +180,20 @@ function AuraEditor({ aura, onChange, onRemove }: AuraEditorProps) {
             }}
           />
           <Button size="sm" variant="outline" onClick={addTrait}>
-            Add
+            {t('customCreatureBuilder.aurasRitualsTab.addTraitButton')}
           </Button>
         </div>
         {aura.traits.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {aura.traits.map((t, ti) => (
+            {aura.traits.map((trait, ti) => (
               <span
-                key={`${t}-${ti}`}
+                key={`${trait}-${ti}`}
                 className="inline-flex items-center gap-1 text-xs rounded bg-secondary/50 border border-border/50 px-2 py-0.5"
               >
-                {t}
+                {trait}
                 <button
                   type="button"
-                  aria-label={`Remove ${t}`}
+                  aria-label={t('customCreatureBuilder.aurasRitualsTab.removeTraitAriaLabel', { name: trait })}
                   onClick={() =>
                     onChange({
                       ...aura,
@@ -217,12 +220,13 @@ interface RitualEditorProps {
 }
 
 function RitualEditor({ ritual, onChange, onRemove }: RitualEditorProps) {
+  const { t } = useTranslation('common')
   return (
     <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/30 border border-border/40">
       <Input
         value={ritual.name}
         onChange={(e) => onChange({ ...ritual, name: e.target.value })}
-        placeholder="Ritual name"
+        placeholder={t('customCreatureBuilder.aurasRitualsTab.ritualNamePlaceholder')}
         className="flex-1"
       />
       <Select
@@ -233,14 +237,14 @@ function RitualEditor({ ritual, onChange, onRemove }: RitualEditorProps) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {TRADITIONS.map((t) => (
-            <SelectItem key={t} value={t}>
-              {t}
+          {TRADITIONS.map((tradition) => (
+            <SelectItem key={tradition} value={tradition}>
+              {tradition}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <span className="text-xs text-muted-foreground">Rank</span>
+      <span className="text-xs text-muted-foreground">{t('customCreatureBuilder.aurasRitualsTab.rank')}</span>
       <Input
         type="number"
         min={1}
@@ -251,7 +255,7 @@ function RitualEditor({ ritual, onChange, onRemove }: RitualEditorProps) {
       />
       <button
         type="button"
-        aria-label="Remove ritual"
+        aria-label={t('customCreatureBuilder.aurasRitualsTab.removeRitualAriaLabel')}
         onClick={onRemove}
         className="p-1 text-muted-foreground hover:text-destructive"
       >

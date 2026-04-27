@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
@@ -12,6 +13,7 @@ import type {
 } from '@/entities/creature/model/types'
 
 export function IwrTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const immunitiesNormalized = normalizeImmunities(form.immunities)
 
@@ -22,12 +24,12 @@ export function IwrTab({ state, dispatch }: BuilderTabsProps) {
 
   return (
     <div className="p-4 space-y-5">
-      <h2 className="text-base font-semibold">IWR</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.iwrTab.heading')}</h2>
 
       {allEmpty && (
         <div className="p-4 rounded-md border border-dashed border-border/50 bg-secondary/20 space-y-2">
           <p className="text-sm text-muted-foreground">
-            No immunities, weaknesses, or resistances.
+            {t('customCreatureBuilder.iwrTab.noIwrAdded')}
           </p>
         </div>
       )}
@@ -69,6 +71,7 @@ interface ImmunitySectionProps {
 }
 
 function ImmunitySection({ entries, onAdd, onRemove }: ImmunitySectionProps) {
+  const { t } = useTranslation('common')
   const [typeInput, setTypeInput] = useState('')
   const [exceptionsInput, setExceptionsInput] = useState('')
 
@@ -87,23 +90,23 @@ function ImmunitySection({ entries, onAdd, onRemove }: ImmunitySectionProps) {
 
   return (
     <div className="space-y-2">
-      <Label>Immunities</Label>
+      <Label>{t('customCreatureBuilder.iwrTab.immunities')}</Label>
       <div className="flex items-center gap-2">
         <Input
           value={typeInput}
           onChange={(e) => setTypeInput(e.target.value)}
-          placeholder="Type (e.g. fire, poison)"
+          placeholder={t('customCreatureBuilder.iwrTab.immunityTypePlaceholder')}
           className="flex-1"
         />
         <Input
           value={exceptionsInput}
           onChange={(e) => setExceptionsInput(e.target.value)}
-          placeholder="Exceptions (comma-separated, optional)"
+          placeholder={t('customCreatureBuilder.iwrTab.exceptionPlaceholder')}
           className="flex-1"
         />
         <Button size="sm" variant="outline" onClick={add}>
           <Plus className="w-3 h-3 mr-1" />
-          Add Immunity
+          {t('customCreatureBuilder.iwrTab.addImmunity')}
         </Button>
       </div>
       {entries.length > 0 && (
@@ -118,13 +121,13 @@ function ImmunitySection({ entries, onAdd, onRemove }: ImmunitySectionProps) {
                 {e.exceptions && e.exceptions.length > 0 && (
                   <span className="text-muted-foreground">
                     {' '}
-                    (except {e.exceptions.join(', ')})
+                    ({t('customCreatureBuilder.iwrTab.exceptLabel')} {e.exceptions.join(', ')})
                   </span>
                 )}
               </span>
               <button
                 type="button"
-                aria-label={`Remove ${e.type}`}
+                aria-label={t('customCreatureBuilder.iwrTab.removeAriaLabel', { type: e.type })}
                 onClick={() => onRemove(i)}
                 className="p-1 text-muted-foreground hover:text-destructive"
               >
@@ -155,6 +158,7 @@ function WeaknessResistanceSection({
   onUpdate,
   onRemove,
 }: WRProps) {
+  const { t } = useTranslation('common')
   const [typeInput, setTypeInput] = useState('')
   const [valueInput, setValueInput] = useState(5)
   const [exceptionsInput, setExceptionsInput] = useState('')
@@ -178,12 +182,22 @@ function WeaknessResistanceSection({
 
   return (
     <div className="space-y-2">
-      <Label>{kind === 'Weakness' ? 'Weaknesses' : 'Resistances'}</Label>
+      <Label>
+        {t(
+          kind === 'Weakness'
+            ? 'customCreatureBuilder.iwrTab.weaknesses'
+            : 'customCreatureBuilder.iwrTab.resistances',
+        )}
+      </Label>
       <div className="flex items-center gap-2">
         <Input
           value={typeInput}
           onChange={(e) => setTypeInput(e.target.value)}
-          placeholder="Type"
+          placeholder={t(
+            kind === 'Weakness'
+              ? 'customCreatureBuilder.iwrTab.weaknessTypePlaceholder'
+              : 'customCreatureBuilder.iwrTab.resistanceTypePlaceholder',
+          )}
           className="flex-1"
         />
         <Input
@@ -195,12 +209,16 @@ function WeaknessResistanceSection({
         <Input
           value={exceptionsInput}
           onChange={(e) => setExceptionsInput(e.target.value)}
-          placeholder="Exceptions (comma-separated)"
+          placeholder={t('customCreatureBuilder.iwrTab.exceptionPlaceholder')}
           className="flex-1"
         />
         <Button size="sm" variant="outline" onClick={add}>
           <Plus className="w-3 h-3 mr-1" />
-          Add {kind}
+          {t(
+            kind === 'Weakness'
+              ? 'customCreatureBuilder.iwrTab.addWeakness'
+              : 'customCreatureBuilder.iwrTab.addResistance',
+          )}
         </Button>
       </div>
       {entries.length > 0 && (
@@ -233,12 +251,12 @@ function WeaknessResistanceSection({
                     exceptions: exceptions.length > 0 ? exceptions : undefined,
                   })
                 }}
-                placeholder="Exceptions"
+                placeholder={t('customCreatureBuilder.iwrTab.exceptionPlaceholder')}
                 className="flex-1"
               />
               <button
                 type="button"
-                aria-label={`Remove ${e.type}`}
+                aria-label={t('customCreatureBuilder.iwrTab.removeAriaLabel', { type: e.type })}
                 onClick={() => onRemove(i)}
                 className="p-1 text-muted-foreground hover:text-destructive"
               >

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
@@ -19,16 +20,6 @@ import type {
 
 type Ability = CreatureStatBlockData['abilities'][number]
 
-const ACTION_COST_OPTIONS: { value: string; label: string }[] = [
-  { value: '__none', label: '—' },
-  { value: '0', label: 'Free (◇)' },
-  { value: '1', label: '1 (◆)' },
-  { value: '2', label: '2 (◆◆)' },
-  { value: '3', label: '3 (◆◆◆)' },
-  { value: 'reaction', label: 'Reaction (↩)' },
-  { value: 'free', label: 'Free action (●)' },
-]
-
 function parseCost(v: string): DisplayActionCost | undefined {
   if (v === '__none') return undefined
   if (v === '0' || v === '1' || v === '2' || v === '3') return Number(v) as DisplayActionCost
@@ -45,19 +36,20 @@ function newAbility(): Ability {
 }
 
 export function AbilitiesTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Abilities</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.abilitiesTab.heading')}</h2>
       {form.abilities.length === 0 && (
         <div className="flex items-center justify-between p-4 rounded-md border border-dashed border-border/50 bg-secondary/20">
-          <p className="text-sm text-muted-foreground">No special abilities.</p>
+          <p className="text-sm text-muted-foreground">{t('customCreatureBuilder.abilitiesTab.noSpecialAbilities')}</p>
           <Button
             size="sm"
             onClick={() => dispatch({ type: 'ADD_ABILITY', ability: newAbility() })}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Add Ability
+            {t('customCreatureBuilder.abilitiesTab.addAbility')}
           </Button>
         </div>
       )}
@@ -76,7 +68,7 @@ export function AbilitiesTab({ state, dispatch }: BuilderTabsProps) {
           onClick={() => dispatch({ type: 'ADD_ABILITY', ability: newAbility() })}
         >
           <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Ability
+          {t('customCreatureBuilder.abilitiesTab.addAbility')}
         </Button>
       )}
     </div>
@@ -90,13 +82,27 @@ interface AbilityEditorProps {
 }
 
 function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
+  const { t } = useTranslation('common')
   const [traitInput, setTraitInput] = useState('')
   const traits = ability.traits ?? []
 
+  const actionCostOptions = useMemo(
+    () => [
+      { value: '__none', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.none') },
+      { value: '0', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.free') },
+      { value: '1', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.one') },
+      { value: '2', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.two') },
+      { value: '3', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.three') },
+      { value: 'reaction', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.reaction') },
+      { value: 'free', label: t('customCreatureBuilder.abilitiesTab.actionCostOptions.freeAction') },
+    ],
+    [t],
+  )
+
   function addTrait() {
-    const t = traitInput.trim()
-    if (!t || traits.includes(t)) return
-    onChange({ ...ability, traits: [...traits, t] })
+    const traitVal = traitInput.trim()
+    if (!traitVal || traits.includes(traitVal)) return
+    onChange({ ...ability, traits: [...traits, traitVal] })
     setTraitInput('')
   }
 
@@ -106,7 +112,7 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
         <Input
           value={ability.name}
           onChange={(e) => onChange({ ...ability, name: e.target.value })}
-          placeholder="Ability name"
+          placeholder={t('customCreatureBuilder.abilitiesTab.abilityNamePlaceholder')}
           className="flex-1"
         />
         <Select
@@ -117,7 +123,7 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ACTION_COST_OPTIONS.map((o) => (
+            {actionCostOptions.map((o) => (
               <SelectItem key={o.value} value={o.value}>
                 {o.label}
               </SelectItem>
@@ -126,7 +132,7 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
         </Select>
         <button
           type="button"
-          aria-label="Remove ability"
+          aria-label={t('customCreatureBuilder.abilitiesTab.removeAbilityAriaLabel')}
           onClick={onRemove}
           className="p-1 text-muted-foreground hover:text-destructive"
         >
@@ -135,7 +141,7 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Description</Label>
+        <Label>{t('customCreatureBuilder.abilitiesTab.description')}</Label>
         <Textarea
           rows={3}
           value={ability.description}
@@ -144,12 +150,12 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Traits</Label>
+        <Label>{t('customCreatureBuilder.abilitiesTab.traits')}</Label>
         <div className="flex items-center gap-2">
           <Input
             value={traitInput}
             onChange={(e) => setTraitInput(e.target.value)}
-            placeholder="Add trait…"
+            placeholder={t('customCreatureBuilder.abilitiesTab.addTraitPlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -158,20 +164,20 @@ function AbilityEditor({ ability, onChange, onRemove }: AbilityEditorProps) {
             }}
           />
           <Button size="sm" variant="outline" onClick={addTrait}>
-            Add
+            {t('customCreatureBuilder.abilitiesTab.addTraitButton')}
           </Button>
         </div>
         {traits.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {traits.map((t, ti) => (
+            {traits.map((trait, ti) => (
               <span
-                key={`${t}-${ti}`}
+                key={`${trait}-${ti}`}
                 className="inline-flex items-center gap-1 text-xs rounded bg-secondary/50 border border-border/50 px-2 py-0.5"
               >
-                {t}
+                {trait}
                 <button
                   type="button"
-                  aria-label={`Remove ${t}`}
+                  aria-label={t('customCreatureBuilder.abilitiesTab.removeTraitAriaLabel', { name: trait })}
                   onClick={() =>
                     onChange({ ...ability, traits: traits.filter((_, i) => i !== ti) })
                   }
