@@ -23,7 +23,7 @@ function isInputFocused(): boolean {
  * Builds a canonical modifier+key string from a KeyboardEvent.
  * Format mirrors the chord combo stored in DB: "Ctrl+F", "Shift+Alt+G", etc.
  */
-function eventToCombo(e: KeyboardEvent): string {
+export function eventToCombo(e: KeyboardEvent): string {
   const parts: string[] = []
   if (e.ctrlKey) parts.push('Ctrl')
   if (e.shiftKey) parts.push('Shift')
@@ -38,7 +38,7 @@ function eventToCombo(e: KeyboardEvent): string {
  * Builds a suffix string from a KeyboardEvent (for the second chord key).
  * Suffix keys are typically bare digits/letters, but can carry modifiers.
  */
-function eventToSuffix(e: KeyboardEvent): string {
+export function eventToSuffix(e: KeyboardEvent): string {
   const parts: string[] = []
   if (e.ctrlKey) parts.push('Ctrl')
   if (e.shiftKey) parts.push('Shift')
