@@ -697,5 +697,128 @@
       "editAriaLabel": "Редактировать существо",
       "deleteAriaLabel": "Удалить существо"
     }
+  },
+  "pages": {
+    "dashboard": {
+      "activeCombat": "Активный бой",
+      "running": "Идёт",
+      "inactive": "Неактивен",
+      "goToCombat": "К бою",
+      "roundN": "Раунд {{n}}",
+      "combatants_one": "{{count}} участник",
+      "combatants_few": "{{count}} участника",
+      "combatants_many": "{{count}} участников",
+      "noActiveCombat": "Нет активного боя",
+      "openCombatTracker": "Открыть Combat Tracker",
+      "savedEncounters": "Сохранённые встречи",
+      "openEncounters": "Открыть встречи",
+      "noSavedEncounters": "Нет сохранённых встреч",
+      "createEncounter": "Создать встречу",
+      "compendium": "Компендиум",
+      "statCreatures": "Существа",
+      "statSpells": "Заклинания",
+      "statItems": "Предметы",
+      "statHazards": "Угрозы"
+    },
+    "combat": {
+      "selectCombatant": "Выберите участника",
+      "noCombatants": "Нет участников",
+      "noEncountersOpen": "Нет открытых встреч",
+      "selectCombatantDetail": "Выберите участника для просмотра",
+      "selectCreatureStatBlock": "Выберите существо для просмотра",
+      "notStarted": "Не начат",
+      "clickToFocus": "(нажмите для фокуса)",
+      "blueprint": {
+        "title": "Открыть встречу",
+        "blankEncounter": "Пустая встреча",
+        "blankEncounterHint": "Начать с чистого листа"
+      }
+    },
+    "characters": {
+      "title": "Персонажи",
+      "importButton": "Импортировать персонажа",
+      "noCharacters": "Персонажи не импортированы",
+      "importHint": "Импортируйте отряд из Pathbuilder 2e",
+      "sourceFilterAria": "Фильтр источника персонажей"
+    },
+    "encounters": {
+      "loading": "Загрузка...",
+      "selectEncounterHint": "Выберите встречу для редактирования."
+    },
+    "hazards": {
+      "hardness": "Твёрдость",
+      "stealth": "Скрытность:",
+      "disable": "Обезвредить",
+      "reset": "Сбросить",
+      "searchPlaceholder": "Поиск угроз…"
+    },
+    "bestiary": {
+      "selectCreatureHint": "Выберите существо для просмотра",
+      "searchPlaceholder": "Поиск в бестиарии..."
+    }
+  },
+  "entities": {
+    "spell": {
+      "linkedSpell": "Связанное заклинание",
+      "loading": "Загрузка…",
+      "notFound": "Заклинание не найдено",
+      "range": "Дальность:",
+      "area": "Область:",
+      "duration": "Длительность:",
+      "source": "Источник:",
+      "actions": "Действия",
+      "save": "Спасбросок",
+      "damage": "Урон",
+      "target": "Цель",
+      "cast": "Сотворение",
+      "cost": "Стоимость",
+      "closePanel": "Закрыть панель"
+    },
+    "item": {
+      "level": "Уровень",
+      "rarity": "Редкость",
+      "price": "Цена",
+      "bulk": "Объём",
+      "usage": "Использование",
+      "damage": "Урон:",
+      "ac": "КД:",
+      "dexCap": "Макс. Лов.:",
+      "check": "Проверка:",
+      "speed": "Скорость:",
+      "strReq": "Треб. Сил.:",
+      "uses": "Использований:",
+      "source": "Источник:",
+      "closePanel": "Закрыть панель"
+    },
+    "encounter": {
+      "threatAssessment": "Оценка угрозы",
+      "trivial": "Тривиальная: {{n}}",
+      "low": "Низкая: {{n}}",
+      "moderate": "Умеренная: {{n}}",
+      "severe": "Серьёзная: {{n}}",
+      "extreme": "Экстремальная: {{n}}"
+    },
+    "creature": {
+      "noStatBlock": "Стат-блок недоступен.",
+      "statBlockSrOnly": "Стат-блок существа"
+    }
+  },
+  "shared": {
+    "dicePanel": {
+      "title": "Бросок кубиков",
+      "quantity": "Количество",
+      "die": "Кубик"
+    },
+    "modifier": {
+      "total": "Итого"
+    },
+    "roll": {
+      "critical": "Критический!",
+      "fumble": "Провал",
+      "chosen": "Выбран",
+      "fortuneKeepHigher": "Удача — оставить большее",
+      "misfortuneKeepLower": "Неудача — оставить меньшее",
+      "rollN": "Бросок {{n}}"
+    }
   }
 }

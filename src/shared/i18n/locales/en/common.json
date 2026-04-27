@@ -679,5 +679,127 @@
       "editAriaLabel": "Edit creature",
       "deleteAriaLabel": "Delete creature"
     }
+  },
+  "pages": {
+    "dashboard": {
+      "activeCombat": "Active Combat",
+      "running": "Running",
+      "inactive": "Inactive",
+      "goToCombat": "Go to Combat",
+      "roundN": "Round {{n}}",
+      "combatants_one": "{{count}} combatant",
+      "combatants_other": "{{count}} combatants",
+      "noActiveCombat": "No active combat",
+      "openCombatTracker": "Open Combat Tracker",
+      "savedEncounters": "Saved Encounters",
+      "openEncounters": "Open Encounters",
+      "noSavedEncounters": "No saved encounters",
+      "createEncounter": "Create Encounter",
+      "compendium": "Compendium",
+      "statCreatures": "Creatures",
+      "statSpells": "Spells",
+      "statItems": "Items",
+      "statHazards": "Hazards"
+    },
+    "combat": {
+      "selectCombatant": "Select a combatant",
+      "noCombatants": "No combatants",
+      "noEncountersOpen": "No encounters open",
+      "selectCombatantDetail": "Select a combatant to view details",
+      "selectCreatureStatBlock": "Select a creature to view its stat block",
+      "notStarted": "Not started",
+      "clickToFocus": "(click to focus)",
+      "blueprint": {
+        "title": "Open Encounter",
+        "blankEncounter": "Blank Encounter",
+        "blankEncounterHint": "Start from scratch"
+      }
+    },
+    "characters": {
+      "title": "Characters",
+      "importButton": "Import Character",
+      "noCharacters": "No characters imported yet",
+      "importHint": "Import your party from Pathbuilder 2e",
+      "sourceFilterAria": "Character source filter"
+    },
+    "encounters": {
+      "loading": "Loading...",
+      "selectEncounterHint": "Select an encounter to edit its creature list."
+    },
+    "hazards": {
+      "hardness": "Hardness",
+      "stealth": "Stealth:",
+      "disable": "Disable",
+      "reset": "Reset",
+      "searchPlaceholder": "Search hazards…"
+    },
+    "bestiary": {
+      "selectCreatureHint": "Select a creature to view its stat block",
+      "searchPlaceholder": "Search bestiary..."
+    }
+  },
+  "entities": {
+    "spell": {
+      "linkedSpell": "Linked Spell",
+      "loading": "Loading…",
+      "notFound": "Spell not found",
+      "range": "Range:",
+      "area": "Area:",
+      "duration": "Duration:",
+      "source": "Source:",
+      "actions": "Actions",
+      "save": "Save",
+      "damage": "Damage",
+      "target": "Target",
+      "cast": "Cast",
+      "cost": "Cost",
+      "closePanel": "Close panel"
+    },
+    "item": {
+      "level": "Level",
+      "rarity": "Rarity",
+      "price": "Price",
+      "bulk": "Bulk",
+      "usage": "Usage",
+      "damage": "Damage:",
+      "ac": "AC:",
+      "dexCap": "Dex cap:",
+      "check": "Check:",
+      "speed": "Speed:",
+      "strReq": "Str req:",
+      "uses": "Uses:",
+      "source": "Source:",
+      "closePanel": "Close panel"
+    },
+    "encounter": {
+      "threatAssessment": "Threat Assessment",
+      "trivial": "Trivial: {{n}}",
+      "low": "Low: {{n}}",
+      "moderate": "Mod: {{n}}",
+      "severe": "Sev: {{n}}",
+      "extreme": "Ext: {{n}}"
+    },
+    "creature": {
+      "noStatBlock": "No stat block available.",
+      "statBlockSrOnly": "Creature stat block"
+    }
+  },
+  "shared": {
+    "dicePanel": {
+      "title": "Dice Roller",
+      "quantity": "Quantity",
+      "die": "Die"
+    },
+    "modifier": {
+      "total": "Total"
+    },
+    "roll": {
+      "critical": "Critical!",
+      "fumble": "Fumble",
+      "chosen": "Chosen",
+      "fortuneKeepHigher": "Fortune — keep higher",
+      "misfortuneKeepLower": "Misfortune — keep lower",
+      "rollN": "Roll {{n}}"
+    }
   }
 }
