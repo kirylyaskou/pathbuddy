@@ -39,15 +39,17 @@ export function AppSidebar({ onSearchOpen }: AppSidebarProps) {
       >
         {/* Logo */}
         <div className={cn(
-          'flex items-center h-14 px-4 border-b border-sidebar-border relative',
-          collapsed ? 'justify-center' : 'gap-3'
+          'flex items-center justify-center h-14 border-b border-sidebar-border relative overflow-hidden',
+          collapsed ? 'px-2' : 'px-3'
         )}>
-            <img className="w-10 h-10"  src='src-tauri\icons\128x128.png'/>
-          {!collapsed && (
-            <span className="font-bold text-sidebar-foreground tracking-tight text-sm">
-              PathMaid
-            </span>
-          )}
+          <img
+            src="/mascot/logo.png"
+            alt="PathMaid"
+            className={cn(
+              'object-contain',
+              collapsed ? 'h-10 w-10 object-right' : 'h-12 w-auto max-w-full'
+            )}
+          />
         </div>
 
         {/* Search Button */}

@@ -15,7 +15,12 @@ function randomGif(exclude?: number): number {
 }
 
 export function MascotHex({ height, className }: MascotHexProps) {
-  const [gifIndex, setGifIndex] = useState(() => randomGif())
+  const [gifIndex, setGifIndex] = useState(() => {
+    const seed = typeof window !== 'undefined'
+      ? (window as { __SPLASH_GIF__?: number }).__SPLASH_GIF__
+      : undefined
+    return seed && seed >= 1 && seed <= GIF_COUNT ? seed : randomGif()
+  })
 
   useEffect(() => {
     const id = setInterval(() => setGifIndex(prev => randomGif(prev)), 10000)
