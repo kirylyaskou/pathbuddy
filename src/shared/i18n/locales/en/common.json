@@ -428,5 +428,248 @@
     "clearBtn": "Clear",
     "noRollsYet": "No rolls yet",
     "rollsWillAppear": "Rolls will appear here during the session."
+  },
+  "customCreatureBuilder": {
+    "tabs": {
+      "concept": "Concept",
+      "abilityMods": "Ability Mods",
+      "defense": "Defense",
+      "perceptionSkills": "Perception & Skills",
+      "speedsSenses": "Speeds & Senses",
+      "strikes": "Strikes",
+      "spellcasting": "Spellcasting",
+      "abilities": "Abilities",
+      "iwr": "IWR",
+      "aurasRituals": "Auras & Rituals"
+    },
+    "header": {
+      "backToList": "Back to list",
+      "newCreature": "New Creature",
+      "unsavedChanges": "Unsaved changes",
+      "cloneFromBestiary": "Clone from bestiary",
+      "saving": "Saving…",
+      "save": "Save"
+    },
+    "page": {
+      "loading": "Loading creature…",
+      "creatureNotFound": "Creature not found",
+      "saved": "Creature saved",
+      "failedToSave": "Failed to save creature",
+      "replacedWithClone": "Replaced with clone from bestiary"
+    },
+    "applyRole": {
+      "buttonLabel": "Apply Role",
+      "dialogTitle": "Apply Role",
+      "dialogDesc": "Apply role-based stat adjustments to this creature",
+      "abilityMods": "Ability Modifiers",
+      "stats": "Stats",
+      "noOverrides": "No overrides for this role",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "perception": "Perception",
+      "ac": "AC",
+      "hp": "HP",
+      "fort": "Fort",
+      "ref": "Ref",
+      "will": "Will",
+      "strikeAttack": "Strike Attack",
+      "strikeDamage": "Strike Damage",
+      "spellDc": "Spell DC",
+      "spellAttack": "Spell Attack",
+      "skillLabel": "Skills",
+      "abilityModLabel": "{{ability}} modifier",
+      "roleLabels": {
+        "brute": "Brute",
+        "skirmisher": "Skirmisher",
+        "sniper": "Sniper",
+        "soldier": "Soldier",
+        "spellcaster": "Spellcaster",
+        "guard": "Guard",
+        "artillery": "Artillery"
+      }
+    },
+    "cloneDialog": {
+      "title": "Clone from Bestiary",
+      "description": "Search the bestiary and clone a creature as a starting point",
+      "searchPlaceholder": "Search creatures…",
+      "searching": "Searching…",
+      "noCreaturesFound": "No creatures found",
+      "startTyping": "Start typing to search",
+      "cloning": "Cloning…",
+      "clone": "Clone"
+    },
+    "dirtyGuard": {
+      "title": "Unsaved Changes",
+      "description": "You have unsaved changes. Are you sure you want to leave?",
+      "keepEditing": "Keep editing",
+      "discardChanges": "Discard changes"
+    },
+    "designReview": {
+      "title": "Design Review",
+      "counter": "{{warnCount}} warnings, {{infoCount}} suggestions"
+    },
+    "exportJson": {
+      "buttonLabel": "Export JSON",
+      "creatureNotFound": "Creature not found",
+      "exported": "Exported as {{filename}}",
+      "failedToExport": "Failed to export"
+    },
+    "benchmarkHint": {
+      "tierLabel": "Tier",
+      "title": "{{tier}} benchmark"
+    },
+    "conceptTab": {
+      "heading": "Concept",
+      "name": "Name",
+      "level": "Level",
+      "rarity": "Rarity",
+      "size": "Size",
+      "creatureType": "Creature Type",
+      "traits": "Traits",
+      "description": "Description",
+      "typeInputPlaceholder": "Enter creature type…",
+      "addTraitPlaceholder": "Add trait…",
+      "addTraitButton": "Add",
+      "removeTraitAriaLabel": "Remove trait {{name}}"
+    },
+    "abilityModsTab": {
+      "heading": "Ability Modifiers",
+      "strength": "Strength",
+      "dexterity": "Dexterity",
+      "constitution": "Constitution",
+      "intelligence": "Intelligence",
+      "wisdom": "Wisdom",
+      "charisma": "Charisma"
+    },
+    "defenseTab": {
+      "heading": "Defense",
+      "ac": "Armor Class",
+      "hp": "Hit Points",
+      "fort": "Fortitude",
+      "ref": "Reflex",
+      "will": "Will"
+    },
+    "perceptionSkillsTab": {
+      "heading": "Perception & Skills",
+      "perception": "Perception",
+      "skills": "Skills",
+      "skillNamePlaceholder": "Skill name…",
+      "noSkillsAdded": "No skills added",
+      "removeSkillAriaLabel": "Remove skill {{name}}"
+    },
+    "speedsSensesTab": {
+      "heading": "Speeds & Senses",
+      "speeds": "Speeds",
+      "senses": "Senses",
+      "languages": "Languages",
+      "sensesPlaceholder": "Add sense…",
+      "languagesPlaceholder": "Add language…",
+      "addButton": "Add",
+      "removeAriaLabel": "Remove {{name}}"
+    },
+    "strikesTab": {
+      "heading": "Strikes",
+      "noStrikesDefined": "No strikes defined",
+      "addStrike": "Add Strike",
+      "strikeNamePlaceholder": "Strike name…",
+      "attackModifier": "Attack Modifier",
+      "damage": "Damage",
+      "setToBenchmarkTitle": "Set to benchmark",
+      "setToTier": "Set to tier",
+      "traits": "Traits",
+      "addTraitPlaceholder": "Add trait…",
+      "addTraitButton": "Add",
+      "addDamageRow": "Add Damage Row",
+      "removeStrikeAriaLabel": "Remove strike",
+      "removeDamageRowAriaLabel": "Remove damage row",
+      "removeTraitAriaLabel": "Remove trait {{name}}"
+    },
+    "spellcastingTab": {
+      "heading": "Spellcasting",
+      "noSpellcastingEntries": "No spellcasting entries",
+      "addEntry": "Add Entry",
+      "tradition": "Tradition",
+      "castType": "Cast Type",
+      "spellDc": "Spell DC",
+      "spellAttack": "Spell Attack",
+      "removeEntryAriaLabel": "Remove spellcasting entry"
+    },
+    "abilitiesTab": {
+      "heading": "Special Abilities",
+      "noSpecialAbilities": "No special abilities",
+      "addAbility": "Add Ability",
+      "description": "Description",
+      "traits": "Traits",
+      "abilityNamePlaceholder": "Ability name…",
+      "addTraitPlaceholder": "Add trait…",
+      "addTraitButton": "Add",
+      "removeAbilityAriaLabel": "Remove ability",
+      "removeTraitAriaLabel": "Remove trait {{name}}",
+      "actionCostOptions": {
+        "none": "None",
+        "free": "Free",
+        "one": "1 Action",
+        "two": "2 Actions",
+        "three": "3 Actions",
+        "reaction": "Reaction",
+        "freeAction": "Free Action"
+      }
+    },
+    "iwrTab": {
+      "heading": "Immunities, Weaknesses & Resistances",
+      "noIwrAdded": "No IWR added",
+      "immunities": "Immunities",
+      "weaknesses": "Weaknesses",
+      "resistances": "Resistances",
+      "immunityTypePlaceholder": "Immunity type…",
+      "exceptionPlaceholder": "Exception…",
+      "addImmunity": "Add Immunity",
+      "weaknessTypePlaceholder": "Weakness type…",
+      "resistanceTypePlaceholder": "Resistance type…",
+      "addWeakness": "Add Weakness",
+      "addResistance": "Add Resistance",
+      "exceptLabel": "Except",
+      "removeAriaLabel": "Remove {{type}}"
+    },
+    "aurasRitualsTab": {
+      "heading": "Auras & Rituals",
+      "noAurasRituals": "No auras or rituals",
+      "addAura": "Add Aura",
+      "addRitual": "Add Ritual",
+      "aurasLabel": "Auras",
+      "ritualsLabel": "Rituals",
+      "auraNamePlaceholder": "Aura name…",
+      "radius": "Radius",
+      "effect": "Effect",
+      "traits": "Traits",
+      "addTraitPlaceholder": "Add trait…",
+      "addTraitButton": "Add",
+      "removeAuraAriaLabel": "Remove aura",
+      "removeTraitAriaLabel": "Remove trait {{name}}",
+      "ritualNamePlaceholder": "Ritual name…",
+      "rank": "Rank",
+      "removeRitualAriaLabel": "Remove ritual"
+    },
+    "listPage": {
+      "heading": "Custom Creatures",
+      "usePregen": "Use Pregenerated",
+      "cloneFromBestiary": "Clone from Bestiary",
+      "newCreature": "New Creature",
+      "searchPlaceholder": "Search custom creatures…",
+      "loading": "Loading…",
+      "emptyHeading": "No custom creatures yet",
+      "emptyDesc": "Create your first custom creature to get started",
+      "cloneFromBestiaryEmpty": "Clone from Bestiary",
+      "newCreatureEmpty": "New Creature",
+      "noMatchText": "No creatures match \"{{query}}\"",
+      "deleteTitle": "Delete Creature",
+      "deleteDesc": "Are you sure you want to delete \"{{name}}\"?",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "listRow": {
+      "editAriaLabel": "Edit creature",
+      "deleteAriaLabel": "Delete creature"
+    }
   }
 }

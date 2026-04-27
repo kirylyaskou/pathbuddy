@@ -446,5 +446,248 @@
     "clearBtn": "Очистить",
     "noRollsYet": "Бросков ещё нет",
     "rollsWillAppear": "Броски будут появляться здесь в течение сессии."
+  },
+  "customCreatureBuilder": {
+    "tabs": {
+      "concept": "Концепция",
+      "abilityMods": "Модификаторы",
+      "defense": "Защита",
+      "perceptionSkills": "Восприятие и навыки",
+      "speedsSenses": "Скорости и чувства",
+      "strikes": "Удары",
+      "spellcasting": "Заклинания",
+      "abilities": "Способности",
+      "iwr": "ИСС",
+      "aurasRituals": "Ауры и ритуалы"
+    },
+    "header": {
+      "backToList": "К списку",
+      "newCreature": "Новое существо",
+      "unsavedChanges": "Несохранённые изменения",
+      "cloneFromBestiary": "Клонировать из бестиария",
+      "saving": "Сохранение…",
+      "save": "Сохранить"
+    },
+    "page": {
+      "loading": "Загрузка существа…",
+      "creatureNotFound": "Существо не найдено",
+      "saved": "Существо сохранено",
+      "failedToSave": "Не удалось сохранить существо",
+      "replacedWithClone": "Заменено клоном из бестиария"
+    },
+    "applyRole": {
+      "buttonLabel": "Применить роль",
+      "dialogTitle": "Применить роль",
+      "dialogDesc": "Применить корректировки характеристик на основе роли существа",
+      "abilityMods": "Модификаторы характеристик",
+      "stats": "Параметры",
+      "noOverrides": "Нет изменений для этой роли",
+      "cancel": "Отмена",
+      "apply": "Применить",
+      "perception": "Восприятие",
+      "ac": "КД",
+      "hp": "ОЗ",
+      "fort": "Стой",
+      "ref": "Ловк",
+      "will": "Воля",
+      "strikeAttack": "Атака ударом",
+      "strikeDamage": "Урон удара",
+      "spellDc": "Сл заклинаний",
+      "spellAttack": "Атака заклинаниями",
+      "skillLabel": "Навыки",
+      "abilityModLabel": "Модификатор {{ability}}",
+      "roleLabels": {
+        "brute": "Громила",
+        "skirmisher": "Застрельщик",
+        "sniper": "Снайпер",
+        "soldier": "Солдат",
+        "spellcaster": "Заклинатель",
+        "guard": "Страж",
+        "artillery": "Артиллерия"
+      }
+    },
+    "cloneDialog": {
+      "title": "Клонировать из бестиария",
+      "description": "Найдите существо в бестиарии и клонируйте его как основу",
+      "searchPlaceholder": "Поиск существ…",
+      "searching": "Поиск…",
+      "noCreaturesFound": "Существа не найдены",
+      "startTyping": "Начните вводить для поиска",
+      "cloning": "Клонирование…",
+      "clone": "Клонировать"
+    },
+    "dirtyGuard": {
+      "title": "Несохранённые изменения",
+      "description": "Есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?",
+      "keepEditing": "Продолжить редактирование",
+      "discardChanges": "Отменить изменения"
+    },
+    "designReview": {
+      "title": "Анализ конструкции",
+      "counter": "{{warnCount}} предупреждений, {{infoCount}} подсказок"
+    },
+    "exportJson": {
+      "buttonLabel": "Экспорт JSON",
+      "creatureNotFound": "Существо не найдено",
+      "exported": "Экспортировано как {{filename}}",
+      "failedToExport": "Не удалось экспортировать"
+    },
+    "benchmarkHint": {
+      "tierLabel": "Уровень",
+      "title": "Ориентир {{tier}}"
+    },
+    "conceptTab": {
+      "heading": "Концепция",
+      "name": "Имя",
+      "level": "Уровень",
+      "rarity": "Редкость",
+      "size": "Размер",
+      "creatureType": "Тип существа",
+      "traits": "Черты",
+      "description": "Описание",
+      "typeInputPlaceholder": "Введите тип существа…",
+      "addTraitPlaceholder": "Добавить черту…",
+      "addTraitButton": "Добавить",
+      "removeTraitAriaLabel": "Убрать черту {{name}}"
+    },
+    "abilityModsTab": {
+      "heading": "Модификаторы характеристик",
+      "strength": "Сила",
+      "dexterity": "Ловкость",
+      "constitution": "Телосложение",
+      "intelligence": "Интеллект",
+      "wisdom": "Мудрость",
+      "charisma": "Харизма"
+    },
+    "defenseTab": {
+      "heading": "Защита",
+      "ac": "Класс доспеха",
+      "hp": "Очки здоровья",
+      "fort": "Стойкость",
+      "ref": "Ловкость (спас.)",
+      "will": "Воля"
+    },
+    "perceptionSkillsTab": {
+      "heading": "Восприятие и навыки",
+      "perception": "Восприятие",
+      "skills": "Навыки",
+      "skillNamePlaceholder": "Название навыка…",
+      "noSkillsAdded": "Навыки не добавлены",
+      "removeSkillAriaLabel": "Убрать навык {{name}}"
+    },
+    "speedsSensesTab": {
+      "heading": "Скорости и чувства",
+      "speeds": "Скорости",
+      "senses": "Чувства",
+      "languages": "Языки",
+      "sensesPlaceholder": "Добавить чувство…",
+      "languagesPlaceholder": "Добавить язык…",
+      "addButton": "Добавить",
+      "removeAriaLabel": "Убрать {{name}}"
+    },
+    "strikesTab": {
+      "heading": "Удары",
+      "noStrikesDefined": "Удары не заданы",
+      "addStrike": "Добавить удар",
+      "strikeNamePlaceholder": "Название удара…",
+      "attackModifier": "Модификатор атаки",
+      "damage": "Урон",
+      "setToBenchmarkTitle": "Задать по ориентиру",
+      "setToTier": "Задать по уровню",
+      "traits": "Черты",
+      "addTraitPlaceholder": "Добавить черту…",
+      "addTraitButton": "Добавить",
+      "addDamageRow": "Добавить строку урона",
+      "removeStrikeAriaLabel": "Убрать удар",
+      "removeDamageRowAriaLabel": "Убрать строку урона",
+      "removeTraitAriaLabel": "Убрать черту {{name}}"
+    },
+    "spellcastingTab": {
+      "heading": "Заклинания",
+      "noSpellcastingEntries": "Записей заклинаний нет",
+      "addEntry": "Добавить запись",
+      "tradition": "Традиция",
+      "castType": "Тип каста",
+      "spellDc": "Сл заклинаний",
+      "spellAttack": "Атака заклинаниями",
+      "removeEntryAriaLabel": "Убрать запись заклинаний"
+    },
+    "abilitiesTab": {
+      "heading": "Особые способности",
+      "noSpecialAbilities": "Особых способностей нет",
+      "addAbility": "Добавить способность",
+      "description": "Описание",
+      "traits": "Черты",
+      "abilityNamePlaceholder": "Название способности…",
+      "addTraitPlaceholder": "Добавить черту…",
+      "addTraitButton": "Добавить",
+      "removeAbilityAriaLabel": "Убрать способность",
+      "removeTraitAriaLabel": "Убрать черту {{name}}",
+      "actionCostOptions": {
+        "none": "Нет",
+        "free": "Бесплатно",
+        "one": "1 действие",
+        "two": "2 действия",
+        "three": "3 действия",
+        "reaction": "Реакция",
+        "freeAction": "Свободное действие"
+      }
+    },
+    "iwrTab": {
+      "heading": "Иммунитеты, слабости и сопротивления",
+      "noIwrAdded": "ИСС не заданы",
+      "immunities": "Иммунитеты",
+      "weaknesses": "Слабости",
+      "resistances": "Сопротивления",
+      "immunityTypePlaceholder": "Тип иммунитета…",
+      "exceptionPlaceholder": "Исключение…",
+      "addImmunity": "Добавить иммунитет",
+      "weaknessTypePlaceholder": "Тип слабости…",
+      "resistanceTypePlaceholder": "Тип сопротивления…",
+      "addWeakness": "Добавить слабость",
+      "addResistance": "Добавить сопротивление",
+      "exceptLabel": "Кроме",
+      "removeAriaLabel": "Убрать {{type}}"
+    },
+    "aurasRitualsTab": {
+      "heading": "Ауры и ритуалы",
+      "noAurasRituals": "Аур и ритуалов нет",
+      "addAura": "Добавить ауру",
+      "addRitual": "Добавить ритуал",
+      "aurasLabel": "Ауры",
+      "ritualsLabel": "Ритуалы",
+      "auraNamePlaceholder": "Название ауры…",
+      "radius": "Радиус",
+      "effect": "Эффект",
+      "traits": "Черты",
+      "addTraitPlaceholder": "Добавить черту…",
+      "addTraitButton": "Добавить",
+      "removeAuraAriaLabel": "Убрать ауру",
+      "removeTraitAriaLabel": "Убрать черту {{name}}",
+      "ritualNamePlaceholder": "Название ритуала…",
+      "rank": "Ранг",
+      "removeRitualAriaLabel": "Убрать ритуал"
+    },
+    "listPage": {
+      "heading": "Свои существа",
+      "usePregen": "Использовать шаблон",
+      "cloneFromBestiary": "Клонировать из бестиария",
+      "newCreature": "Новое существо",
+      "searchPlaceholder": "Поиск своих существ…",
+      "loading": "Загрузка…",
+      "emptyHeading": "Своих существ пока нет",
+      "emptyDesc": "Создайте первое существо, чтобы начать работу",
+      "cloneFromBestiaryEmpty": "Клонировать из бестиария",
+      "newCreatureEmpty": "Новое существо",
+      "noMatchText": "Существа по запросу «{{query}}» не найдены",
+      "deleteTitle": "Удалить существо",
+      "deleteDesc": "Вы уверены, что хотите удалить «{{name}}»?",
+      "cancel": "Отмена",
+      "delete": "Удалить"
+    },
+    "listRow": {
+      "editAriaLabel": "Редактировать существо",
+      "deleteAriaLabel": "Удалить существо"
+    }
   }
 }
