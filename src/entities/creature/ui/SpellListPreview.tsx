@@ -9,7 +9,7 @@ import {
 import { ChevronDown } from 'lucide-react'
 import type { SpellcastingSection } from '@/entities/spell'
 import { traditionColor, rankLabel } from '../lib/spellcasting-helpers'
-import { useCurrentLocale } from '@/shared/i18n'
+import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import { getTraitLabel } from '@/shared/i18n/pf2e-content'
 import { SpellCard } from './SpellCard'
 

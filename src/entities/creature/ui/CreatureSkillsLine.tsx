@@ -1,7 +1,7 @@
 import { cn } from '@/shared/lib/utils'
 import { formatModifier, formatRollFormula } from '@/shared/lib/format'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
-import { useCurrentLocale } from '@/shared/i18n'
+import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import { getSkillLabel } from '@/shared/i18n/pf2e-content'
 import type { StatModifierResult } from '../model/use-modified-stats'
 import type { SupportedLocale } from '@/shared/i18n/config'

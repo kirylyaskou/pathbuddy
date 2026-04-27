@@ -11,7 +11,7 @@ import {
   LOCALE_LABELS,
   SUPPORTED_LOCALES,
   type SupportedLocale,
-} from '@/shared/i18n'
+} from '@/shared/i18n/config'
 
 /**
  * Header-level language switcher.

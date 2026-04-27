@@ -6,8 +6,8 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { CONDITION_SLUGS, VALUED_CONDITIONS, CONDITION_GROUPS } from '@engine'
 import type { ConditionSlug } from '@engine'
-import { applyCondition } from '@/features/combat-tracker'
-import { useConditionStore } from '@/entities/condition'
+import { applyCondition } from '@/entities/condition/lib/condition-bridge'
+import { useConditionStore } from '@/entities/condition/model/store'
 import { toast } from 'sonner'
 
 interface Props {

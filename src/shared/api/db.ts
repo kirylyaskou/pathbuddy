@@ -1,5 +1,5 @@
 import { getDb, runMigrations } from '@/shared/db'
-import { loadContentTranslations } from '@/shared/i18n'
+import { loadContentTranslations } from '@/shared/i18n/pf2e-content'
 
 // Module-level guard: React StrictMode fires the SplashScreen useEffect twice in
 // dev, which launched two parallel initDatabase() calls. They race through the

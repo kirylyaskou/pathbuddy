@@ -4,8 +4,8 @@
 
 import { ConditionManager, VALUED_CONDITIONS } from '@engine'
 import type { ConditionSlug } from '@engine'
-import { useConditionStore } from '@/entities/condition'
-import type { ActiveCondition } from '@/entities/condition'
+import { useConditionStore } from '../model/store'
+import type { ActiveCondition } from '../model/types'
 import { useCombatantStore } from '@/entities/combatant'
 
 const managers = new Map<string, ConditionManager>()

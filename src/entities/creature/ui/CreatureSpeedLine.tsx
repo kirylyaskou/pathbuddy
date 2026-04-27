@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ModifierTooltip } from '@/shared/ui/ModifierTooltip'
-import { useCurrentLocale } from '@/shared/i18n'
+import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import { getTraitLabel } from '@/shared/i18n/pf2e-content'
 import type { EffectiveSpeed } from '../model/use-effective-speeds'
 

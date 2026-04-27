@@ -23,7 +23,7 @@
  */
 
 import { getDb } from '@/shared/db'
-import type { TranslationKind } from '@/shared/i18n'
+import type { TranslationKind } from '@/shared/i18n/pf2e-content'
 import type { MonsterStructuredLoc } from '@/shared/i18n/pf2e-content/lib'
 
 export type { TranslationKind }

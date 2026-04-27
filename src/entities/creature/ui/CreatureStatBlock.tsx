@@ -37,14 +37,15 @@ import { classifyAbilities } from '../model/classify-abilities'
 import { StatItem } from './StatItem'
 import { SpellListPreview } from './SpellListPreview'
 import { EquipmentBlock } from './EquipmentBlock'
-import { useContentTranslation, useCurrentLocale } from '@/shared/i18n'
+import { useContentTranslation } from '@/shared/i18n/use-content-translation'
+import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import {
   getSizeLabel,
   getTraitLabel,
   getSkillLabel,
   getLanguageLabel,
 } from '@/shared/i18n/pf2e-content'
-import type { AbilityLoc } from '@/shared/i18n'
+import type { AbilityLoc } from '@/shared/i18n/pf2e-content/lib'
 import type { SpellcastingSection } from '@/entities/spell'
 import type { ReactNode } from 'react'
 import { CreatureSpeedLine } from './CreatureSpeedLine'
