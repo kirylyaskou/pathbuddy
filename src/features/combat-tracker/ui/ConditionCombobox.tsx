@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Plus, Minus, Check, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -23,18 +24,16 @@ const PERSISTENT_SLUGS = [
   'persistent-poison',
 ] as const
 
-const SECTIONS: { label: string; slugs: readonly string[] }[] = [
-  { label: 'Persistent Damage', slugs: PERSISTENT_SLUGS },
-  { label: 'Death',             slugs: CONDITION_GROUPS['death']     ?? [] },
-  { label: 'Abilities',         slugs: CONDITION_GROUPS['abilities'] ?? [] },
-  { label: 'Senses',            slugs: CONDITION_GROUPS['senses']    ?? [] },
-  { label: 'Detection',         slugs: CONDITION_GROUPS['detection'] ?? [] },
-  { label: 'Attitudes',         slugs: CONDITION_GROUPS['attitudes'] ?? [] },
+const STATIC_GROUPED_SLUGS = [
+  ...PERSISTENT_SLUGS,
+  ...(CONDITION_GROUPS['death']     ?? []),
+  ...(CONDITION_GROUPS['abilities'] ?? []),
+  ...(CONDITION_GROUPS['senses']    ?? []),
+  ...(CONDITION_GROUPS['detection'] ?? []),
+  ...(CONDITION_GROUPS['attitudes'] ?? []),
 ]
-
-const groupedSet = new Set(SECTIONS.flatMap((s) => [...s.slugs]))
+const groupedSet = new Set(STATIC_GROUPED_SLUGS)
 const otherSlugs = CONDITION_SLUGS.filter((s) => !groupedSet.has(s))
-const allSlugs = [...SECTIONS.flatMap((s) => [...s.slugs]), ...otherSlugs]
 
 const fmt = (s: string) => s.split('-').join(' ')
 const norm = (s: string) => fmt(s).toLowerCase()
@@ -67,6 +66,25 @@ function ConditionPill({
 }
 
 export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
+  const { t } = useTranslation('common')
+
+  const SECTIONS = useMemo(
+    () => [
+      { label: t('combatTracker.conditions.sectionPersistentDamage'), slugs: PERSISTENT_SLUGS },
+      { label: t('combatTracker.conditions.sectionDeath'),     slugs: CONDITION_GROUPS['death']     ?? [] },
+      { label: t('combatTracker.conditions.sectionAbilities'), slugs: CONDITION_GROUPS['abilities'] ?? [] },
+      { label: t('combatTracker.conditions.sectionSenses'),    slugs: CONDITION_GROUPS['senses']    ?? [] },
+      { label: t('combatTracker.conditions.sectionDetection'), slugs: CONDITION_GROUPS['detection'] ?? [] },
+      { label: t('combatTracker.conditions.sectionAttitudes'), slugs: CONDITION_GROUPS['attitudes'] ?? [] },
+    ],
+    [t],
+  )
+
+  const allSlugs = useMemo(
+    () => [...SECTIONS.flatMap((s) => [...s.slugs]), ...otherSlugs],
+    [SECTIONS],
+  )
+
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
@@ -179,26 +197,26 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
           <Plus className="w-3 h-3" />
-          Condition
+          {t('combatTracker.conditions.addButton')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg p-0">
         <DialogHeader className="px-4 pt-4 pb-0">
-          <DialogTitle className="text-sm">Add Condition</DialogTitle>
+          <DialogTitle className="text-sm">{t('combatTracker.conditions.addButton')}</DialogTitle>
         </DialogHeader>
 
         {selected && isPersistent ? (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <button onClick={handleBack} className="text-xs text-muted-foreground hover:text-foreground">
-                &#8592; Back
+                &#8592; {t('combatTracker.conditions.back')}
               </button>
               <span className="text-sm font-medium capitalize">
                 {selected.replace('persistent-', 'persistent ')}
               </span>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Dice Formula</label>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('combatTracker.conditions.diceFormula')}</label>
               <Input
                 value={formula}
                 onChange={(e) => setFormula(e.target.value)}
@@ -209,14 +227,14 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
             </div>
             <Button className="w-full h-8 text-xs" onClick={handleApplyPersistent} disabled={!formula.trim()}>
               <Check className="w-3 h-3 mr-1" />
-              Apply {selected.replace('persistent-', 'persistent ')}
+              {t('combatTracker.conditions.apply')} {selected.replace('persistent-', 'persistent ')}
             </Button>
           </div>
         ) : selected && isValued ? (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <button onClick={handleBack} className="text-xs text-muted-foreground hover:text-foreground">
-                &#8592; Back
+                &#8592; {t('combatTracker.conditions.back')}
               </button>
               <span className="text-sm font-medium capitalize">
                 {selected.split('-').join(' ')}
@@ -244,7 +262,7 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
             </div>
             <Button className="w-full h-8 text-xs" onClick={handleApplyValued}>
               <Check className="w-3 h-3 mr-1" />
-              Apply {selected.split('-').join(' ')} {value}
+              {t('combatTracker.conditions.apply')} {selected.split('-').join(' ')} {value}
             </Button>
           </div>
         ) : (
@@ -252,13 +270,13 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search conditions..."
+              placeholder={t('combatTracker.conditions.searchPlaceholder')}
               className="h-8 text-xs border-0 border-b rounded-none px-3 focus-visible:ring-0"
             />
             {search ? (
               <div className="p-2 grid grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                 {filteredSlugs.length === 0 ? (
-                  <p className="col-span-3 text-center text-xs text-muted-foreground py-4">No condition found.</p>
+                  <p className="col-span-3 text-center text-xs text-muted-foreground py-4">{t('combatTracker.conditions.noMatch')}</p>
                 ) : (
                   filteredSlugs.map((slug) => (
                     <ConditionPill
@@ -341,7 +359,7 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
                       disabled={!formula.trim()}
                     >
                       <Check className="w-3 h-3 mr-1" />
-                      Apply
+                      {t('combatTracker.conditions.apply')}
                     </Button>
                   </div>
                 ) : (
@@ -368,7 +386,7 @@ export function ConditionCombobox({ combatantId, existingSlugs }: Props) {
                     </Button>
                     <Button className="h-8 text-xs flex-1" onClick={handleApply}>
                       <Check className="w-3 h-3 mr-1" />
-                      Apply {fmt(selected)} {value}
+                      {t('combatTracker.conditions.apply')} {fmt(selected)} {value}
                     </Button>
                   </div>
                 )}

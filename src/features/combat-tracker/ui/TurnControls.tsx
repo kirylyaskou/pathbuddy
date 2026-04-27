@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
 import { useCombatTrackerStore } from '../model/store'
 import { useEncounterTabsStore } from '../model/encounter-tabs-store'
@@ -7,6 +8,7 @@ import { advanceTurn, reverseTurn, canReverseTurn } from '../lib/turn-manager'
 import { useShallow } from 'zustand/react/shallow'
 
 export function TurnControls() {
+  const { t } = useTranslation('common')
   const { isRunning } = useCombatTrackerStore(
     useShallow((s) => ({ isRunning: s.isRunning }))
   )
@@ -40,16 +42,16 @@ export function TurnControls() {
         disabled={!activeTabIsStarted || !canReverseTurn()}
       >
         <ChevronLeft className="w-3.5 h-3.5" />
-        Previous
+        {t('combatTracker.previous')}
       </Button>
       <Button
         size="sm"
         className="h-7 text-xs gap-1 flex-1"
         onClick={handleNext}
         disabled={!activeTabIsStarted}
-        title={!activeTabIsStarted ? 'Press Start to begin combat' : undefined}
+        title={!activeTabIsStarted ? t('combatTracker.startHint') : undefined}
       >
-        Next Turn
+        {t('combatTracker.nextTurn')}
         <ChevronRight className="w-3.5 h-3.5" />
       </Button>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { UserPlus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -8,6 +9,7 @@ import { useCombatantStore } from '@/entities/combatant'
 import { createPCCombatant } from '../lib/initiative'
 
 export function AddPCDialog() {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [initiative, setInitiative] = useState('')
@@ -34,27 +36,27 @@ export function AddPCDialog() {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <UserPlus className="w-3.5 h-3.5" />
-          Add PC
+          {t('combatTracker.addPc.trigger')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Add Player Character</DialogTitle>
+          <DialogTitle>{t('combatTracker.addPc.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <Label htmlFor="pc-name">Name</Label>
+            <Label htmlFor="pc-name">{t('combatTracker.addPc.name')}</Label>
             <Input
               id="pc-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Character name"
+              placeholder={t('combatTracker.addPc.namePlaceholder')}
               autoFocus
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="pc-initiative">Initiative</Label>
+              <Label htmlFor="pc-initiative">{t('combatTracker.addPc.initiative')}</Label>
               <Input
                 id="pc-initiative"
                 type="number"
@@ -64,7 +66,7 @@ export function AddPCDialog() {
               />
             </div>
             <div>
-              <Label htmlFor="pc-hp">Max HP</Label>
+              <Label htmlFor="pc-hp">{t('combatTracker.addPc.maxHp')}</Label>
               <Input
                 id="pc-hp"
                 type="number"
@@ -75,7 +77,7 @@ export function AddPCDialog() {
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={!name.trim() || !initiative || !maxHp}>
-            Add to Combat
+            {t('combatTracker.addPc.submit')}
           </Button>
         </form>
       </DialogContent>

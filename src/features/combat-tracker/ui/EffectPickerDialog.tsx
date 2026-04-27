@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { SearchInput } from '@/shared/ui/search-input'
 import { ScrollArea } from '@/shared/ui/scroll-area'
@@ -21,13 +22,17 @@ interface EffectPickerDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const TABS: { id: SpellEffectCategory; label: string }[] = [
-  { id: 'spell', label: 'Spell' },
-  { id: 'alchemical', label: 'Alchemical' },
-  { id: 'other', label: 'Other' },
-]
-
 export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPickerDialogProps) {
+  const { t } = useTranslation('common')
+
+  const TABS = useMemo(
+    () => [
+      { id: 'spell' as SpellEffectCategory,      label: t('combatTracker.effects.tabSpell') },
+      { id: 'alchemical' as SpellEffectCategory, label: t('combatTracker.effects.tabAlchemical') },
+      { id: 'other' as SpellEffectCategory,      label: t('combatTracker.effects.tabOther') },
+    ],
+    [t],
+  )
   const [allEffects, setAllEffects] = useState<SpellEffectRow[]>([])
   const [contextEffects, setContextEffects] = useState<SpellEffectRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -152,7 +157,7 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="px-4 pt-4 pb-2">
-          <DialogTitle className="text-sm">Spell Effects</DialogTitle>
+          <DialogTitle className="text-sm">{t('combatTracker.effects.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="px-4 pb-2">
@@ -161,16 +166,16 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={
               contextEffects.length > 0 && !isSearching
-                ? 'Search all effects…'
-                : 'Search effects…'
+                ? t('combatTracker.effects.searchAllPlaceholder')
+                : t('combatTracker.effects.searchPlaceholder')
             }
-            aria-label="Search spell effects"
+            aria-label={t('combatTracker.effects.ariaSearch')}
             autoFocus
             className="h-8 text-xs"
           />
           {showFallbackHint && (
             <p className="mt-1 text-[10px] text-muted-foreground">
-              No spell context in this encounter — browsing full library ({allEffects.length} effects).
+              {t('combatTracker.effects.noContext')} ({allEffects.length} effects).
             </p>
           )}
         </div>
@@ -244,6 +249,7 @@ export function EffectPickerDialog({ combatantId, open, onOpenChange }: EffectPi
 }
 
 function WelcomeState() {
+  const { t } = useTranslation('common')
   return (
     <div className="flex flex-col min-h-full items-center justify-center gap-3 py-8 px-4 text-center">
       <img
@@ -252,9 +258,9 @@ function WelcomeState() {
         className="h-56 min-h-full w-auto drop-shadow-lg"
       />
       <div className="space-y-1">
-        <p className="text-sm font-semibold">Pick a category or search</p>
+        <p className="text-sm font-semibold">{t('combatTracker.effects.welcomeTitle')}</p>
         <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-          Choose a tab above to browse effects, or start typing in the search box to hunt across the full library.
+          {t('combatTracker.effects.welcomeDesc')}
         </p>
       </div>
     </div>
@@ -262,6 +268,7 @@ function WelcomeState() {
 }
 
 function EmptyState({ isSearching, tabLabel }: { isSearching: boolean; tabLabel: string }) {
+  const { t } = useTranslation('common')
   return (
     <div className="flex flex-col min-h-full items-center justify-center gap-3 py-8 px-4 text-center">
       <img
@@ -271,12 +278,14 @@ function EmptyState({ isSearching, tabLabel }: { isSearching: boolean; tabLabel:
       />
       <div className="space-y-1">
         <p className="text-sm font-semibold">
-          {isSearching ? 'No effects match your search' : `No ${tabLabel.toLowerCase()} effects here`}
+          {isSearching
+            ? t('combatTracker.effects.emptySearch')
+            : t('combatTracker.effects.emptyCategory', { category: tabLabel.toLowerCase() })}
         </p>
         <p className="text-xs text-muted-foreground max-w-xs mx-auto">
           {isSearching
-            ? 'Try a different term, or switch tabs to browse other categories.'
-            : 'Switch tabs to browse other categories, or type in search to find any effect in the library.'}
+            ? t('combatTracker.effects.emptySearchHint')
+            : t('combatTracker.effects.emptyTabsHint')}
         </p>
       </div>
     </div>

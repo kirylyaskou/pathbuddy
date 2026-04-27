@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Zap, UserPlus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ interface QuickAddCombatantFormProps {
  * Used alongside the Bestiary drag-add and AddPCDialog flows for custom entries.
  */
 export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [initiative, setInitiative] = useState('')
@@ -65,9 +67,9 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
   }
 
   const Icon = mode === 'pc' ? UserPlus : Zap
-  const title = mode === 'pc' ? 'Add Custom PC' : 'Quick Add Creature'
-  const triggerLabel = mode === 'pc' ? 'Custom PC' : 'Quick Add'
-  const namePlaceholder = mode === 'pc' ? 'Character name' : 'Creature name'
+  const title = mode === 'pc' ? t('combatTracker.quickAdd.pcTitle') : t('combatTracker.quickAdd.creatureTitle')
+  const triggerLabel = mode === 'pc' ? t('combatTracker.quickAdd.pcTrigger') : t('combatTracker.quickAdd.creatureTrigger')
+  const namePlaceholder = mode === 'pc' ? t('combatTracker.quickAdd.pcNamePlaceholder') : t('combatTracker.quickAdd.creatureNamePlaceholder')
 
   return (
     <Dialog modal={false} open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset() }}>
@@ -83,7 +85,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <Label htmlFor="qa-name">Name *</Label>
+            <Label htmlFor="qa-name">{t('combatTracker.quickAdd.name')}</Label>
             <Input
               id="qa-name"
               autoFocus
@@ -95,7 +97,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="qa-init">Initiative</Label>
+              <Label htmlFor="qa-init">{t('combatTracker.addPc.initiative')}</Label>
               <Input
                 id="qa-init"
                 type="number"
@@ -107,7 +109,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="qa-hp">HP *</Label>
+              <Label htmlFor="qa-hp">{t('combatTracker.quickAdd.hp')}</Label>
               <Input
                 id="qa-hp"
                 type="number"
@@ -122,7 +124,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
           </div>
           {mode === 'creature' && (
             <div>
-              <Label htmlFor="qa-ac">AC</Label>
+              <Label htmlFor="qa-ac">{t('combatTracker.quickAdd.ac')}</Label>
               <Input
                 id="qa-ac"
                 type="number"
@@ -139,7 +141,7 @@ export function QuickAddCombatantForm({ mode }: QuickAddCombatantFormProps) {
             className="w-full"
             disabled={!name.trim() || !hp}
           >
-            Add to Combat
+            {t('combatTracker.quickAdd.submit')}
           </Button>
         </form>
       </DialogContent>
