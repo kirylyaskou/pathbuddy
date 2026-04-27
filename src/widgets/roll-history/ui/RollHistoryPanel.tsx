@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Separator } from '@/shared/ui/separator'
@@ -57,6 +58,7 @@ function RollRow({ roll }: { roll: Roll }) {
 }
 
 export function RollHistoryPanel() {
+  const { t } = useTranslation('common')
   const rolls = useRollStore((state) => state.rolls)
   const clearRolls = useRollStore((state) => state.clearRolls)
 
@@ -67,9 +69,9 @@ export function RollHistoryPanel() {
       {/* Header */}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center">
-          <span className="text-sm font-semibold">Roll History</span>
+          <span className="text-sm font-semibold">{t('rollHistory.header')}</span>
           <Badge variant="secondary" className="ml-2">
-            {rolls.length === 1 ? '1 roll' : `${rolls.length} rolls`}
+            {t('rollHistory.roll', { count: rolls.length })}
           </Badge>
         </div>
         <Button
@@ -77,10 +79,10 @@ export function RollHistoryPanel() {
           size="sm"
           onClick={clearRolls}
           disabled={rolls.length === 0}
-          aria-label="Clear roll history"
+          aria-label={t('rollHistory.clearAriaLabel')}
         >
           <Trash2 className="h-3.5 w-3.5 mr-1" />
-          Clear
+          {t('rollHistory.clearBtn')}
         </Button>
       </div>
 
@@ -90,8 +92,8 @@ export function RollHistoryPanel() {
       <div className="max-h-[320px] overflow-y-auto">
         {rolls.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <p className="text-sm font-semibold">No rolls yet</p>
-            <p className="text-xs">Rolls will appear here during the session.</p>
+            <p className="text-sm font-semibold">{t('rollHistory.noRollsYet')}</p>
+            <p className="text-xs">{t('rollHistory.rollsWillAppear')}</p>
           </div>
         ) : (
           displayRolls.map((roll) => <RollRow key={roll.id} roll={roll} />)
