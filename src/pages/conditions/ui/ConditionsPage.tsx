@@ -72,13 +72,6 @@ function ConditionCard({ condition, expanded, onToggle }: {
         </span>
       </div>
 
-      {/* Modifier summary — always visible if present */}
-      {condition.modifier_summary && (
-        <div className="px-3 pb-1.5">
-          <p className="text-xs text-amber-300/80 font-medium">{condition.modifier_summary}</p>
-        </div>
-      )}
-
       {/* Expanded detail */}
       {expanded && (
         <div className="px-3 pb-3 border-t border-border/30 pt-2 space-y-2">
