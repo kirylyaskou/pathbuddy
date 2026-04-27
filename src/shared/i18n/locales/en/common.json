@@ -910,7 +910,19 @@
   "commandPalette": {
     "searchPages": "Search pages...",
     "noResults": "No results.",
-    "pagesGroup": "Pages"
+    "pagesGroup": "Pages",
+    "globalSearch": {
+      "placeholder": "Search creatures, spells, items…",
+      "noResults": "No results.",
+      "groups": {
+        "creatures": "Creatures",
+        "spells": "Spells",
+        "items": "Items",
+        "conditions": "Conditions",
+        "hazards": "Hazards",
+        "actions": "Actions"
+      }
+    }
   },
   "pregen": {
     "pcTitle": "Use Pregen as Character",

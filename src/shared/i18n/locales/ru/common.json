@@ -933,7 +933,19 @@
   "commandPalette": {
     "searchPages": "Поиск страниц...",
     "noResults": "Нет результатов.",
-    "pagesGroup": "Страницы"
+    "pagesGroup": "Страницы",
+    "globalSearch": {
+      "placeholder": "Поиск существ, заклинаний, предметов…",
+      "noResults": "Нет результатов.",
+      "groups": {
+        "creatures": "Существа",
+        "spells": "Заклинания",
+        "items": "Предметы",
+        "conditions": "Состояния",
+        "hazards": "Опасности",
+        "actions": "Действия"
+      }
+    }
   },
   "pregen": {
     "pcTitle": "Использовать прегена как персонажа",
