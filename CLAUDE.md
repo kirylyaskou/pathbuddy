@@ -14,7 +14,7 @@ PF2e (Pathfinder 2e) GM Assistant. Tauri 2 desktop app.
 - Drizzle ORM for schema definitions — raw `getSqlite()` only for perf-critical paths (batch insert, FTS5)
 - No new npm or cargo dependencies without flagging to user first
 - No improvisation on architecture decisions — if not in CONTEXT.md → stop and ask
-- `.planning/` files are source of truth — code must match them, not vice versa
+- `.gsd/` files are source of truth for active work — code must match them, not vice versa
 - `useShallow` mandatory for all Zustand object selectors
 - `createHashRouter` only — no HTML5 history (Tauri WebView limitation)
 - `import.meta.glob` for Drizzle migrations — no Node.js `fs` in WebView context
@@ -87,8 +87,8 @@ code-review-graph build                         # full rebuild after major refac
 - `get_community` — module cluster this node belongs to
 
 ## Workflow
-GSD lifecycle: `discuss-phase → ui-phase → plan-phase → execute-phase`
-Config: `.planning/config.json` — parallelization=true, auto_advance=true.
+GSD lifecycle: `gsd_plan_milestone → gsd_plan_slice → gsd_plan_task → gsd_complete_*`
+GSD backend: `.gsd/` (MCP JSON-based) — milestones/slices/tasks tracked via `gsd_*` tools.
 GSD agents: `C:/Users/kiryl/.claude/agents/`
 
 ### Session strategy
@@ -123,13 +123,15 @@ node "C:/Users/kiryl/.claude/get-shit-done/bin/gsd-tools.cjs" <command>
 ### Model preferences
 - **Planning** (plan-phase, brainstorming): Opus
 - **Everything else** (execution, debugging, review): Sonnet
-- Config: `.planning/config.json` — planner=opus, checker=haiku
 
 ## Key Files
-- `.planning/STATE.md` — current phase and progress
-- `.planning/ROADMAP.md` — all phases
-- `.planning/phases/NN-name/NN-CONTEXT.md` — phase decisions and rationale
-- `.planning/phases/NN-name/NN-UI-SPEC.md` — UI design contract
+- `.gsd/STATE.md` — current milestone/slice/task progress (`gsd_progress` for structured view)
+- `.gsd/milestones/M001/M001-ROADMAP.md` — milestone plan (`gsd_roadmap` to query)
+- `.gsd/DECISIONS.md` — append-only architectural decisions register
+- `.gsd/REQUIREMENTS.md` — capability contract (requirements + validation status)
+- `.planning/PROJECT.md` — high-level project reference (historical, read-only)
+- `.planning/milestones/*.md` — archived milestone roadmaps v1.5.0–v1.7.4 (read-only)
+- `.planning/phases/{84..113}-*/SUMMARY.md` — completed phase narratives (read-only)
 - `src/shared/api/sync.ts` — Foundry VTT data extraction
 - `src/app/styles/globals.css` — design tokens (Golden Parchment theme)
 
