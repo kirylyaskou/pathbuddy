@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SearchInput } from '@/shared/ui/search-input'
 import {
   Select,
@@ -50,12 +51,6 @@ function customToCreatureRow(custom: CustomCreatureRow, stat: CreatureStatBlockD
 
 type LeftTab = 'bestiary' | 'hazards' | 'characters'
 
-const TIERS: { value: WeakEliteTier; label: string }[] = [
-  { value: 'weak', label: 'Weak' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'elite', label: 'Elite' },
-]
-
 const CREATURE_TYPES = [
   'aberration', 'animal', 'astral', 'beast', 'celestial', 'construct',
   'dragon', 'dream', 'elemental', 'ethereal', 'fey', 'fiend', 'fungus',
@@ -75,6 +70,7 @@ function DraggableBestiaryRow({ row, tier, children }: { row: CreatureRow; tier:
 }
 
 export function BestiarySearchPanel() {
+  const { t } = useTranslation('common')
   const [activeTab, setActiveTab] = useState<LeftTab>('bestiary')
   const [query, setQuery] = useState('')
   const [creatureType, setCreatureType] = useState('__all__')
@@ -92,6 +88,18 @@ export function BestiarySearchPanel() {
   // `sourceFilter === null` (All) — source chips filter Paizo-library scope
   // and customs don't belong to any such scope.
   const [customRows, setCustomRows] = useState<CreatureRow[]>([])
+
+  const tiers = useMemo<{ value: WeakEliteTier; label: string }[]>(() => [
+    { value: 'weak', label: t('bestiarySearch.tierWeak') },
+    { value: 'normal', label: t('bestiarySearch.tierNormal') },
+    { value: 'elite', label: t('bestiarySearch.tierElite') },
+  ], [t])
+
+  const tabs = useMemo<{ value: LeftTab; label: string }[]>(() => [
+    { value: 'bestiary', label: t('bestiarySearch.tabBestiary') },
+    { value: 'hazards', label: t('bestiarySearch.tabHazards') },
+    { value: 'characters', label: t('bestiarySearch.tabCharacters') },
+  ], [t])
 
   const combatants = useCombatantStore(useShallow((s) => s.combatants))
   const addCombatant = useCombatantStore((s) => s.addCombatant)
@@ -201,12 +209,6 @@ export function BestiarySearchPanel() {
     [combatants, addCombatant, selectedTier]
   )
 
-  const tabs: { value: LeftTab; label: string }[] = [
-    { value: 'bestiary', label: 'Bestiary' },
-    { value: 'hazards', label: 'Hazards' },
-    { value: 'characters', label: 'Characters' },
-  ]
-
   return (
     <div className="flex flex-col h-full">
       {/* Tab toggle row */}
@@ -240,16 +242,16 @@ export function BestiarySearchPanel() {
             <SearchInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search bestiary..."
+              placeholder={t('bestiarySearch.searchBestiaryPlaceholder')}
               className="h-8 text-sm"
             />
             {/* Creature type filter */}
             <Select value={creatureType} onValueChange={setCreatureType}>
               <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="All types" />
+                <SelectValue placeholder={t('bestiarySearch.allTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">All types</SelectItem>
+                <SelectItem value="__all__">{t('bestiarySearch.allTypes')}</SelectItem>
                 {CREATURE_TYPES.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -259,22 +261,22 @@ export function BestiarySearchPanel() {
             </Select>
             {/* Tier chips */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Tier</span>
-              {TIERS.map((t) => (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">{t('bestiarySearch.tierLabel')}</span>
+              {tiers.map((tier) => (
                 <button
-                  key={t.value}
-                  onClick={() => setSelectedTier(t.value)}
+                  key={tier.value}
+                  onClick={() => setSelectedTier(tier.value)}
                   className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                    selectedTier === t.value
-                      ? t.value === 'elite'
+                    selectedTier === tier.value
+                      ? tier.value === 'elite'
                         ? 'bg-primary text-primary-foreground'
-                        : t.value === 'weak'
+                        : tier.value === 'weak'
                           ? 'bg-muted text-muted-foreground'
                           : 'bg-secondary text-secondary-foreground'
                       : 'text-muted-foreground hover:bg-secondary/50'
                   }`}
                 >
-                  {t.label}
+                  {tier.label}
                 </button>
               ))}
             </div>
@@ -288,11 +290,11 @@ export function BestiarySearchPanel() {
                 value={sourceFilter ?? '__all__'}
                 onValueChange={(v) => setSourceFilter(v === '__all__' ? null : v)}
               >
-                <SelectTrigger className="h-7 text-xs" aria-label="Source library filter">
-                  <SelectValue placeholder="All sources" />
+                <SelectTrigger className="h-7 text-xs" aria-label={t('bestiarySearch.sourceLibraryFilterAriaLabel')}>
+                  <SelectValue placeholder={t('bestiarySearch.allSources')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All sources</SelectItem>
+                  <SelectItem value="__all__">{t('bestiarySearch.allSources')}</SelectItem>
                   {librarySources.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
@@ -306,11 +308,13 @@ export function BestiarySearchPanel() {
           <div className="flex-1 overflow-y-auto">
             <div className="p-2 space-y-1.5">
               {loading && results.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t('bestiarySearch.searching')}</p>
               )}
               {!loading && results.length === 0 && customFiltered.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  {query.trim() ? `No creatures found for "${query}"` : 'No creatures found'}
+                  {query.trim()
+                    ? t('bestiarySearch.noCreaturesFoundQuery', { query })
+                    : t('bestiarySearch.noCreaturesFound')}
                 </p>
               )}
               {/* Custom creatures rendered first with a gold
