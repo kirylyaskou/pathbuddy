@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
@@ -19,6 +20,7 @@ const RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'unique']
 const SIZES: DisplaySize[] = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan']
 
 export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const [traitInput, setTraitInput] = useState('')
 
@@ -39,10 +41,10 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Concept</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.conceptTab.heading')}</h2>
 
       <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">{t('customCreatureBuilder.conceptTab.name')}</Label>
         <Input
           id="name"
           value={form.name}
@@ -54,7 +56,7 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
 
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="level">Level</Label>
+          <Label htmlFor="level">{t('customCreatureBuilder.conceptTab.level')}</Label>
           <Input
             id="level"
             type="number"
@@ -68,7 +70,7 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label>Rarity</Label>
+          <Label>{t('customCreatureBuilder.conceptTab.rarity')}</Label>
           <Select
             value={form.rarity}
             onValueChange={(v) =>
@@ -88,7 +90,7 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Size</Label>
+          <Label>{t('customCreatureBuilder.conceptTab.size')}</Label>
           <Select
             value={form.size}
             onValueChange={(v) =>
@@ -110,11 +112,11 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="type">Creature Type</Label>
+        <Label htmlFor="type">{t('customCreatureBuilder.conceptTab.creatureType')}</Label>
         <Input
           id="type"
           value={form.type}
-          placeholder="e.g. humanoid, beast, construct"
+          placeholder={t('customCreatureBuilder.conceptTab.typeInputPlaceholder')}
           onChange={(e) =>
             dispatch({ type: 'SET_FIELD', path: 'type', value: e.target.value })
           }
@@ -122,12 +124,12 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Traits</Label>
+        <Label>{t('customCreatureBuilder.conceptTab.traits')}</Label>
         <div className="flex items-center gap-2">
           <Input
             value={traitInput}
             onChange={(e) => setTraitInput(e.target.value)}
-            placeholder="Add trait…"
+            placeholder={t('customCreatureBuilder.conceptTab.addTraitPlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -136,20 +138,20 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
             }}
           />
           <Button size="sm" variant="outline" onClick={addTrait}>
-            Add
+            {t('customCreatureBuilder.conceptTab.addTraitButton')}
           </Button>
         </div>
         {form.traits.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-2">
-            {form.traits.map((t, i) => (
+            {form.traits.map((trait, i) => (
               <span
-                key={`${t}-${i}`}
+                key={`${trait}-${i}`}
                 className="inline-flex items-center gap-1 text-xs rounded bg-secondary/50 border border-border/50 px-2 py-0.5"
               >
-                {t}
+                {trait}
                 <button
                   type="button"
-                  aria-label={`Remove ${t}`}
+                  aria-label={t('customCreatureBuilder.conceptTab.removeTraitAriaLabel', { name: trait })}
                   onClick={() => removeTrait(i)}
                   className="hover:text-destructive"
                 >
@@ -162,7 +164,7 @@ export function ConceptTab({ state, dispatch }: BuilderTabsProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t('customCreatureBuilder.conceptTab.description')}</Label>
         <Textarea
           id="description"
           rows={4}

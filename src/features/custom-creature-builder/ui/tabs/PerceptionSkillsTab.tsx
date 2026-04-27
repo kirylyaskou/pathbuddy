@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
@@ -7,6 +8,7 @@ import type { BuilderTabsProps } from '../BuilderTabs'
 import { BenchmarkHint } from '../BenchmarkHint'
 
 export function PerceptionSkillsTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   const [skillNameInput, setSkillNameInput] = useState('')
   const [skillModInput, setSkillModInput] = useState(0)
@@ -21,11 +23,11 @@ export function PerceptionSkillsTab({ state, dispatch }: BuilderTabsProps) {
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Perception &amp; Skills</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.perceptionSkillsTab.heading')}</h2>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="perc">Perception</Label>
+          <Label htmlFor="perc">{t('customCreatureBuilder.perceptionSkillsTab.perception')}</Label>
           <BenchmarkHint
             stat="perception"
             level={form.level}
@@ -47,12 +49,12 @@ export function PerceptionSkillsTab({ state, dispatch }: BuilderTabsProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Skills</Label>
+        <Label>{t('customCreatureBuilder.perceptionSkillsTab.skills')}</Label>
         <div className="flex items-center gap-2">
           <Input
             value={skillNameInput}
             onChange={(e) => setSkillNameInput(e.target.value)}
-            placeholder="Skill name"
+            placeholder={t('customCreatureBuilder.perceptionSkillsTab.skillNamePlaceholder')}
           />
           <Input
             type="number"
@@ -61,12 +63,12 @@ export function PerceptionSkillsTab({ state, dispatch }: BuilderTabsProps) {
             onChange={(e) => setSkillModInput(Number(e.target.value))}
           />
           <Button size="sm" variant="outline" onClick={addSkill}>
-            Add
+            {t('customCreatureBuilder.conceptTab.addTraitButton')}
           </Button>
         </div>
         <div className="space-y-1 pt-2">
           {form.skills.length === 0 && (
-            <p className="text-xs text-muted-foreground">No skills added.</p>
+            <p className="text-xs text-muted-foreground">{t('customCreatureBuilder.perceptionSkillsTab.noSkillsAdded')}</p>
           )}
           {form.skills.map((s, i) => (
             <div
@@ -101,7 +103,7 @@ export function PerceptionSkillsTab({ state, dispatch }: BuilderTabsProps) {
               />
               <button
                 type="button"
-                aria-label={`Remove ${s.name}`}
+                aria-label={t('customCreatureBuilder.perceptionSkillsTab.removeSkillAriaLabel', { name: s.name })}
                 onClick={() => dispatch({ type: 'REMOVE_SKILL', index: i })}
                 className="p-1 text-muted-foreground hover:text-destructive"
               >

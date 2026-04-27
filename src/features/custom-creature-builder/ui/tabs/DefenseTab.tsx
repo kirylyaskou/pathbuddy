@@ -1,4 +1,5 @@
 import type { Dispatch } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import type { StatKind } from '@engine'
@@ -11,16 +12,17 @@ type DefenseField = 'ac' | 'hp' | 'fort' | 'ref' | 'will'
 type DefenseStat = Exclude<StatKind, 'strikeDamage' | 'areaDamage'>
 
 export function DefenseTab({ state, dispatch }: BuilderTabsProps) {
+  const { t } = useTranslation('common')
   const { form } = state
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-base font-semibold">Defense</h2>
+      <h2 className="text-base font-semibold">{t('customCreatureBuilder.defenseTab.heading')}</h2>
 
-      <Field label="AC" field="ac" stat="ac" form={form} dispatch={dispatch} />
-      <Field label="HP" field="hp" stat="hp" form={form} dispatch={dispatch} />
-      <Field label="Fort" field="fort" stat="save" form={form} dispatch={dispatch} />
-      <Field label="Ref" field="ref" stat="save" form={form} dispatch={dispatch} />
-      <Field label="Will" field="will" stat="save" form={form} dispatch={dispatch} />
+      <Field label={t('customCreatureBuilder.defenseTab.ac')} field="ac" stat="ac" form={form} dispatch={dispatch} />
+      <Field label={t('customCreatureBuilder.defenseTab.hp')} field="hp" stat="hp" form={form} dispatch={dispatch} />
+      <Field label={t('customCreatureBuilder.defenseTab.fort')} field="fort" stat="save" form={form} dispatch={dispatch} />
+      <Field label={t('customCreatureBuilder.defenseTab.ref')} field="ref" stat="save" form={form} dispatch={dispatch} />
+      <Field label={t('customCreatureBuilder.defenseTab.will')} field="will" stat="save" form={form} dispatch={dispatch} />
     </div>
   )
 }
