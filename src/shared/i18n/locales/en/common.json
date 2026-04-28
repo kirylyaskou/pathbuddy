@@ -864,6 +864,7 @@
       "target": "Target",
       "cast": "Cast",
       "cost": "Cost",
+      "heightenedLabel": "Heightened",
       "closePanel": "Close panel"
     },
     "item": {

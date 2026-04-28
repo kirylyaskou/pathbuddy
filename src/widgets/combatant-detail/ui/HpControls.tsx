@@ -81,6 +81,15 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
   }
 
   const shieldAcBonus = isNpc(combatant) ? combatant.shieldAcBonus ?? 0 : 0
+  // PF2e Shield spell: Foundry models AC bonus via ActiveEffectLike override on
+  // system.attributes.shield (no FlatModifier rule). PathMaid's abstraction is
+  // shieldRaised + shieldAcBonus — derive an effective raised state when the
+  // Shield spell-effect is active so the +1 circumstance bonus shows up
+  // without mutating combatant state on add/remove.
+  const hasShieldEffect = rawEffects.some((e) => e.effectName.trim().toLowerCase() === 'shield')
+  const effectiveShieldBonus = hasShieldEffect
+    ? Math.max(1, shieldAcBonus)
+    : (isNpc(combatant) && combatant.shieldRaised ? shieldAcBonus : 0)
 
   const totalTypedDamage = damageEntries.reduce((s, e) => s + e.amount, 0)
   const hasEntries = damageEntries.length > 0
@@ -388,7 +397,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
             combatantId={combatant.id}
             combatantName={combatant.displayName}
             creature={creature}
-            ac={getModified(creature.ac + (isNpc(combatant) && combatant.shieldRaised ? shieldAcBonus : 0), 'ac')}
+            ac={getModified(creature.ac + effectiveShieldBonus, 'ac')}
             getModified={getModified}
           />
         </>

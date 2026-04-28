@@ -8,7 +8,6 @@ import { TraitPill } from '@/shared/ui/trait-pill'
 import { damageTypeColor } from '@/shared/lib/damage-colors'
 import { getSpellById, getSpellByName } from '@/shared/api'
 import type { SpellRow } from '@/entities/spell'
-import { stripHtml } from '@/shared/lib/html'
 import { heightenFormula } from '@engine'
 import { actionCostLabel, resolveFoundryTokensForSpell } from '../lib/spellcasting-helpers'
 import { parseJsonArray, parseJsonOrNull } from '@/shared/lib/json'
@@ -16,6 +15,7 @@ import { useContentTranslation } from '@/shared/i18n/use-content-translation'
 import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import { getTraitLabel } from '@/shared/i18n/pf2e-content'
 import { SafeHtml } from '@/shared/lib/safe-html'
+import { extractHeightening, applyHeightenedScalings } from '@/entities/spell/lib/heightened-text'
 
 type IntervalHeighten = { type: 'interval'; perRanks: number; damage: Record<string, string> }
 type FixedHeightenDamageEntry = { formula?: string; type?: string; damageType?: string; category?: string | null }
@@ -89,6 +89,20 @@ export function SpellCard({ foundryId, name, source, combatId, castRank, castCon
     () => parseJsonOrNull<HeightenSpec>(spell?.heightened_json),
     [spell?.heightened_json],
   )
+
+  const description = useMemo(() => {
+    if (!spell) return { mainHtml: '', blocks: [] }
+    const baseRank = spell.rank
+    const effectiveRank = castRank ?? baseRank
+    const sourceHtml = localizedDescriptionHtml
+      ?? (spell.description
+        ? resolveFoundryTokensForSpell(spell.description, { itemLevel: effectiveRank })
+        : null)
+    if (!sourceHtml) return { mainHtml: '', blocks: [] }
+    const extracted = extractHeightening(sourceHtml)
+    const scaledMain = applyHeightenedScalings(extracted.mainHtml, extracted.blocks, effectiveRank, baseRank)
+    return { mainHtml: scaledMain, blocks: extracted.blocks }
+  }, [spell, castRank, localizedDescriptionHtml])
 
   const parsedDamage = useMemo(() => {
     type DamageEntry = { formula?: string; damage?: string; damageType?: string; type?: string }
@@ -213,19 +227,26 @@ export function SpellCard({ foundryId, name, source, combatId, castRank, castCon
               ))}
             </div>
           )}
-          {/* Description — prefer pack-translated HTML overlay (carries
-              degree-of-success branches as <p><strong>…</strong></p> blocks);
-              fall back to engine description with foundry-token resolution. */}
-          {localizedDescriptionHtml ? (
+          {/* Description — heightened blocks extracted out; numeric scalings
+              (Hardness etc.) applied when castRank > base rank. */}
+          {description.mainHtml && (
             <SafeHtml
-              html={localizedDescriptionHtml}
+              html={description.mainHtml}
               className="text-xs text-foreground/75 leading-relaxed"
             />
-          ) : spell.description ? (
-            <p className="text-xs text-foreground/75 leading-relaxed whitespace-pre-line">
-              {stripHtml(resolveFoundryTokensForSpell(spell.description, { itemLevel: castRank ?? spell.rank }))}
-            </p>
-          ) : null}
+          )}
+          {description.blocks.length > 0 && (
+            <div className="mt-1 rounded border border-pf-gold/30 bg-pf-gold/5 p-2 space-y-1">
+              {description.blocks.map((b, i) => (
+                <p key={i} className="text-xs leading-snug">
+                  <span className="font-mono font-semibold text-pf-gold mr-1.5">
+                    {t('entities.spell.heightenedLabel', { defaultValue: 'Heightened' })} (+{b.step})
+                  </span>
+                  <span className="text-foreground/85">{b.text}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

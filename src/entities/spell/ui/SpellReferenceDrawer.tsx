@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { getSpellById } from '@/shared/api'
 import type { SpellRow } from '@/shared/api'
 import { cn } from '@/shared/lib/utils'
-import {  sanitizeFoundryText } from '@/shared/lib/foundry-tokens'
+import { resolveFoundryTokens } from '@/shared/lib/foundry-tokens'
 import { SafeHtml } from '@/shared/lib/safe-html'
 import { NoTranslationBadge } from '@/shared/ui/no-translation-badge'
 import { useContentTranslation } from '@/shared/i18n/use-content-translation'
@@ -13,6 +13,7 @@ import { useCurrentLocale } from '@/shared/i18n/use-current-locale'
 import { getTraitLabel } from '@/shared/i18n/pf2e-content'
 import { TraitPill } from '@/shared/ui/trait-pill'
 import { CritButton } from '@/shared/ui/crit-button'
+import { extractHeightening } from '../lib/heightened-text'
 import type { SpellStructuredLoc } from '@/shared/i18n/pf2e-content/lib'
 import { stripRarityMarker } from '@/shared/lib/display-name'
 
@@ -63,6 +64,16 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
       return null
     }
   }, [translation?.structuredJson])
+
+  // Extract heightened blocks for separate visual rendering. No castRank in
+  // drawer (opens from global catalog), so numeric scaling is skipped here —
+  // see SpellCard for the cast-context variant.
+  const description = useMemo(() => {
+    const sourceHtml = translation?.textLoc
+      ?? (spell?.description ? resolveFoundryTokens(spell.description, { itemLevel: spell.rank }) : null)
+    if (!sourceHtml) return { mainHtml: '', blocks: [] }
+    return extractHeightening(sourceHtml)
+  }, [translation?.textLoc, spell?.description, spell?.rank])
 
   return (
     <Sheet open={!!spellId} onOpenChange={(open) => { if (!open) onClose() }}>
@@ -172,22 +183,25 @@ export function SpellReferenceDrawer({ spellId, onClose }: SpellReferenceDrawerP
                 </div>
               )}
 
-              {/* Description — when a vendored RU translation exists, render
-                  it through SafeHtml (handles Babele @UUID / @Trait /
-                  @Damage / @Check tokens + tables / lists / details).
-                  Otherwise sanitize the engine EN HTML through the
-                  pre-existing token replacement path. */}
-              {translation?.textLoc ? (
+              {/* Main description body — heightened blocks already extracted
+                  out and rendered separately below for clearer visual hierarchy. */}
+              {description.mainHtml && (
                 <SafeHtml
-                  html={translation.textLoc}
+                  html={description.mainHtml}
                   className="text-[13px] text-foreground/80 leading-relaxed"
                 />
-              ) : (
-                spell.description && (
-                  <p className="text-[13px] text-foreground/80 leading-relaxed whitespace-pre-line">
-                    {sanitizeFoundryText(spell.description, { itemLevel: spell.rank })}
-                  </p>
-                )
+              )}
+              {description.blocks.length > 0 && (
+                <div className="rounded border border-pf-gold/30 bg-pf-gold/5 p-3 space-y-1.5">
+                  {description.blocks.map((b, i) => (
+                    <p key={i} className="text-[13px] leading-snug">
+                      <span className="font-mono font-semibold text-pf-gold mr-1.5">
+                        {t('entities.spell.heightenedLabel', { defaultValue: 'Heightened' })} (+{b.step})
+                      </span>
+                      <span className="text-foreground/85">{b.text}</span>
+                    </p>
+                  ))}
+                </div>
               )}
 
               {/* Source */}
