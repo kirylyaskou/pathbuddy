@@ -3,6 +3,8 @@
 export interface FoundryIwrEntry {
   type: string
   value?: number
+  exceptions?: unknown[]
+  doubleVs?: unknown[]
 }
 
 export interface FoundryOtherSpeed {

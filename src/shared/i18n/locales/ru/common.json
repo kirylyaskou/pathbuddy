@@ -241,6 +241,7 @@
       "title": "Горячие клавиши",
       "description": "Chord-хоткеи для боевых действий. Каждый хоткей — два нажатия: комбинация + суффикс.",
       "add": "Добавить",
+      "addButton": "Добавить",
       "save": "Сохранить",
       "cancel": "Отмена",
       "delete": "Удалить",
@@ -251,13 +252,27 @@
       "chordField": "Chord",
       "actionField": "Действие",
       "noHotkeys": "Горячие клавиши не настроены",
+      "empty": "Горячие клавиши не настроены",
+      "columnAction": "Действие",
+      "columnChord": "Комбинация",
+      "fieldAction": "Действие",
+      "fieldCondition": "Состояние",
+      "fieldValue": "Значение",
+      "fieldChord": "Комбинация",
+      "chordPlaceholder": "Не задано",
+      "captureIdle": "Нажмите для записи комбинации",
+      "captureStep1": "Нажмите комбинацию (напр. Ctrl+F)…",
+      "captureStep2": "Теперь нажмите суффикс (цифра или буква)…",
+      "captureChange": "Изменить",
+      "captureListening": "Ожидание…",
+      "conditionValueHint": "Значение берётся из следующей нажатой цифры (1–9)",
+      "formTitle": "Добавить / изменить хоткей",
       "actions": {
         "nextInitiative": "Следующий ход",
         "zoomIn": "Увеличить",
         "zoomOut": "Уменьшить",
         "applyCondition": "Применить состояние",
-        "conditionField": "Состояние",
-        "valueField": "Значение"
+        "stealthVsParty": "Скрытность vs партия"
       }
     }
   },
@@ -943,7 +958,8 @@
         "items": "Предметы",
         "conditions": "Состояния",
         "hazards": "Опасности",
-        "actions": "Действия"
+        "actions": "Действия",
+        "feats": "Черты"
       }
     }
   },

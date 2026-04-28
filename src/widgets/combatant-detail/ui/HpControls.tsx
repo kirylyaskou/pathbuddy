@@ -33,8 +33,8 @@ import { IwrPreview } from './IwrPreview'
 interface HpControlsProps {
   combatant: Combatant
   iwrImmunities?: string[]
-  iwrWeaknesses?: { type: string; value: number }[]
-  iwrResistances?: { type: string; value: number }[]
+  iwrWeaknesses?: { type: string; value: number; exceptions?: string[] }[]
+  iwrResistances?: { type: string; value: number; exceptions?: string[]; doubleVs?: string[] }[]
   creature?: CreatureStatBlockData | null
 }
 
@@ -119,8 +119,12 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
     const immunities = (iwrImmunities || [])
       .filter((t) => (IMMUNITY_TYPES as readonly string[]).includes(t))
       .map((t) => createImmunity(t as ImmunityType))
-    const weaknesses = (iwrWeaknesses || []).map((w) => createWeakness(w.type as WeaknessType, w.value))
-    const resistances = (mergedResistances || []).map((r) => createResistance(r.type as ResistanceType, r.value))
+    const weaknesses = (iwrWeaknesses || []).map((w) =>
+      createWeakness(w.type as WeaknessType, w.value, { exceptions: w.exceptions as DamageType[] | undefined })
+    )
+    const resistances = (mergedResistances || []).map((r) =>
+      createResistance(r.type as ResistanceType, r.value, r.exceptions as DamageType[] | undefined, r.doubleVs)
+    )
 
     return activeEntries.map(({ damageType, amount }) => ({
       type: damageType,
@@ -241,7 +245,7 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
           </Button>
 
           {/* Damage entries area */}
-          <div className="min-h-7 w-full flex flex-wrap items-center gap-1 px-2 py-1 rounded border border-border/50 bg-secondary/20">
+          <div className="min-h-7 max-h-20 w-full flex flex-wrap items-start gap-1 px-2 py-1 rounded border border-border/50 bg-secondary/20 overflow-y-auto">
             {!hasEntries && materials.length === 0 && (
               <span className="text-xs text-muted-foreground">{t('combatantDetail.untyped')}</span>
             )}

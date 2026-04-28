@@ -120,6 +120,23 @@ export async function saveEncounterCombatants(
   }
 }
 
+export async function insertEncounterCombatant(
+  encounterId: string,
+  c: EncounterCombatantRow,
+  sortOrder: number
+): Promise<void> {
+  const db = await getDb()
+  await db.execute(
+    `INSERT OR IGNORE INTO encounter_combatants
+       (id, encounter_id, creature_ref, display_name, initiative, hp, max_hp, temp_hp,
+        is_npc, weak_elite_tier, creature_level, sort_order, is_hazard, hazard_ref, perception)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [c.id, encounterId, c.creatureRef ?? null, c.displayName, c.initiative,
+     c.hp, c.maxHp, c.tempHp, c.isNPC ? 1 : 0, c.weakEliteTier ?? 'normal', c.creatureLevel ?? 0,
+     sortOrder, c.isHazard ? 1 : 0, c.hazardRef ?? null, null]
+  )
+}
+
 export async function loadEncounterCombatants(encounterId: string): Promise<EncounterCombatantRow[]> {
   const db = await getDb()
   const rows = await db.select<Array<{

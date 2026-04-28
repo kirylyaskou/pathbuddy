@@ -7,7 +7,9 @@
     <title>PathMaid</title>
     <style>
       @keyframes msg-fade-in { from { opacity: 0; } to { opacity: 1; } }
-      body { margin: 0; }
+      html { margin: 0; height: 100%; }
+      body { margin: 0; height: 100%; overflow: hidden; }
+      #root { height: 100%; display: flex; flex-direction: column; }
       #static-splash {
         position: fixed; inset: 0; z-index: 40;
         display: flex; flex-direction: column;

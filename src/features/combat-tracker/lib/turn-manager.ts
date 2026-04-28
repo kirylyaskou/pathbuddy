@@ -4,7 +4,8 @@ import { useEffectStore } from '@/entities/spell-effect'
 import type { ActiveEffect } from '@/entities/spell-effect'
 import { decrementEffectTurns as decrementEffectTurnsApi } from '@/shared/api/effects'
 import { useCombatTrackerStore } from '../model/store'
-import type { ConditionSlug } from '@engine'
+import type { ConditionSlug, ConditionInput } from '@engine'
+import { computeStatModifier } from '@engine'
 import { toast } from 'sonner'
 
 interface TurnSnapshot {
@@ -76,12 +77,22 @@ export function advanceTurn(): void {
     const sickenedState = allManagerStates.find((c) => c.slug === 'sickened')
     if (sickenedState) {
       const combatant = combatants.find((cb) => cb.id === endingCombatantId)
-      const creatureRef = combatant && 'creatureRef' in combatant ? (combatant.creatureRef as string) : ''
+      const baseFort = (combatant && 'fort' in combatant ? (combatant.fort as number | undefined) : undefined) ?? 0
+      const conditions = useConditionStore
+        .getState()
+        .activeConditions.filter((c) => c.combatantId === endingCombatantId)
+        .map((c): ConditionInput => ({ slug: c.slug as ConditionInput['slug'], value: c.value ?? 1 }))
+      const condMod = conditions.length > 0
+        ? computeStatModifier(conditions, 'fortitude', ['fortitude']).netModifier
+        : 0
 
+      const creatureRef = (combatant && 'creatureRef' in combatant) ? (combatant as { creatureRef: string }).creatureRef : undefined
       tracker.setPendingSickenedSave({
         combatantId: endingCombatantId,
         combatantName: combatant?.displayName ?? 'Combatant',
         sickenedValue: sickenedState.value,
+        baseFort,
+        condMod,
         creatureRef,
       })
     }

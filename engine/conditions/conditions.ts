@@ -191,7 +191,7 @@ export class ConditionManager {
 
   // Source: PF2e CRB — frightened/stunned/slowed reduce by 1 at end of owner's turn.
   // Note: sickened is intentionally excluded — it requires a Fortitude save (DC 15) at
-  // end of turn to reduce (success: −1, critical success: remove). Handled by UI layer.
+  // end of turn to reduce (success: −1, critical success: −2). Handled by UI layer.
   endTurn(): void {
     const autoDecrement: ConditionSlug[] = ['frightened', 'stunned', 'slowed']
     for (const slug of autoDecrement) {

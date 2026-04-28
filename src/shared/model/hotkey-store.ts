@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { listHotkeys, type Hotkey } from '@/shared/api/hotkeys'
+import type { StealthVsPartyRow } from '@/shared/lib/stealth-vs-party'
 
 export interface ParsedChord {
   /** Key combination before the last colon, e.g. "Ctrl+F" */
@@ -40,6 +41,10 @@ interface HotkeyStoreState {
   /** Zoom level — session only, not persisted */
   zoomLevel: number
   setZoomLevel: (level: number) => void
+
+  /** Stealth-vs-party result panel — null when hidden */
+  stealthResult: StealthVsPartyRow[] | null
+  setStealthResult: (rows: StealthVsPartyRow[] | null) => void
 }
 
 export const useHotkeyStore = create<HotkeyStoreState>()(
@@ -72,6 +77,12 @@ export const useHotkeyStore = create<HotkeyStoreState>()(
     setZoomLevel: (level) =>
       set((state) => {
         state.zoomLevel = level
+      }),
+
+    stealthResult: null,
+    setStealthResult: (rows) =>
+      set((state) => {
+        state.stealthResult = rows
       }),
   }))
 )

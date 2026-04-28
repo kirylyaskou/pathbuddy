@@ -13,11 +13,12 @@ import type { WeakEliteTier } from '@/entities/creature'
 import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
 import type { CustomCreatureRow } from '@/entities/creature/model/custom-creature-types'
-import { searchCreaturesFiltered, fetchDistinctLibrarySources, getAllCustomCreatures } from '@/shared/api'
+import { searchCreaturesFiltered, fetchDistinctLibrarySources, getAllCustomCreatures, insertEncounterCombatant } from '@/shared/api'
 import type { CreatureRow, LibrarySourceOption } from '@/shared/api'
 import { useCombatantStore } from '@/entities/combatant'
 import { createCombatantFromCreature } from '@/features/combat-tracker'
 import { useShallow } from 'zustand/react/shallow'
+import { logErrorWithToast } from '@/shared/lib/error'
 import { getHpAdjustment } from '@engine'
 import { useDraggable } from '@dnd-kit/core'
 import { HazardSearchPanel } from './HazardSearchPanel'
@@ -69,7 +70,7 @@ function DraggableBestiaryRow({ row, tier, children }: { row: CreatureRow; tier:
   )
 }
 
-export function BestiarySearchPanel() {
+export function BestiarySearchPanel({ encounterId }: { encounterId?: string }) {
   const { t } = useTranslation('common')
   const [activeTab, setActiveTab] = useState<LeftTab>('bestiary')
   const [query, setQuery] = useState('')
@@ -185,7 +186,7 @@ export function BestiarySearchPanel() {
   }, [query])
 
   const handleAdd = useCallback(
-    (row: CreatureRow) => {
+    async (row: CreatureRow) => {
       const creature = toCreature(row)
       const hpDelta = getHpAdjustment(selectedTier, creature.level)
       const adjustedHp = Math.max(1, creature.hp + hpDelta)
@@ -198,15 +199,42 @@ export function BestiarySearchPanel() {
         combatants,
         creature.level,
         selectedTier,
+        creature.fort,
       )
       combatant.maxHp = adjustedHp
       combatant.iwrImmunities = iwr.immunities
       combatant.iwrWeaknesses = iwr.weaknesses
       combatant.iwrResistances = iwr.resistances
+      // Insert into encounter_combatants before addCombatant triggers auto-save
+      // to prevent FK constraint failure when conditions are later applied.
+      if (encounterId) {
+        const sortOrder = combatants.length
+        try {
+          await insertEncounterCombatant(encounterId, {
+            id: combatant.id,
+            encounterId,
+            creatureRef: combatant.creatureRef,
+            displayName: combatant.displayName,
+            initiative: combatant.initiative,
+            hp: combatant.hp,
+            maxHp: combatant.maxHp,
+            tempHp: combatant.tempHp,
+            isNPC: true,
+            weakEliteTier: combatant.weakEliteTier ?? 'normal',
+            creatureLevel: combatant.level ?? 0,
+            sortOrder,
+            isHazard: false,
+            hazardRef: null,
+          }, sortOrder)
+        } catch (err) {
+          logErrorWithToast('bestiary-add-insert')(err)
+          return
+        }
+      }
       addCombatant(combatant)
       setSelectedTier('normal')
     },
-    [combatants, addCombatant, selectedTier]
+    [combatants, addCombatant, selectedTier, encounterId]
   )
 
   return (

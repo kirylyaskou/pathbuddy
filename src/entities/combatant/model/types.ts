@@ -26,6 +26,8 @@ export interface NpcCombatant extends CombatantBase {
   ac?: number
   // Session-only Perception for Quick Add creatures (not stored in DB, not tied to creatureRef).
   perception?: number
+  // Base Fortitude modifier from stat block — used for Sickened end-of-turn save dialog.
+  fort?: number
   // Shield Raised toggle (session-only). shieldAcBonus holds the actual bonus from item data.
   shieldRaised?: boolean
   // AC bonus from the equipped shield — set when creature stat block is loaded.
@@ -37,8 +39,8 @@ export interface NpcCombatant extends CombatantBase {
   // getHpAdjustment, so this field is purely for display / lookup.
   weakEliteTier?: WeakEliteTier
   iwrImmunities?: string[]
-  iwrWeaknesses?: { type: string; value: number }[]
-  iwrResistances?: { type: string; value: number }[]
+  iwrWeaknesses?: { type: string; value: number; exceptions?: string[] }[]
+  iwrResistances?: { type: string; value: number; exceptions?: string[]; doubleVs?: string[] }[]
 }
 
 /** PC — player character from Pathbuilder import or session-only custom PC. */

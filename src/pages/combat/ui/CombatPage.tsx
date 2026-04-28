@@ -29,8 +29,8 @@ import { getHpAdjustment, applyTierToStatBlock } from '@engine'
 import { PCCombatCard } from '@/features/characters'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/shared/lib/utils'
-import { saveEncounterStagingCombatants } from '@/shared/api'
-import type { EncounterStagingRow } from '@/shared/api'
+import { saveEncounterStagingCombatants, insertEncounterCombatant } from '@/shared/api'
+import type { EncounterStagingRow, EncounterCombatantRow } from '@/shared/api'
 import { StagingTable } from '@/features/encounter-builder/ui/StagingTable'
 import { logErrorWithToast } from '@/shared/lib/error'
 import { useCombatDetailLoader } from '../model/use-combat-detail-loader'
@@ -267,6 +267,50 @@ export function CombatPage() {
   const prevRoundRef = useRef<number>(currentRound)
 
   // Auto-trigger: when round advances, release staging creatures scheduled for that round
+  const deployDueStagingCombatant = useCallback(async (encounterId: string, round: number) => {
+    const staging = useCombatantStore.getState().stagingCombatants
+    const due = staging.filter((s) => s.round === round)
+    if (due.length === 0) return
+    const sc = due[0].combatant
+    // INSERT into encounter_combatants BEFORE releaseFromStaging mutates the
+    // Zustand store. Auto-save fires on store change — if the row doesn't
+    // exist in DB yet, saveEncounterConditions will hit the FK constraint.
+    const sortOrder = useCombatantStore.getState().combatants.length
+    const row: EncounterCombatantRow = {
+      id: sc.id,
+      encounterId,
+      creatureRef: 'creatureRef' in sc ? (sc as NpcCombatant).creatureRef : '',
+      displayName: sc.displayName,
+      initiative: 0,
+      hp: sc.hp,
+      maxHp: sc.maxHp,
+      tempHp: sc.tempHp,
+      isNPC: sc.kind === 'npc',
+      weakEliteTier: ('weakEliteTier' in sc ? sc.weakEliteTier : undefined) ?? 'normal',
+      creatureLevel: sc.level ?? 0,
+      sortOrder,
+      isHazard: sc.kind === 'hazard',
+      hazardRef: sc.kind === 'hazard' ? (sc as unknown as NpcCombatant).creatureRef : null,
+    }
+    try {
+      await insertEncounterCombatant(encounterId, row, sortOrder)
+    } catch (err) {
+      logErrorWithToast('auto-deploy-insert')(err)
+      return
+    }
+    const released = useCombatantStore.getState().releaseFromStaging(sc.id)
+    if (released) {
+      const updated = useCombatantStore.getState().stagingCombatants
+      saveEncounterStagingCombatants(encounterId, toRowsInline(encounterId, updated)).catch(logErrorWithToast('staging-save'))
+      setAutoDeployTarget({
+        combatantId: released.id,
+        creatureRef: 'creatureRef' in released ? (released as NpcCombatant).creatureRef : '',
+        displayName: released.displayName,
+      })
+      setAutoDialogOpen(true)
+    }
+  }, [])
+
   useEffect(() => {
     if (currentRound <= 1 && prevRoundRef.current <= 1) {
       prevRoundRef.current = currentRound
@@ -274,24 +318,11 @@ export function CombatPage() {
     }
     if (currentRound !== prevRoundRef.current) {
       prevRoundRef.current = currentRound
-      const staging = useCombatantStore.getState().stagingCombatants
-      const due = staging.filter((s) => s.round === currentRound)
-      if (due.length > 0 && combatId) {
-        const first = due[0]
-        const released = useCombatantStore.getState().releaseFromStaging(first.combatant.id)
-        if (released) {
-          const updated = useCombatantStore.getState().stagingCombatants
-          saveEncounterStagingCombatants(combatId, toRowsInline(combatId, updated)).catch(logErrorWithToast('staging-save'))
-          setAutoDeployTarget({
-            combatantId: released.id,
-            creatureRef: 'creatureRef' in released ? (released as NpcCombatant).creatureRef : '',
-            displayName: released.displayName,
-          })
-          setAutoDialogOpen(true)
-        }
+      if (combatId) {
+        deployDueStagingCombatant(combatId, currentRound)
       }
     }
-  }, [currentRound, combatId])
+  }, [currentRound, combatId, deployDueStagingCombatant])
 
   const combatants = useCombatantStore(useShallow((s) => s.combatants))
   const { reorderInitiative } = useCombatantStore()
@@ -342,7 +373,7 @@ export function CombatPage() {
     await loadForCombatant(id)
   }, [loadForCombatant])
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event
     if (!over) return
 
@@ -369,11 +400,39 @@ export function CombatPage() {
         useCombatantStore.getState().combatants,
         creature.level,
         tier,
+        creature.fort,
       )
       c.maxHp = adjustedHp
       c.iwrImmunities = iwr.immunities
       c.iwrWeaknesses = iwr.weaknesses
       c.iwrResistances = iwr.resistances
+      // Insert into encounter_combatants BEFORE addCombatant triggers auto-save,
+      // otherwise saveEncounterConditions will hit FK constraint for any conditions
+      // applied to this combatant before the next save flushes.
+      if (combatId && isEncounterBacked) {
+        const sortOrder = useCombatantStore.getState().combatants.length
+        try {
+          await insertEncounterCombatant(combatId, {
+            id: c.id,
+            encounterId: combatId,
+            creatureRef: c.creatureRef,
+            displayName: c.displayName,
+            initiative: c.initiative,
+            hp: c.hp,
+            maxHp: c.maxHp,
+            tempHp: c.tempHp,
+            isNPC: true,
+            weakEliteTier: c.weakEliteTier ?? 'normal',
+            creatureLevel: c.level ?? 0,
+            sortOrder,
+            isHazard: false,
+            hazardRef: null,
+          }, sortOrder)
+        } catch (err) {
+          logErrorWithToast('bestiary-drag-insert')(err)
+          return
+        }
+      }
       useCombatantStore.getState().addCombatant(c)
       return
     }
@@ -381,8 +440,33 @@ export function CombatPage() {
     // Route 0.5: Hazard add from HazardSearchPanel drag
     if (dragData?.type === 'hazard-add' && dragData.hazardRow) {
       const hr = dragData.hazardRow
+      const hazardId = crypto.randomUUID()
+      if (combatId && isEncounterBacked) {
+        const sortOrder = useCombatantStore.getState().combatants.length
+        try {
+          await insertEncounterCombatant(combatId, {
+            id: hazardId,
+            encounterId: combatId,
+            creatureRef: `hazard-${hr.id}`,
+            displayName: hr.name,
+            initiative: 0,
+            hp: hr.hp ?? 0,
+            maxHp: hr.hp ?? 0,
+            tempHp: 0,
+            isNPC: false,
+            weakEliteTier: 'normal',
+            creatureLevel: 0,
+            sortOrder,
+            isHazard: true,
+            hazardRef: hr.id,
+          }, sortOrder)
+        } catch (err) {
+          logErrorWithToast('hazard-drag-insert')(err)
+          return
+        }
+      }
       useCombatantStore.getState().addCombatant({
-        id: crypto.randomUUID(),
+        id: hazardId,
         creatureRef: `hazard-${hr.id}`,
         displayName: hr.name,
         initiative: 0,
@@ -451,6 +535,7 @@ export function CombatPage() {
           combatantId={autoDeployTarget.combatantId}
           creatureRef={autoDeployTarget.creatureRef}
           displayName={autoDeployTarget.displayName}
+          encounterId={isEncounterBacked && combatId ? combatId : undefined}
         />
       )}
       {openTabs.length === 0 ? (
@@ -469,7 +554,7 @@ export function CombatPage() {
 
             {/* Left panel — Bestiary search */}
             <ResizablePanel defaultSize={22} minSize={16} maxSize={32}>
-              <BestiarySearchPanel />
+              <BestiarySearchPanel encounterId={isEncounterBacked ? combatId ?? undefined : undefined} />
             </ResizablePanel>
 
             <ResizableHandle withHandle />

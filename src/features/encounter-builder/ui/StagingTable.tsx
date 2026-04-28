@@ -136,6 +136,7 @@ export function StagingTable({ encounterId, combatMode = false }: StagingTablePr
         combatantId={deployTarget?.combatantId ?? ''}
         creatureRef={deployTarget?.creatureRef ?? ''}
         displayName={deployTarget?.displayName ?? ''}
+        encounterId={encounterId}
       />
     </div>
   )

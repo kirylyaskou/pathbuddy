@@ -49,6 +49,7 @@ function defaultStatBlock(id: string): CreatureStatBlockData {
     ref: 0,
     will: 0,
     perception: 0,
+    stealth: null,
     rarity: 'common',
     size: 'Medium',
     type: 'npc',

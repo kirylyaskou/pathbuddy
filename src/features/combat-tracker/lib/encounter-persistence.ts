@@ -1,8 +1,8 @@
-import { saveEncounterCombatState, loadEncounterState, loadEncounterStagingCombatants, fetchCreatureById } from '@/shared/api'
+import { saveEncounterCombatState, loadEncounterState, loadEncounterStagingCombatants } from '@/shared/api'
 import type { EncounterConditionRow } from '@/shared/api'
 import { useCombatantStore, kindFromLegacy, type Combatant, type StagingCombatant } from '@/entities/combatant'
 import { useConditionStore, hydrateManager, clearAllManagers } from '@/entities/condition'
-import { extractIwr } from '@/entities/creature'
+import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import { useCombatTrackerStore } from '../model/store'
 import { rollInitiative } from './initiative'
 import type { ConditionSlug } from '@engine'
@@ -18,7 +18,11 @@ function buildEncounterSavePayload() {
   const combatants = useCombatantStore.getState().combatants
   const conditions = useConditionStore.getState().activeConditions
 
-  const combatantIds = new Set(combatants.map((c) => c.id))
+  // PC combatants are session-only and have no rows in encounter_combatants.
+  // Including them in the UPDATE list is harmless (0 rows updated), but their
+  // condition combatant_id values would violate the FK constraint on INSERT.
+  const dbCombatants = combatants.filter((c) => c.kind !== 'pc')
+  const dbCombatantIds = new Set(dbCombatants.map((c) => c.id))
 
   return {
     encounterId: tracker.combatId,
@@ -26,14 +30,14 @@ function buildEncounterSavePayload() {
     turn: tracker.turn,
     activeCombatantId: tracker.activeCombatantId,
     isRunning: tracker.isRunning,
-    combatants: combatants.map((c) => ({
+    combatants: dbCombatants.map((c) => ({
       id: c.id,
       hp: c.hp,
       tempHp: c.tempHp,
       initiative: c.initiative,
     })),
     conditions: conditions
-      .filter((c) => combatantIds.has(c.combatantId))
+      .filter((c) => dbCombatantIds.has(c.combatantId))
       .map((c): EncounterConditionRow => ({
         combatantId: c.combatantId,
         slug: c.slug,
@@ -116,26 +120,32 @@ export async function loadEncounterIntoCombat(encounterId: string): Promise<bool
     const snapshot = await loadEncounterState(encounterId)
     if (!snapshot) return false
 
-    // Fetch creature data for NPC combatants (initiative + IWR)
+    // Fetch creature data for NPC combatants (initiative + IWR) and staging pool (fort).
+    // Staging refs are included so fort is available when staging combatants deploy into combat.
     const needsInitiative = !snapshot.isRunning && snapshot.round === 0
-    const uniqueRefs = [...new Set(
-      snapshot.combatants.filter((c) => c.isNPC && c.creatureRef).map((c) => c.creatureRef)
-    )]
-    const creatureRows = new Map<string, Awaited<ReturnType<typeof fetchCreatureById>>>()
+    const stagingRowsEarly = await loadEncounterStagingCombatants(encounterId)
+    const uniqueRefs = [...new Set([
+      ...snapshot.combatants.filter((c) => c.isNPC && c.creatureRef).map((c) => c.creatureRef),
+      ...stagingRowsEarly.filter((r) => r.creatureRef).map((r) => r.creatureRef),
+    ])]
+    const creatureData = new Map<string, Awaited<ReturnType<typeof fetchCreatureStatBlockData>>>()
     await Promise.all(uniqueRefs.map(async (ref) => {
-      const row = await fetchCreatureById(ref)
-      if (row) creatureRows.set(ref, row)
+      const stat = await fetchCreatureStatBlockData(ref)
+      if (stat) creatureData.set(ref, stat)
     }))
 
     // Build combatants with initiative rolls and IWR data
     const combatants: Combatant[] = snapshot.combatants.map((c) => {
-      const row = c.creatureRef ? creatureRows.get(c.creatureRef) : null
-      const iwr = row ? extractIwr(row) : null
+      const stat = c.creatureRef ? creatureData.get(c.creatureRef) : null
 
       let initiative = c.initiative
-      if (needsInitiative && (c.isNPC || c.isHazard) && row) {
-        initiative = rollInitiative(row.perception ?? 0)
+      if (needsInitiative && (c.isNPC || c.isHazard) && stat) {
+        initiative = rollInitiative(stat.perception ?? 0)
       }
+
+      const immunities = stat?.immunities.map((i) => (typeof i === 'string' ? i : i.type)) ?? []
+      const weaknesses = stat?.weaknesses ?? []
+      const resistances = stat?.resistances ?? []
 
       return {
         kind: kindFromLegacy(c.isNPC, c.isHazard ?? false),
@@ -146,33 +156,40 @@ export async function loadEncounterIntoCombat(encounterId: string): Promise<bool
         hp: c.hp,
         maxHp: c.maxHp,
         tempHp: c.tempHp,
-        ...(row?.level != null ? { level: row.level } : {}),
+        ...(stat?.level != null ? { level: stat.level } : {}),
+        ...(stat?.fort != null ? { fort: stat.fort } : {}),
         ...(c.weakEliteTier && c.weakEliteTier !== 'normal' ? { weakEliteTier: c.weakEliteTier } : {}),
-        ...(iwr && iwr.immunities.length > 0 ? { iwrImmunities: iwr.immunities } : {}),
-        ...(iwr && iwr.weaknesses.length > 0 ? { iwrWeaknesses: iwr.weaknesses } : {}),
-        ...(iwr && iwr.resistances.length > 0 ? { iwrResistances: iwr.resistances } : {}),
+        ...(immunities.length > 0 ? { iwrImmunities: immunities } : {}),
+        ...(weaknesses.length > 0 ? { iwrWeaknesses: weaknesses } : {}),
+        ...(resistances.length > 0 ? { iwrResistances: resistances } : {}),
       }
     })
 
     useCombatantStore.getState().setCombatants(combatants)
 
-    // Restore staging pool from DB
-    const stagingRows = await loadEncounterStagingCombatants(encounterId)
-    const stagingCombatants: StagingCombatant[] = stagingRows.map((row) => ({
-      combatant: {
-        kind: row.kind,
-        id: row.id,
-        creatureRef: row.creatureRef,
-        displayName: row.displayName,
-        initiative: 0,
-        hp: row.hp,
-        maxHp: row.maxHp,
-        tempHp: row.tempHp,
-        ...(row.creatureLevel ? { level: row.creatureLevel } : {}),
-      } as Combatant,
-      round: row.round ?? undefined,
-      sortOrder: row.sortOrder,
-    }))
+    // Restore staging pool from DB (creatureData already fetched above)
+    const stagingCombatants: StagingCombatant[] = stagingRowsEarly.map((row) => {
+      const cr = row.creatureRef ? creatureData.get(row.creatureRef) : null
+      return {
+        combatant: {
+          kind: row.kind,
+          id: row.id,
+          creatureRef: row.creatureRef,
+          displayName: row.displayName,
+          initiative: 0,
+          hp: row.hp,
+          maxHp: row.maxHp,
+          tempHp: row.tempHp,
+          ...(row.creatureLevel ? { level: row.creatureLevel } : {}),
+          ...(cr?.fort != null ? { fort: cr.fort } : {}),
+          ...(cr?.immunities && cr.immunities.length > 0 ? { iwrImmunities: cr.immunities.map((i) => (typeof i === 'string' ? i : i.type)) } : {}),
+          ...(cr?.weaknesses && cr.weaknesses.length > 0 ? { iwrWeaknesses: cr.weaknesses } : {}),
+          ...(cr?.resistances && cr.resistances.length > 0 ? { iwrResistances: cr.resistances } : {}),
+        } as Combatant,
+        round: row.round ?? undefined,
+        sortOrder: row.sortOrder,
+      }
+    })
     useCombatantStore.getState().setStagingCombatants(stagingCombatants)
 
     // Hydrate conditions

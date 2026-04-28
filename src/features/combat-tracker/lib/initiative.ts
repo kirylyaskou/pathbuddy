@@ -33,6 +33,7 @@ export function createCombatantFromCreature(
   existingCombatants: Combatant[],
   level?: number,
   tier?: WeakEliteTier,
+  fort?: number,
 ): NpcCombatant {
   return {
     kind: 'npc',
@@ -45,6 +46,7 @@ export function createCombatantFromCreature(
     tempHp: 0,
     ...(level !== undefined ? { level } : {}),
     ...(tier && tier !== 'normal' ? { weakEliteTier: tier } : {}),
+    ...(fort !== undefined ? { fort } : {}),
   }
 }
 

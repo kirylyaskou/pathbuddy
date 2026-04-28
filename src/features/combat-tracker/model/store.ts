@@ -18,8 +18,12 @@ export interface PendingSickenedSave {
   combatantId: string
   combatantName: string
   sickenedValue: number
-  /** creatureRef from the combatant — used by dialog to async-fetch fort modifier. */
-  creatureRef: string
+  /** Base Fortitude stat from the creature's stat block (before conditions). */
+  baseFort: number
+  /** Net condition modifier applied to Fortitude (e.g. -2 from Sickened 2). */
+  condMod: number
+  /** creatureRef for async fort lookup if baseFort was unavailable at trigger time. */
+  creatureRef?: string
 }
 
 export interface CombatTrackerState {

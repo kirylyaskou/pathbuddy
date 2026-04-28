@@ -20,7 +20,7 @@ interface GlobalSearchModalProps {
   onSelect: (result: GlobalSearchResult) => void
 }
 
-const KIND_ORDER: EntityKind[] = ['creature', 'spell', 'item', 'condition', 'hazard', 'action']
+const KIND_ORDER: EntityKind[] = ['creature', 'spell', 'item', 'condition', 'hazard', 'action', 'feat']
 
 export function GlobalSearchModal({ open, onOpenChange, onSelect }: GlobalSearchModalProps) {
   const { t } = useTranslation('common')
@@ -63,6 +63,7 @@ export function GlobalSearchModal({ open, onOpenChange, onSelect }: GlobalSearch
       condition: t('commandPalette.globalSearch.groups.conditions'),
       hazard: t('commandPalette.globalSearch.groups.hazards'),
       action: t('commandPalette.globalSearch.groups.actions'),
+      feat: t('commandPalette.globalSearch.groups.feats'),
     }
     return keyMap[kind]
   }

@@ -33,6 +33,7 @@ export interface ResistanceEntry {
   type: string
   value: number
   exceptions?: string[]
+  doubleVs?: string[]
 }
 
 export interface AuraEntry {
@@ -98,6 +99,8 @@ export interface Creature {
   ref: number
   will: number
   perception: number
+  /** Stealth skill modifier from the stat block. Null when not present in the Foundry data. */
+  stealth: number | null
   traits: string[]
   rarity: EngineRarity
   size: DisplaySize

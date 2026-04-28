@@ -4,8 +4,9 @@ import { searchItems } from './items'
 import { searchConditions } from './conditions'
 import { searchHazards } from './hazards'
 import { searchActions } from './actions'
+import { searchFeats } from './feats'
 
-export type EntityKind = 'creature' | 'spell' | 'item' | 'condition' | 'hazard' | 'action'
+export type EntityKind = 'creature' | 'spell' | 'item' | 'condition' | 'hazard' | 'action' | 'feat'
 
 export interface GlobalSearchResult {
   id: string
@@ -17,13 +18,14 @@ export interface GlobalSearchResult {
 export async function searchAllEntities(query: string): Promise<GlobalSearchResult[]> {
   if (!query.trim()) return []
 
-  const [creatures, spells, items, conditions, hazards, actions] = await Promise.all([
+  const [creatures, spells, items, conditions, hazards, actions, feats] = await Promise.all([
     searchCreatures(query, 5),
     searchSpells(query),
     searchItems(query),
     searchConditions(query),
     searchHazards(query, 5),
     searchActions(query, 5),
+    searchFeats(query, 5),
   ])
 
   const results: GlobalSearchResult[] = [
@@ -60,6 +62,12 @@ export async function searchAllEntities(query: string): Promise<GlobalSearchResu
       id: a.id,
       name: a.name,
       kind: 'action' as EntityKind,
+    })),
+    ...feats.slice(0, 5).map((f) => ({
+      id: f.id,
+      name: f.name,
+      kind: 'feat' as EntityKind,
+      subtitle: f.level != null ? `Lvl ${f.level}` : undefined,
     })),
   ]
 

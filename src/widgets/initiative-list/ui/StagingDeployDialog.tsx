@@ -6,8 +6,9 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useCombatantStore } from '@/entities/combatant'
-import { fetchCreatureById } from '@/shared/api/creatures'
+import { fetchCreatureById, insertEncounterCombatant } from '@/shared/api'
 import { toCreatureStatBlockData } from '@/entities/creature'
+import { logErrorWithToast } from '@/shared/lib/error'
 
 interface SkillOption {
   name: string
@@ -20,6 +21,7 @@ interface StagingDeployDialogProps {
   combatantId: string
   creatureRef: string
   displayName: string
+  encounterId?: string
 }
 
 export function StagingDeployDialog({
@@ -28,6 +30,7 @@ export function StagingDeployDialog({
   combatantId,
   creatureRef,
   displayName,
+  encounterId,
 }: StagingDeployDialogProps) {
   const { t } = useTranslation('common')
   const [skills, setSkills] = useState<SkillOption[]>([])
@@ -55,11 +58,37 @@ export function StagingDeployDialog({
     })
   }, [open, creatureRef])
 
+  function persistToEncounter(initiative: number) {
+    if (!encounterId) return
+    const store = useCombatantStore.getState()
+    const c = store.combatants.find((cb) => cb.id === combatantId)
+    if (!c) return
+    const sortOrder = store.combatants.length - 1
+    insertEncounterCombatant(encounterId, {
+      id: c.id,
+      encounterId,
+      creatureRef: 'creatureRef' in c ? c.creatureRef : '',
+      displayName: c.displayName,
+      initiative,
+      hp: c.hp,
+      maxHp: c.maxHp,
+      tempHp: c.tempHp,
+      isNPC: c.kind === 'npc',
+      weakEliteTier: ('weakEliteTier' in c ? c.weakEliteTier : undefined) ?? 'normal',
+      creatureLevel: c.level ?? 0,
+      sortOrder,
+      isHazard: c.kind === 'hazard',
+      hazardRef: c.kind === 'hazard' ? c.creatureRef : null,
+    }, sortOrder).catch(logErrorWithToast('staging-deploy-insert'))
+  }
+
   function handleRoll() {
     const entry = skills.find((s) => s.name === selectedSkill)
     const mod = entry?.modifier ?? 0
     const d20 = Math.ceil(Math.random() * 20)
-    useCombatantStore.getState().setInitiative(combatantId, d20 + mod)
+    const initiative = d20 + mod
+    useCombatantStore.getState().setInitiative(combatantId, initiative)
+    persistToEncounter(initiative)
     onOpenChange(false)
   }
 
@@ -67,6 +96,7 @@ export function StagingDeployDialog({
     const v = parseInt(manualValue, 10)
     if (!isNaN(v)) {
       useCombatantStore.getState().setInitiative(combatantId, v)
+      persistToEncounter(v)
       onOpenChange(false)
     }
   }

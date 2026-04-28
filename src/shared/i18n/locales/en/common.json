@@ -224,6 +224,7 @@
       "title": "Hotkeys",
       "description": "Chord hotkeys for combat actions. Each hotkey is two keypresses: combination + suffix.",
       "add": "Add",
+      "addButton": "Add",
       "save": "Save",
       "cancel": "Cancel",
       "delete": "Delete",
@@ -234,13 +235,27 @@
       "chordField": "Chord",
       "actionField": "Action",
       "noHotkeys": "No hotkeys configured",
+      "empty": "No hotkeys configured",
+      "columnAction": "Action",
+      "columnChord": "Chord",
+      "fieldAction": "Action",
+      "fieldCondition": "Condition",
+      "fieldValue": "Value",
+      "fieldChord": "Chord",
+      "chordPlaceholder": "Not set",
+      "captureIdle": "Click to record a chord",
+      "captureStep1": "Press combination (e.g. Ctrl+F)…",
+      "captureStep2": "Now press suffix key (digit or letter)…",
+      "captureChange": "Change",
+      "captureListening": "Listening…",
+      "conditionValueHint": "Value is read from the next digit key pressed (1–9)",
+      "formTitle": "Add / Edit Hotkey",
       "actions": {
         "nextInitiative": "Next Initiative",
         "zoomIn": "Zoom In",
         "zoomOut": "Zoom Out",
         "applyCondition": "Apply Condition",
-        "conditionField": "Condition",
-        "valueField": "Value"
+        "stealthVsParty": "Stealth vs Party"
       }
     }
   },
@@ -920,7 +935,8 @@
         "items": "Items",
         "conditions": "Conditions",
         "hazards": "Hazards",
-        "actions": "Actions"
+        "actions": "Actions",
+        "feats": "Feats"
       }
     }
   },

@@ -79,6 +79,8 @@ export interface DamageInstance {
   critical?: boolean
   precision?: boolean
   materials?: MaterialEffect[]
+  /** True when the damage originates from a magical source (spell, magic weapon, etc). */
+  magical?: boolean
 }
 
 /** An immunity entry on a creature. Zeroes matched damage entirely (or halves for critical-hits). */
@@ -100,11 +102,15 @@ export interface Weakness {
   readonly applyOnce: boolean
 }
 
-/** A resistance entry on a creature. Reduces matched damage (minimum 0). */
+/**
+ * A resistance entry on a creature. Reduces matched damage (minimum 0).
+ * doubleVs conditions (e.g. "non-magical") double the resistance value when matched.
+ */
 export interface Resistance {
   readonly type: ResistanceType
   readonly value: number
   readonly exceptions: DamageType[]
+  readonly doubleVs?: string[]
 }
 
 /** Detailed result from applyIWR for UI display and diagnostic use. */
@@ -141,13 +147,14 @@ export function createWeakness(
   }
 }
 
-/** Creates a Resistance entry with optional exceptions. */
+/** Creates a Resistance entry with optional exceptions and doubleVs conditions. */
 export function createResistance(
   type: ResistanceType,
   value: number,
   exceptions: DamageType[] = [],
+  doubleVs?: string[],
 ): Resistance {
-  return { type, value, exceptions }
+  return doubleVs && doubleVs.length > 0 ? { type, value, exceptions, doubleVs } : { type, value, exceptions }
 }
 
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
@@ -185,6 +192,25 @@ function effectiveWeaknessValue(weakness: Weakness, instance: DamageInstance): n
     condition => condition === 'critical' && instance.critical === true,
   ) ?? false
   return shouldDouble ? weakness.value * 2 : weakness.value
+}
+
+/**
+ * Checks whether a doubleVs condition string is satisfied by the damage instance.
+ * "non-magical" doubles resistance when the source is not magical.
+ */
+function doubleVsMatches(condition: string, instance: DamageInstance): boolean {
+  if (condition === 'non-magical') return instance.magical !== true
+  return false
+}
+
+/**
+ * Computes the effective resistance value, doubling it when a doubleVs condition is met.
+ * Source: Foundry VTT PF2e doubleVs on resistance entries (e.g. ghost all-damage 5 doubles vs non-magical).
+ */
+function effectiveResistanceValue(resistance: Resistance, instance: DamageInstance): number {
+  if (!resistance.doubleVs || resistance.doubleVs.length === 0) return resistance.value
+  const shouldDouble = resistance.doubleVs.some(cond => doubleVsMatches(cond, instance))
+  return shouldDouble ? resistance.value * 2 : resistance.value
 }
 
 // ─── Core Engine ─────────────────────────────────────────────────────────────
@@ -273,14 +299,20 @@ export function applyIWR(
   )
 
   if (matchingResistances.length > 0) {
-    // Select the highest resistance value (only the highest applies)
-    const highestResistance = matchingResistances.reduce(
-      (best, r) => (r.value > best.value ? r : best),
-      matchingResistances[0],
-    )
+    // Select the highest effective resistance value (accounting for doubleVs)
+    let highestResistance = matchingResistances[0]
+    let highestValue = effectiveResistanceValue(matchingResistances[0], instance)
+
+    for (let i = 1; i < matchingResistances.length; i++) {
+      const candidateValue = effectiveResistanceValue(matchingResistances[i], instance)
+      if (candidateValue > highestValue) {
+        highestValue = candidateValue
+        highestResistance = matchingResistances[i]
+      }
+    }
 
     // Clamp to 0 minimum — resistance cannot make damage negative
-    adjustedAmount = Math.max(0, adjustedAmount - highestResistance.value)
+    adjustedAmount = Math.max(0, adjustedAmount - highestValue)
     appliedResistances.push(highestResistance)
   }
 

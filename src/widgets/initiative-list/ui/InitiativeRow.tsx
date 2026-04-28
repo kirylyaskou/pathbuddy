@@ -10,9 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useShallow } from 'zustand/react/shallow'
 import { useCombatantStore, isNpc } from '@/entities/combatant'
-import { toCreatureStatBlockData } from '@/entities/creature'
+import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import { applyCondition } from '@/entities/condition/lib/condition-bridge'
-import { fetchCreatureById } from '@/shared/api/creatures'
 import { useHotkeyStore } from '@/shared/model/hotkey-store'
 import type { ConditionSlug } from '@engine'
 import type { Combatant } from '@/entities/combatant'
@@ -60,9 +59,8 @@ export function InitiativeRow({
     setManualValue(String(combatant.initiative))
     const ref = combatant.creatureRef
     if (!ref) { setSkills([]); return }
-    fetchCreatureById(ref).then((row) => {
-      if (!row) return
-      const creature = toCreatureStatBlockData(row)
+    fetchCreatureStatBlockData(ref).then((creature) => {
+      if (!creature) return
       const opts: SkillOption[] = [
         { name: 'Perception', modifier: creature.perception },
         ...creature.skills

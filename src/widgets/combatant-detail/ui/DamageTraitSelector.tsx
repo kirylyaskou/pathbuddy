@@ -31,8 +31,8 @@ export function DamageTraitSelector({
   const { t } = useTranslation('common')
 
   return (
-    <Dialog modal={false} open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold flex items-center justify-between">
             <span>{t('combatantDetail.addDamageTraits')}</span>
@@ -47,7 +47,7 @@ export function DamageTraitSelector({
             )}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 pt-1">
+        <div className="space-y-3 pt-1 overflow-y-auto">
           {DAMAGE_GROUPS.map((group) => (
             <div key={group.label}>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">

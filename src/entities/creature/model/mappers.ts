@@ -54,6 +54,16 @@ export function toCreature(row: CreatureRow): Creature {
     }
   }
 
+  // Extract stealth skill modifier from raw_json skills block (all creature types)
+  let stealth: number | null = null
+  try {
+    const rawForStealth = JSON.parse(row.raw_json) as { system?: { skills?: Record<string, { base?: unknown }> } } | null
+    const stealthBase = rawForStealth?.system?.skills?.stealth?.base
+    if (typeof stealthBase === 'number') stealth = stealthBase
+  } catch {
+    // raw_json absent or malformed — stealth stays null
+  }
+
   return {
     id: row.id,
     name: row.name,
@@ -64,6 +74,7 @@ export function toCreature(row: CreatureRow): Creature {
     ref: derivedRef ?? row.ref ?? 0,
     will: derivedWill ?? row.will ?? 0,
     perception: derivedPerception ?? row.perception ?? 0,
+    stealth,
     traits: parseJsonArray(row.traits),
     rarity: (row.rarity ?? 'common') as Rarity,
     size: mapSize(row.size),
@@ -112,8 +123,11 @@ export function toCreatureStatBlockData(row: CreatureRow): CreatureStatBlockData
     const exceptions = rawExc
       .map((e) => (typeof e === 'string' ? e : (e as { label?: string })?.label))
       .filter((s): s is string => typeof s === 'string' && s.length > 0)
+    const rawDvs = Array.isArray(entry.doubleVs) ? entry.doubleVs : []
+    const doubleVs = rawDvs.filter((s): s is string => typeof s === 'string' && s.length > 0)
     const result: ResistanceEntry = { type: entry.type || String(r), value: entry.value ?? 0 }
     if (exceptions.length > 0) result.exceptions = exceptions
+    if (doubleVs.length > 0) result.doubleVs = doubleVs
     return result
   })
 
@@ -440,21 +454,40 @@ function derivePcStats(raw: unknown, baseAbilityMods: AbilityMods): DerivedPcSta
 
 export function extractIwr(row: CreatureRow): {
   immunities: string[]
-  weaknesses: { type: string; value: number }[]
-  resistances: { type: string; value: number }[]
+  weaknesses: { type: string; value: number; exceptions?: string[] }[]
+  resistances: { type: string; value: number; exceptions?: string[]; doubleVs?: string[] }[]
 } {
   const raw = JSON.parse(row.raw_json)
   const system = (raw.system || {}) as FoundrySystem
   return {
     immunities: (system.attributes?.immunities || []).map((i) => i.type || String(i)),
-    weaknesses: (system.attributes?.weaknesses || []).map((w) => ({
-      type: w.type || String(w),
-      value: w.value ?? 0,
-    })),
-    resistances: (system.attributes?.resistances || []).map((r) => ({
-      type: r.type || String(r),
-      value: r.value ?? 0,
-    })),
+    weaknesses: (system.attributes?.weaknesses || []).map((w) => {
+      const rawExc = Array.isArray(w.exceptions) ? w.exceptions : []
+      const exceptions = rawExc
+        .map((e: unknown) => (typeof e === 'string' ? e : (e as { label?: string })?.label))
+        .filter((s): s is string => typeof s === 'string' && s.length > 0)
+      const entry: { type: string; value: number; exceptions?: string[] } = {
+        type: w.type || String(w),
+        value: w.value ?? 0,
+      }
+      if (exceptions.length > 0) entry.exceptions = exceptions
+      return entry
+    }),
+    resistances: (system.attributes?.resistances || []).map((r) => {
+      const rawExc = Array.isArray(r.exceptions) ? r.exceptions : []
+      const exceptions = rawExc
+        .map((e: unknown) => (typeof e === 'string' ? e : (e as { label?: string })?.label))
+        .filter((s): s is string => typeof s === 'string' && s.length > 0)
+      const rawDvs = Array.isArray(r.doubleVs) ? r.doubleVs : []
+      const doubleVs = rawDvs.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
+      const entry: { type: string; value: number; exceptions?: string[]; doubleVs?: string[] } = {
+        type: r.type || String(r),
+        value: r.value ?? 0,
+      }
+      if (exceptions.length > 0) entry.exceptions = exceptions
+      if (doubleVs.length > 0) entry.doubleVs = doubleVs
+      return entry
+    }),
   }
 }
 

@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dices, Keyboard } from 'lucide-react'
+import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { removeCondition, setConditionValue } from '@/entities/condition'
-import { fetchCreatureById } from '@/shared/api/creatures'
 import type { PendingSickenedSave } from '@/features/combat-tracker'
 
 // PF2e CRB: Sickened end-of-turn recovery.
 // Attempt a Fortitude save vs DC 15.
-// Critical success: remove sickened entirely.
-// Success: reduce sickened value by 1.
+// Critical success: reduce sickened value by 2 (remove if value <= 2).
+// Success: reduce sickened value by 1 (remove if value <= 1).
 // Failure / Critical failure: no change.
 
 const DEFAULT_DC = 15
@@ -35,7 +36,12 @@ function applyOutcome(
   outcome: SaveOutcome,
 ): void {
   if (outcome === 'critical-success') {
-    removeCondition(combatantId, 'sickened')
+    const newValue = sickenedValue - 2
+    if (newValue <= 0) {
+      removeCondition(combatantId, 'sickened')
+    } else {
+      setConditionValue(combatantId, 'sickened', newValue)
+    }
   } else if (outcome === 'success') {
     if (sickenedValue <= 1) {
       removeCondition(combatantId, 'sickened')
@@ -57,14 +63,25 @@ export function SickenedFortitudeSaveDialog({ pending, onClose }: SickenedFortit
   const [manualRoll, setManualRoll] = useState('')
   const [dc, setDc] = useState(DEFAULT_DC)
   const [result, setResult] = useState<{ d20: number; total: number; outcome: SaveOutcome } | null>(null)
-  const [fortMod, setFortMod] = useState(0)
+
+  const [resolvedBaseFort, setResolvedBaseFort] = useState<number>(pending?.baseFort ?? 0)
 
   useEffect(() => {
-    if (!pending?.creatureRef) { setFortMod(0); return }
-    fetchCreatureById(pending.creatureRef).then((creature) => {
-      setFortMod(creature?.fort ?? 0)
-    })
-  }, [pending?.creatureRef])
+    if (!pending) return
+    const base = pending.baseFort
+    setResolvedBaseFort(base)
+    // If baseFort is 0 but creatureRef is present, the fort was likely missing
+    // from the combatant at trigger time — fetch it from the DB as a fallback.
+    if (base === 0 && pending.creatureRef) {
+      fetchCreatureStatBlockData(pending.creatureRef).then((creature) => {
+        if (!creature) return
+        if (creature.fort !== 0) setResolvedBaseFort(creature.fort)
+      })
+    }
+  }, [pending])
+
+  const condMod = pending?.condMod ?? 0
+  const fortMod = resolvedBaseFort + condMod
 
   if (!pending) return null
 
@@ -92,11 +109,14 @@ export function SickenedFortitudeSaveDialog({ pending, onClose }: SickenedFortit
     setManualRoll('')
     setRollMode('auto')
     setDc(DEFAULT_DC)
+    setResolvedBaseFort(0)
     onClose()
   }
 
   const outcomeLabel: Record<SaveOutcome, string> = {
-    'critical-success': 'Critical Success — Sickened removed',
+    'critical-success': pending.sickenedValue <= 2
+      ? 'Critical Success — Sickened removed'
+      : `Critical Success — Sickened ${pending.sickenedValue} → ${pending.sickenedValue - 2}`,
     'success': pending.sickenedValue <= 1
       ? 'Success — Sickened removed'
       : `Success — Sickened ${pending.sickenedValue} → ${pending.sickenedValue - 1}`,
@@ -116,6 +136,9 @@ export function SickenedFortitudeSaveDialog({ pending, onClose }: SickenedFortit
           <DialogTitle className="flex items-center gap-2">
             Fortitude Save — {pending.combatantName}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('combatantDetail.sickenedValue', { value: pending.sickenedValue })}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -126,7 +149,16 @@ export function SickenedFortitudeSaveDialog({ pending, onClose }: SickenedFortit
 
           <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
             <span>
-              Fort mod:{' '}
+              Fort:{' '}
+              <span className="font-mono font-bold text-foreground">
+                {resolvedBaseFort >= 0 ? `+${resolvedBaseFort}` : `${resolvedBaseFort}`}
+              </span>
+              {condMod !== 0 && (
+                <span className="font-mono text-amber-400">
+                  {condMod >= 0 ? ` +${condMod}` : ` ${condMod}`}
+                </span>
+              )}
+              {' = '}
               <span className="font-mono font-bold text-foreground">
                 {fortMod >= 0 ? `+${fortMod}` : `${fortMod}`}
               </span>
@@ -210,12 +242,14 @@ export function SickenedFortitudeSaveDialog({ pending, onClose }: SickenedFortit
                   <span className="font-medium">{t('combatantDetail.fortitudeSave')}</span>
                   <span className="font-mono text-xs text-muted-foreground">
                     {result.d20}
-                    {fortMod !== 0 && (
-                      <> {fortMod >= 0 ? '+' : ''}{fortMod} = <span className="font-bold text-foreground">{result.total}</span></>
+                    {resolvedBaseFort !== 0 && (
+                      <>{resolvedBaseFort >= 0 ? ' +' : ' '}{resolvedBaseFort}</>
                     )}
-                    {fortMod === 0 && (
-                      <> = <span className="font-bold text-foreground">{result.total}</span></>
+                    {condMod !== 0 && (
+                      <span className="text-amber-400">{condMod >= 0 ? ' +' : ' '}{condMod}</span>
                     )}
+                    {' = '}
+                    <span className="font-bold text-foreground">{result.total}</span>
                     {' '}vs DC {dc}
                   </span>
                 </div>

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { LevelBadge } from '@/shared/ui/level-badge'
-import { StatBlockModal, toCreature, BestiaryResultRow } from '@/entities/creature'
+import { StatBlockModal, toCreature, extractIwr, BestiaryResultRow } from '@/entities/creature'
 import type { WeakEliteTier } from '@/entities/creature'
 import { fetchCreatureStatBlockData } from '@/entities/creature/model/fetchStatBlock'
 import type { CreatureStatBlockData } from '@/entities/creature/model/types'
@@ -272,6 +272,7 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
       if (!encounterId) return
       const creature = toCreature(row)
       const adjustedHp = Math.max(1, creature.hp + getHpAdjustment(selectedTier, creature.level))
+      const iwr = extractIwr(row)
       const combatant: NpcCombatant = {
         id: crypto.randomUUID(),
         kind: 'npc',
@@ -282,6 +283,10 @@ export function CreatureSearchSidebar({ onAddCreature, onAddHazard, encounterId 
         maxHp: adjustedHp,
         tempHp: 0,
         level: creature.level,
+        fort: creature.fort,
+        ...(iwr.immunities.length > 0 ? { iwrImmunities: iwr.immunities } : {}),
+        ...(iwr.weaknesses.length > 0 ? { iwrWeaknesses: iwr.weaknesses } : {}),
+        ...(iwr.resistances.length > 0 ? { iwrResistances: iwr.resistances } : {}),
       }
       useCombatantStore.getState().addStagingCombatant(combatant)
       const staging = useCombatantStore.getState().stagingCombatants
