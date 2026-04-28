@@ -339,6 +339,23 @@ export function HpControls({ combatant, iwrImmunities, iwrWeaknesses, iwrResista
               <Shield className="w-3 h-3" />
               {t('combatantDetail.tempHp')}
             </Button>
+            {isNpc(combatant) && (
+              <button
+                type="button"
+                onClick={() => updateCombatant(combatant.id, { mortal: !(combatant.mortal === true) })}
+                title={t('combatantDetail.mortalTooltip')}
+                aria-pressed={combatant.mortal === true}
+                className={cn(
+                  'h-full shrink-0 p-2 flex items-center justify-center gap-1 rounded-md text-xs transition-colors border',
+                  combatant.mortal === true
+                    ? 'bg-rose-900/60 hover:bg-rose-900/70 text-rose-200 border-rose-700/60'
+                    : 'bg-secondary/30 hover:bg-secondary/60 text-muted-foreground border-border/50',
+                )}
+              >
+                <Skull className="w-3.5 h-3.5" />
+                <span>{t('combatantDetail.mortal')}</span>
+              </button>
+            )}
           </div>
 
           {dyingValue > 0 && (

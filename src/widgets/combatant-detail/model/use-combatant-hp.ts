@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { useCombatantStore } from '@/entities/combatant'
+import { useCombatantStore, isNpc } from '@/entities/combatant'
 import { useConditionStore, applyCondition, removeCondition, clearCombatantManager, getManagerState } from '@/entities/condition'
 import { getDyingValueOnKnockout, getWoundedValueAfterStabilize } from '@engine'
 import type { ConditionSlug } from '@engine'
@@ -39,9 +39,11 @@ export function useCombatantHp(combatantId: string) {
   )
 
   const deathThreshold = 4 - doomedValue
-  const isDead = dyingValue > 0 && dyingValue >= deathThreshold
+  const permaDead = combatant && isNpc(combatant) ? combatant.permaDead === true : false
+  const isDead = permaDead || (dyingValue > 0 && dyingValue >= deathThreshold)
 
-  /** Apply effective damage (post-IWR). Absorbs temp HP first, then triggers dying on knockout. */
+  /** Apply effective damage (post-IWR). Absorbs temp HP first, then triggers dying on knockout
+   *  (or permaDead for mortal combatants). */
   const applyDamage = useCallback((effectiveDamage: number) => {
     const current = useCombatantStore.getState().combatants.find((c) => c.id === combatantId)
     if (!current) return
@@ -54,25 +56,49 @@ export function useCombatantHp(combatantId: string) {
     const hpBefore = current.hp
     if (remaining > 0) updateHp(combatantId, -remaining)
     const newHp = Math.max(0, hpBefore - remaining)
-    // CRB pg.460: on HP → 0 auto-apply dying (1 + wounded).
     if (newHp === 0 && hpBefore > 0) {
+      // Mortal toggle: skip dying flow, set permaDead instantly.
+      if (isNpc(current) && current.mortal === true) {
+        useCombatantStore.getState().updateCombatant(combatantId, { permaDead: true })
+        return
+      }
+      // CRB pg.460: on HP → 0 auto-apply dying (1 + wounded).
       const wounded = useConditionStore.getState().activeConditions
         .find((c) => c.combatantId === combatantId && c.slug === 'wounded')?.value ?? 0
       applyCondition(combatantId, 'dying' as ConditionSlug, getDyingValueOnKnockout(wounded))
     }
   }, [combatantId, updateHp, updateTempHp])
 
-  /** Heal HP. If creature was downed (hp ≤ 0) and healed to positive, remove dying + grant wounded. */
+  /** Heal HP. State-machine for wounded + downed-conditions:
+   *  - Full heal (hp reaches max) with wounded > 0 → wounded → 0 (project rule)
+   *  - Wake up from 0 hp while still dying (not yet stabilized) → wounded += 1 (recovery from dying)
+   *  - Wake up from 0 hp (stabilized or otherwise) → remove dying + unconscious + blinded
+   *  - Prone stays (player decision: handle separately)
+   */
   const applyHeal = useCallback((amount: number) => {
     const current = useCombatantStore.getState().combatants.find((c) => c.id === combatantId)
     if (!current) return
+
     const wasDown = current.hp <= 0
+    const newHp = Math.min(current.maxHp, current.hp + amount)
+    const wokeUp = wasDown && newHp > 0
+
     updateHp(combatantId, amount)
-    if (wasDown && current.hp + amount > 0) {
-      const curWounded = useConditionStore.getState().activeConditions
-        .find((c) => c.combatantId === combatantId && c.slug === 'wounded')?.value ?? 0
+
+    const conds = useConditionStore.getState().activeConditions
+    const curDying = conds.find((c) => c.combatantId === combatantId && c.slug === 'dying')?.value ?? 0
+    const curWounded = conds.find((c) => c.combatantId === combatantId && c.slug === 'wounded')?.value ?? 0
+
+    if (newHp >= current.maxHp && curWounded > 0) {
+      removeCondition(combatantId, 'wounded' as ConditionSlug)
+    } else if (wokeUp && curDying > 0) {
       applyCondition(combatantId, 'wounded' as ConditionSlug, getWoundedValueAfterStabilize(curWounded))
-      removeCondition(combatantId, 'dying' as ConditionSlug)
+    }
+
+    if (wokeUp) {
+      if (curDying > 0) removeCondition(combatantId, 'dying' as ConditionSlug)
+      removeCondition(combatantId, 'unconscious' as ConditionSlug)
+      removeCondition(combatantId, 'blinded' as ConditionSlug)
     }
   }, [combatantId, updateHp])
 
@@ -108,10 +134,12 @@ export function useCombatantHp(combatantId: string) {
     }
   }, [combatantId])
 
-  /** Resurrect (GM fiat): clear all conditions, set HP to 1. */
+  /** Resurrect (GM fiat): clear all conditions, set HP to 1.
+   *  No-op for mortal combatants that have already permaDied — death is final. */
   const resurrect = useCallback(() => {
     const current = useCombatantStore.getState().combatants.find((c) => c.id === combatantId)
     if (!current) return
+    if (isNpc(current) && current.permaDead === true) return
     clearCombatantManager(combatantId)
     updateHp(combatantId, 1 - current.hp)
   }, [combatantId, updateHp])

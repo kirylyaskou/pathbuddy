@@ -392,6 +392,8 @@
     "iwrFinal": "Final",
     "iwrDoubledHint": "(×2 crit)",
     "iwrDoubledVsNonMagical": "(×2 vs non-magical)",
+    "mortal": "Mortal",
+    "mortalTooltip": "When this toggle is active, the creature dies permanently the moment it drops below 0 HP — no dying saves, no resurrect.",
     "dyingLabel": "Dying",
     "woundedLabel": "Wounded",
     "doomedLabel": "Doomed",

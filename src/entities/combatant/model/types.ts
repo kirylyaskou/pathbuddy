@@ -41,6 +41,10 @@ export interface NpcCombatant extends CombatantBase {
   iwrImmunities?: string[]
   iwrWeaknesses?: { type: string; value: number; exceptions?: string[] }[]
   iwrResistances?: { type: string; value: number; exceptions?: string[]; doubleVs?: string[] }[]
+  // When true, dropping to 0 HP kills permanently (skip dying flow, block resurrect).
+  mortal?: boolean
+  // Set internally by applyDamage when mortal && hp ≤ 0. Drives isDead + blocks resurrect.
+  permaDead?: boolean
 }
 
 /** PC — player character from Pathbuilder import or session-only custom PC. */
